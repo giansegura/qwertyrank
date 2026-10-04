@@ -1,0 +1,22 @@
+import { notFound } from "next/navigation";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { TypingTest } from "@/components/typing-test/typing-test";
+import { routing } from "@/i18n/routing";
+import { PRACTICE_DURATION_MS } from "@/lib/scoring/durations";
+import { getInitialWords } from "@/lib/words/initial-words";
+
+export default async function PracticePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  const t = await getTranslations("Practice");
+  const initialWords = await getInitialWords(locale);
+
+  return (
+    <>
+      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <TypingTest language={locale} durationMs={PRACTICE_DURATION_MS} initialWords={initialWords} />
+      <p className="text-zinc-600 dark:text-zinc-400">{t("intro")}</p>
+    </>
+  );
+}

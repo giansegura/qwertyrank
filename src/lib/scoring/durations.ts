@@ -1,0 +1,2 @@
+export const OFFICIAL_DURATION_MS = 30_000;
+export const PRACTICE_DURATION_MS = 15_000;

@@ -1,0 +1,37 @@
+{
+  "Metadata": {
+    "title": "QwertyRank — Typing speed test",
+    "description": "How fast do you type? Take a 30-second typing test and compare your words per minute."
+  },
+  "Nav": {
+    "home": "Ranked",
+    "practice": "Practice"
+  },
+  "LocaleSwitcher": {
+    "label": "Language"
+  },
+  "Home": {
+    "title": "How fast do you type?",
+    "intro": "Type the words as fast and accurately as you can. The 30-second timer starts with your first keystroke."
+  },
+  "Practice": {
+    "title": "Practice",
+    "intro": "15-second tests with no ranking. Start typing to begin and press Tab to restart."
+  },
+  "TypingTest": {
+    "label": "Typing test",
+    "inputLabel": "Type the words shown",
+    "focusPrompt": "Click here or tap to start typing",
+    "restartHint": "Tab to restart"
+  },
+  "Result": {
+    "wpm": "wpm",
+    "accuracy": "accuracy",
+    "raw": "raw wpm",
+    "chartLabel": "Words per minute, second by second",
+    "mistakesTitle": "Most missed keys",
+    "noMistakes": "No mistakes. Impressive!",
+    "restart": "Next test",
+    "restartHint": "or press Tab / Enter"
+  }
+}

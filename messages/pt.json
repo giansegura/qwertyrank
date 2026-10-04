@@ -1,0 +1,37 @@
+{
+  "Metadata": {
+    "title": "QwertyRank — Teste de velocidade de digitação",
+    "description": "Qual é a sua velocidade de digitação? Faça um teste de 30 segundos e compare suas palavras por minuto."
+  },
+  "Nav": {
+    "home": "Ranked",
+    "practice": "Prática"
+  },
+  "LocaleSwitcher": {
+    "label": "Idioma"
+  },
+  "Home": {
+    "title": "Qual é a sua velocidade de digitação?",
+    "intro": "Digite as palavras o mais rápido e com a maior precisão possível. Os 30 segundos começam na primeira tecla."
+  },
+  "Practice": {
+    "title": "Prática",
+    "intro": "Testes de 15 segundos sem ranking. Comece a digitar para iniciar e pressione Tab para reiniciar."
+  },
+  "TypingTest": {
+    "label": "Teste de digitação",
+    "inputLabel": "Digite as palavras exibidas",
+    "focusPrompt": "Clique aqui ou toque para começar a digitar",
+    "restartHint": "Tab para reiniciar"
+  },
+  "Result": {
+    "wpm": "ppm",
+    "accuracy": "precisão",
+    "raw": "ppm bruto",
+    "chartLabel": "Palavras por minuto, segundo a segundo",
+    "mistakesTitle": "Teclas mais erradas",
+    "noMistakes": "Nenhum erro. Impressionante!",
+    "restart": "Próximo teste",
+    "restartHint": "ou pressione Tab / Enter"
+  }
+}

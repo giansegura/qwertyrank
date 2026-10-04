@@ -1,0 +1,37 @@
+{
+  "Metadata": {
+    "title": "QwertyRank — Test de velocidad de escritura",
+    "description": "¿A qué velocidad escribes? Haz un test de mecanografía de 30 segundos y compara tus palabras por minuto."
+  },
+  "Nav": {
+    "home": "Ranked",
+    "practice": "Práctica"
+  },
+  "LocaleSwitcher": {
+    "label": "Idioma"
+  },
+  "Home": {
+    "title": "¿A qué velocidad escribes?",
+    "intro": "Escribe las palabras lo más rápido y preciso que puedas. Los 30 segundos empiezan con tu primera pulsación."
+  },
+  "Practice": {
+    "title": "Práctica",
+    "intro": "Tests de 15 segundos sin ranking. Empieza a escribir para comenzar y pulsa Tab para reiniciar."
+  },
+  "TypingTest": {
+    "label": "Test de escritura",
+    "inputLabel": "Escribe las palabras que aparecen",
+    "focusPrompt": "Haz clic aquí o toca para empezar a escribir",
+    "restartHint": "Tab para reiniciar"
+  },
+  "Result": {
+    "wpm": "ppm",
+    "accuracy": "precisión",
+    "raw": "ppm brutas",
+    "chartLabel": "Palabras por minuto, segundo a segundo",
+    "mistakesTitle": "Teclas más falladas",
+    "noMistakes": "Sin errores. ¡Impresionante!",
+    "restart": "Siguiente test",
+    "restartHint": "o pulsa Tab / Enter"
+  }
+}

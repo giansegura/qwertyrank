@@ -185,8 +185,9 @@ export function RankedTest({ language }: { language: TestLanguage }) {
         </span>
       </div>
 
-      {/* Altura reservada para el resultado: al terminar, el contenido de debajo no salta (CLS = 0). */}
-      <div className="min-h-[28rem]">
+      {/* Sin altura reservada: debajo no hay contenido que pueda saltar al crecer el resultado (CLS = 0),
+          y la pantalla inicial cabe sin scroll. */}
+      <div>
         {waiting || phase.name === "starting" ? (
           <div className="flex min-h-30 flex-col items-center justify-center gap-3 text-center">
             {phase.name === "unavailable" && (

@@ -14,9 +14,11 @@ export default async function PracticePage({ params }: { params: Promise<{ local
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-zinc-600 dark:text-zinc-400">{t("intro")}</p>
+      </div>
       <TypingTest language={locale} durationMs={PRACTICE_DURATION_MS} initialWords={initialWords} />
-      <p className="text-zinc-600 dark:text-zinc-400">{t("intro")}</p>
     </>
   );
 }

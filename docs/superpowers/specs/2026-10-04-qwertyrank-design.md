@@ -139,12 +139,13 @@ QwertyRank es una web para medir y comparar la velocidad de escritura. Su núcle
 | Regla | Valor inicial |
 |---|---|
 | Violación de tiempos (§4.2) | — |
-| Ráfaga inhumana: mediana de intervalos entre `keydown` en cualquier ventana de 20 pulsaciones | < 25 ms |
+| Ráfaga inhumana: mediana de intervalos entre entradas de texto (`input`) en cualquier ventana de 20. Se usa `input` y no `keydown` porque así vale también para teclados táctiles | < 25 ms |
 | PPM por encima del techo de la categoría | 320 (físico) / 220 (táctil) |
-| Texto insertado sin pulsaciones correspondientes (pegado/inyección) | Cualquier caso |
+| Teclado físico: texto que entra sin un `keydown` en el segundo anterior (inyectado) | Cualquier caso |
+| Varias letras insertadas de golpe (deslizar el dedo, tocar sugerencias, pegar, autocorrector). En Ranked solo vale teclear letra a letra; la práctica lo admite todo | Físico: cualquier caso. Táctil: más de 2 por partida, para tolerar alguna autocorrección del teclado (umbral a calibrar con dispositivos reales) |
 | Eventos con `isTrusted = false` | Cualquier caso |
 
-El usuario ve *"Partida no válida"* con un motivo genérico (p. ej. *"problema de conexión"* o *"actividad no reconocida"*).
+El usuario ve *"Partida no válida"* con un motivo genérico: *"problema de conexión"*, *"actividad no reconocida"* o, si se insertaron varias letras de golpe, *"en Ranked hay que teclear letra a letra"*.
 
 ### 4.4 Señales de sospecha → puntuación de riesgo
 
@@ -212,7 +213,7 @@ No se puede evitar un bot muy sofisticado que teclee en tiempo real imitando a u
 |---|---|
 | `users` | `id`, `nick` (único, `citext`), `country` (nullable), `role` (`user`/`admin`), `status` (`active`/`shadowbanned`/`banned`), `created_at` |
 | tablas de Better Auth | cuentas, sesiones, passkeys, verificaciones |
-| `games` | `id`, `user_id` (nullable), `anon_id`, `language`, `input_type`, `wpm`, `raw_wpm`, `accuracy`, `verdict`, `risk_score`, `ip_hash`, `starts_at`, `finished_at`, `claimed_at` |
+| `games` | `id`, `user_id` (nullable), `anon_id`, `language`, `input_type`, `wpm`, `raw_wpm`, `accuracy`, `verdict`, `reject_reason` (nullable), `risk_score`, `ip_hash`, `starts_at`, `finished_at`, `claimed_at` |
 | `keystroke_logs` | `game_id`, `events` (comprimidos), `created_at` |
 | `period_bests` | `user_id`, `language`, `input_type`, `period_type`, `period_key`, `game_id`, `wpm`, `accuracy`, `achieved_at`. Clave única: (`user_id`, `language`, `input_type`, `period_type`, `period_key`) |
 | `verifications` | `game_id`, `user_id`, `status`, `attempts`, `expires_at` |
@@ -372,6 +373,8 @@ src/
   app/api/leaderboard/me     posición propia
   components/typing-test/    componente del test (cliente)
   lib/scoring/               reproducción de pulsaciones → PPM y precisión (compartido cliente/servidor)
+  lib/game/                  tipos del protocolo de partidas (compartidos cliente/servidor)
+  components/ranked/         partida Ranked: API, envío de tandas, cuenta atrás y veredicto
   server/game/               ciclo de vida de la partida (Redis)
   server/anticheat/          reglas, señales, veredicto
   server/input-type/         clasificación físico/táctil
@@ -420,6 +423,7 @@ Además, un script de administración reconstruye Redis desde Postgres.
 
 ### 8.6 Entornos
 
+- **Local:** `docker compose up -d` levanta PostgreSQL 17, Redis 7 y SRH (emula la API HTTP de Upstash), así el mismo cliente `@upstash/redis` funciona en local, en tests y en producción. Configuración en `.env.local` (a partir de `.env.example`); los tests de integración usan `.env.test` y una base de datos aparte.
 - Despliegue de vista previa por PR con una rama de Neon propia.
 - Producción en `qwertyrank.com`; `www` redirige al dominio raíz; HSTS.
 

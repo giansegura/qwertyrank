@@ -12,7 +12,7 @@
   },
   "Home": {
     "title": "How fast do you type?",
-    "intro": "Type the words as fast and accurately as you can. The 30-second timer starts with your first keystroke."
+    "intro": "Press Start: after a 3-second countdown the text appears and you have 30 seconds to type as fast and accurately as you can."
   },
   "Practice": {
     "title": "Practice",
@@ -33,5 +33,18 @@
     "noMistakes": "No mistakes. Impressive!",
     "restart": "Next test",
     "restartHint": "or press Tab / Enter"
+  },
+  "Ranked": {
+    "start": "Start",
+    "startHint": "or press Space / Enter",
+    "rules": "30 seconds. The text appears after a 3-second countdown and the clock can't be paused.",
+    "submitting": "Checking your game…",
+    "unavailable": "Ranked isn't available right now. You can keep practising in the meantime.",
+    "practiceLink": "Go to practice",
+    "verdictValid": "Valid game",
+    "verdictConnection": "Connection problem: this game doesn't count.",
+    "verdictUnrecognized": "Unrecognized activity: this game doesn't count.",
+    "verdictLetterByLetter": "In Ranked you have to type letter by letter: this game doesn't count.",
+    "replaced": "You started another game, so this one was closed."
   }
 }

@@ -12,7 +12,7 @@
   },
   "Home": {
     "title": "¿A qué velocidad escribes?",
-    "intro": "Escribe las palabras lo más rápido y preciso que puedas. Los 30 segundos empiezan con tu primera pulsación."
+    "intro": "Pulsa Empezar: tras una cuenta atrás de 3 segundos aparece el texto y tienes 30 segundos para escribir lo más rápido y preciso que puedas."
   },
   "Practice": {
     "title": "Práctica",
@@ -33,5 +33,18 @@
     "noMistakes": "Sin errores. ¡Impresionante!",
     "restart": "Siguiente test",
     "restartHint": "o pulsa Tab / Enter"
+  },
+  "Ranked": {
+    "start": "Empezar",
+    "startHint": "o pulsa Espacio / Enter",
+    "rules": "30 segundos. El texto aparece tras una cuenta atrás de 3 segundos y el reloj no se puede parar.",
+    "submitting": "Comprobando tu partida…",
+    "unavailable": "Ranked no está disponible ahora mismo. Mientras tanto puedes seguir practicando.",
+    "practiceLink": "Ir a la práctica",
+    "verdictValid": "Partida válida",
+    "verdictConnection": "Problema de conexión: esta partida no cuenta.",
+    "verdictUnrecognized": "Actividad no reconocida: esta partida no cuenta.",
+    "verdictLetterByLetter": "En Ranked hay que teclear letra a letra: esta partida no cuenta.",
+    "replaced": "Has empezado otra partida, así que esta se ha cerrado."
   }
 }

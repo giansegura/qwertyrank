@@ -46,6 +46,18 @@ describe("replay", () => {
     ]);
   });
 
+  it("ignora eventos con forma inválida (datos no confiables)", () => {
+    const events = [
+      input(0, "hola "),
+      { t: Number.NaN, type: "input", deleted: 0, inserted: "x", trusted: true },
+      { t: null, type: "input", deleted: 0, inserted: "x", trusted: true },
+      { t: 10, type: "input", deleted: 0, inserted: 5, trusted: true },
+      { t: 20, type: "input", deleted: -3, inserted: "x", trusted: true },
+      null,
+    ] as unknown as TypingEvent[];
+    expect(replay(words, events, 15_000).correctChars).toBe(5);
+  });
+
   it("una partida sin pulsaciones da 0 en todo", () => {
     const result = replay(words, [], 15_000);
     expect(result).toMatchObject({ wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0 });

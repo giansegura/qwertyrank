@@ -34,8 +34,8 @@ test("cambiar de idioma conserva la página", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Práctica");
 });
 
-test("el texto inicial está en el idioma de la página", async ({ page }) => {
-  await page.goto("/es");
+test("el texto inicial de la práctica está en el idioma de la página", async ({ page }) => {
+  await page.goto("/es/practica");
   const words = await page.getByTestId("word").evaluateAll((els) => els.map((el) => el.getAttribute("data-word")));
   expect(words).toHaveLength(160);
   expect(words.some((word) => /[áéíóúñ]/.test(word ?? ""))).toBe(true);

@@ -12,7 +12,7 @@
   },
   "Home": {
     "title": "Qual é a sua velocidade de digitação?",
-    "intro": "Digite as palavras o mais rápido e com a maior precisão possível. Os 30 segundos começam na primeira tecla."
+    "intro": "Pressione Começar: depois de uma contagem regressiva de 3 segundos o texto aparece e você tem 30 segundos para digitar o mais rápido e com a maior precisão possível."
   },
   "Practice": {
     "title": "Prática",
@@ -33,5 +33,18 @@
     "noMistakes": "Nenhum erro. Impressionante!",
     "restart": "Próximo teste",
     "restartHint": "ou pressione Tab / Enter"
+  },
+  "Ranked": {
+    "start": "Começar",
+    "startHint": "ou pressione Espaço / Enter",
+    "rules": "30 segundos. O texto aparece depois de uma contagem regressiva de 3 segundos e o relógio não pode ser pausado.",
+    "submitting": "Verificando sua partida…",
+    "unavailable": "O Ranked não está disponível agora. Enquanto isso, você pode continuar praticando.",
+    "practiceLink": "Ir para a prática",
+    "verdictValid": "Partida válida",
+    "verdictConnection": "Problema de conexão: esta partida não conta.",
+    "verdictUnrecognized": "Atividade não reconhecida: esta partida não conta.",
+    "verdictLetterByLetter": "No Ranked é preciso digitar letra por letra: esta partida não conta.",
+    "replaced": "Você começou outra partida, então esta foi encerrada."
   }
 }

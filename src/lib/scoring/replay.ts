@@ -13,15 +13,27 @@ export interface TestResult {
   mistakes: Record<string, number>;
 }
 
+/** El servidor reproduce eventos que no son de fiar: se ignora todo lo que no tenga la forma esperada. */
+function isValidInput(event: unknown): event is InputTypingEvent {
+  if (typeof event !== "object" || event === null) return false;
+  const candidate = event as Record<string, unknown>;
+  return (
+    candidate.type === "input" &&
+    typeof candidate.t === "number" &&
+    Number.isFinite(candidate.t) &&
+    typeof candidate.inserted === "string" &&
+    Number.isInteger(candidate.deleted) &&
+    (candidate.deleted as number) >= 0
+  );
+}
+
 export function replay(
   words: readonly string[],
   events: readonly TypingEvent[],
   durationMs: number,
 ): TestResult {
   const inputs = events
-    .filter((event): event is InputTypingEvent =>
-      event.type === "input" && event.t >= 0 && event.t <= durationMs,
-    )
+    .filter((event): event is InputTypingEvent => isValidInput(event) && event.t >= 0 && event.t <= durationMs)
     .toSorted((a, b) => a.t - b.t);
 
   const seconds = Math.ceil(durationMs / 1000);

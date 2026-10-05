@@ -8,10 +8,14 @@ const defaultNow = () => performance.now();
 export function Timer({
   endsAt,
   durationMs,
+  testId = "timer",
+  className = "font-mono text-2xl tabular-nums text-amber-600 dark:text-amber-400",
   now = defaultNow,
 }: {
   endsAt: number | null;
   durationMs: number;
+  testId?: string;
+  className?: string;
   now?: () => number;
 }) {
   const [tick, setTick] = useState<{ endsAt: number; seconds: number } | null>(null);
@@ -31,7 +35,7 @@ export function Timer({
   const seconds =
     endsAt !== null && tick?.endsAt === endsAt ? tick.seconds : Math.ceil(durationMs / 1000);
   return (
-    <span data-testid="timer" className="font-mono text-2xl tabular-nums text-amber-600 dark:text-amber-400">
+    <span data-testid={testId} className={className}>
       {seconds}
     </span>
   );

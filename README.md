@@ -27,8 +27,3 @@ pnpm dev                      # http://localhost:3000
 
 - El esquema está en `src/server/db/schema.ts`.
 - Si lo cambias, genera la migración con `pnpm db:generate --name <nombre>` y aplícala con `pnpm db:migrate`.
-
-## Documentación
-
-- Diseño: `docs/superpowers/specs/2026-10-04-qwertyrank-design.md`
-- Planes de cada fase: `docs/superpowers/plans/`

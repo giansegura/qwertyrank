@@ -13,19 +13,19 @@ test("el resultado no desplaza el contenido de la página (CLS)", async ({ page 
   });
 
   await page.goto("/en/practice");
-  const intro = page.locator("main > p");
-  const introTop = async () => (await intro.boundingBox())!.y;
-  const before = await introTop();
+  const area = page.getByTestId("typing-area");
+  const areaTop = async () => (await area.boundingBox())!.y;
+  const before = await areaTop();
 
   // Peor caso: varias palabras mal escritas llenan la lista de teclas falladas.
   const words = await page
     .getByTestId("word")
     .evaluateAll((elements) => elements.slice(0, 4).map((el) => el.getAttribute("data-word") ?? ""));
-  await page.getByTestId("typing-area").click();
+  await area.click();
   await page.keyboard.type(words.map((word) => "q".repeat(word.length)).join(" ") + " ");
   await expect(page.getByTestId("result")).toBeVisible({ timeout: 20_000 });
 
-  expect(await introTop()).toBe(before);
+  expect(await areaTop()).toBe(before);
   const cls = await page.evaluate(() => (window as unknown as ShiftWindow).__cls);
   expect(cls).toBeLessThan(0.001);
 });

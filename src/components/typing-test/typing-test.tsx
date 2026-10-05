@@ -63,9 +63,9 @@ export function TypingTest({ language, durationMs, initialWords }: TypingTestPro
         <span className="text-sm text-zinc-500 dark:text-zinc-400">{t("restartHint")}</span>
       </div>
 
-      {/* Altura reservada para el resultado (hasta ~27rem en móvil con la lista de fallos
-          en dos líneas): así, al terminar, el contenido de debajo no salta (CLS = 0). */}
-      <div className="min-h-[28rem]">
+      {/* Sin altura reservada: debajo no hay contenido que pueda saltar al crecer el resultado (CLS = 0),
+          y la pantalla inicial cabe sin scroll. */}
+      <div>
         {session.status === "finished" && session.result ? (
           <ResultView result={session.result} onRestart={restart} />
         ) : (

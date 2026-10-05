@@ -14,7 +14,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
       <RankedTest language={locale} />
-      <p className="text-zinc-600 dark:text-zinc-400">{t("intro")}</p>
     </>
   );
 }

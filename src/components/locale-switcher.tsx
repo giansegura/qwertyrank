@@ -11,14 +11,14 @@ export function LocaleSwitcher() {
 
   return (
     <nav aria-label={t("label")}>
-      <ul className="flex gap-2">
+      <ul className="flex gap-1 sm:gap-2">
         {routing.locales.map((option) => (
           <li key={option}>
             <Link
               href={pathname}
               locale={option}
               aria-current={option === locale ? "true" : undefined}
-              className="rounded px-1.5 py-0.5 font-mono text-xs uppercase text-zinc-500 aria-[current]:bg-zinc-200 aria-[current]:text-zinc-900 dark:aria-[current]:bg-zinc-800 dark:aria-[current]:text-zinc-100"
+              className="rounded px-1 py-0.5 font-mono sm:px-1.5 text-xs uppercase text-zinc-500 aria-[current]:bg-zinc-200 aria-[current]:text-zinc-900 dark:aria-[current]:bg-zinc-800 dark:aria-[current]:text-zinc-100"
             >
               {option}
             </Link>

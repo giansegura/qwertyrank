@@ -11,8 +11,7 @@
     "label": "Idioma"
   },
   "Home": {
-    "title": "Qual é a sua velocidade de digitação?",
-    "intro": "Pressione Começar: depois de uma contagem regressiva de 3 segundos o texto aparece e você tem 30 segundos para digitar o mais rápido e com a maior precisão possível."
+    "title": "Qual é a sua velocidade de digitação?"
   },
   "Practice": {
     "title": "Prática",

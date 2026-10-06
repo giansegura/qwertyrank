@@ -36,3 +36,13 @@ export function accuracyPercent(correct: number, total: number): number {
   if (total === 0) return 0;
   return round2((correct / total) * 100);
 }
+
+/** PPM tal como se enseñan: redondeadas. */
+export function displayWpm(wpm: number): number {
+  return Math.round(wpm);
+}
+
+/** Precisión tal como se enseña: hacia abajo, para que un 89,9 % nunca parezca el 90 % que pide el ranking. */
+export function displayAccuracy(accuracy: number): number {
+  return Math.floor(accuracy);
+}

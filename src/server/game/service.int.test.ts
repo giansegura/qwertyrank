@@ -5,6 +5,8 @@ import type { TypingEvent } from "@/lib/scoring/types";
 import { typed } from "@/test/typing-events";
 import { createDb } from "../db/client";
 import { games, users } from "../db/schema";
+import { createRanking } from "../leaderboard/ranking";
+import { createLeaderboardStore } from "../leaderboard/store";
 import { createRedis } from "../redis";
 import { createSaveGame } from "./persist";
 import { createGameService } from "./service";
@@ -12,6 +14,8 @@ import { createGameStore } from "./store";
 
 const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
+const rankingPrefix = `${process.env.REDIS_KEY_PREFIX}service-${randomUUID().slice(0, 8)}:`;
+const ranking = createRanking({ db, store: createLeaderboardStore(redis, rankingPrefix), onTopChanged: () => {} });
 
 // Tiempos cortos para recorrer partidas completas en el test: sin cuenta atrás, 1,5 s de partida.
 const service = createGameService({
@@ -21,12 +25,15 @@ const service = createGameService({
   random: Math.random,
   newId: randomUUID,
   times: { countdownMs: 0, durationMs: 1_500, graceMs: 500 },
+  rankGame: ranking.rankGame,
 });
 
 const ENV = { coarse: false, touchPoints: 0 };
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 afterAll(async () => {
+  const keys = await redis.keys(`${rankingPrefix}*`);
+  if (keys.length > 0) await redis.del(...keys);
   await db.$client.end();
 });
 
@@ -50,7 +57,14 @@ describe("GameService (Redis + PostgreSQL)", () => {
     const { gameId, words, outcome } = await play(typed("hola ", { every: 50, hold: 30 }));
     expect(words.every((word) => word === "hola")).toBe(true);
     if (outcome.kind !== "ok") throw new Error(outcome.kind);
-    expect(outcome.response).toMatchObject({ gameId, verdict: "valid", reason: null, inputType: "physical", correctChars: 5 });
+    expect(outcome.response).toMatchObject({
+      gameId,
+      verdict: "valid",
+      reason: null,
+      inputType: "physical",
+      correctChars: 5,
+      ranking: { kind: "would_rank" },
+    });
 
     const [row] = await db.select().from(games).where(eq(games.id, gameId));
     expect(row).toMatchObject({ verdict: "valid", wpm: outcome.response.wpm });
@@ -100,6 +114,7 @@ describe("GameService (Redis + PostgreSQL)", () => {
       .returning({ id: users.id });
     const { owner, gameId, outcome } = await play(typed("hola ", { every: 50, hold: 30 }), { userId: user.id });
     expect(outcome).toMatchObject({ kind: "ok", response: { verdict: "valid" } });
+    expect(outcome).toMatchObject({ kind: "ok", response: { ranking: { kind: "ranked", ranks: { day: 1 } } } });
     const [row] = await db.select({ userId: games.userId, anonId: games.anonId }).from(games).where(eq(games.id, gameId));
     expect(row).toEqual({ userId: user.id, anonId: owner });
   });

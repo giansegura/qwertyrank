@@ -1,3 +1,4 @@
+import type { GameRanking } from "@/lib/leaderboard/types";
 import type { TestResult } from "@/lib/scoring/replay";
 import type { TypingEvent } from "@/lib/scoring/types";
 import type { TestLanguage } from "@/lib/words/languages";
@@ -53,4 +54,13 @@ export interface FinishResponse extends TestResult {
   inputType: InputType;
   verdict: Verdict;
   reason: PublicReason | null;
+  /** Posiciones en los rankings (spec §3.4, §8.3). */
+  ranking: GameRanking;
+}
+
+/** `POST /api/game/{id}/claim`: la partida pasa a la cuenta y estas son sus posiciones (spec §3.7). */
+export interface ClaimResponse {
+  ranking: GameRanking;
+  language: TestLanguage;
+  inputType: InputType;
 }

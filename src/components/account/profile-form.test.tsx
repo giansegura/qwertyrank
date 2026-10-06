@@ -1,6 +1,6 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SESSION_CHANGED_EVENT } from "@/components/user-menu";
+import { SESSION_CHANGED_EVENT } from "@/lib/viewer";
 import { navigateTo } from "@/lib/navigate";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { ProfileForm } from "./profile-form";

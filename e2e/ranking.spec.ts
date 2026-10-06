@@ -1,0 +1,72 @@
+import { expect, test } from "@playwright/test";
+import { closeDb, randomClientIp, signUp, signUpOnLoginPage, userIdByEmail, verdictsOf } from "./helpers/accounts";
+import { switchLocale } from "./helpers/locale";
+import { playValidGame } from "./helpers/ranked";
+
+test.describe.configure({ timeout: 120_000 });
+
+test.afterAll(async () => {
+  await closeDb();
+});
+
+test.beforeEach(async ({ context }) => {
+  await context.setExtraHTTPHeaders({ "x-forwarded-for": randomClientIp() });
+});
+
+test("con cuenta: la partida da su posición, aparece en el ranking y en su perfil", async ({ page }) => {
+  await signUp(page, "en");
+  const nick = `e2e_${crypto.randomUUID().slice(0, 8)}`;
+  await page.getByTestId("profile-nick").fill(nick);
+  await page.getByTestId("profile-save").click();
+  await expect(page).toHaveURL((url) => url.pathname === "/en");
+  // El ranking ya está en caché (ISR) antes de jugar: así se comprueba que entrar en el top 100 lo revalida.
+  for (const input of ["physical", "touch"]) await page.goto(`/en/leaderboard/${input}/today`);
+
+  await playValidGame(page);
+  const summary = page.getByTestId("rank-summary");
+  await expect(summary).toContainText(/#\d+ today/);
+  await expect(summary).toContainText("New personal best!");
+
+  await summary.getByRole("link", { name: "View ranking" }).click();
+  await expect(page).toHaveURL(/\/en\/leaderboard\/(physical|touch)\/today$/);
+  const position = page.getByTestId("my-position");
+  await expect(position).toContainText(/Your position: #\d+/);
+  const rank = Number((await position.textContent())!.match(/#(\d+)/)![1]);
+  // Al entrar en el top 100 la página se revalida al momento: el jugador ya sale en la tabla.
+  if (rank <= 100) await expect(page.locator(`[data-testid="leaderboard-row"][data-nick="${nick}"]`)).toBeVisible();
+
+  await page.goto(`/en/u/${nick}`);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(nick);
+  await expect(page.getByTestId("profile-records").locator("li")).toHaveCount(1);
+  await expect(page.getByTestId("profile-history").locator("li")).toHaveCount(1);
+});
+
+test("anónimo: «Guárdalo» lleva a crear la cuenta y la partida pasa a ella", async ({ page }) => {
+  // En inglés: Playwright escribe las letras con tilde insertando texto sin pulsar teclas, y el
+  // anti-trampas (con razón) rechaza esa partida como texto inyectado.
+  await playValidGame(page, "en");
+  await expect(page.getByTestId("rank-summary")).toContainText(/You'd be #\d+ today/);
+  await page.getByTestId("save-game").click();
+  await expect(page).toHaveURL(/\/en\/sign-in\?next=%2Fen%2Fsave%2F/);
+
+  const email = await signUpOnLoginPage(page);
+  await page.getByTestId("profile-save").click();
+  await expect(page).toHaveURL(/\/en\/save\/[0-9a-f-]{36}$/);
+  await expect(page.getByTestId("save-result")).toContainText("Game saved to your account.");
+  await expect(page.getByTestId("rank-summary")).toContainText(/#\d+ today/);
+
+  const userId = await userIdByEmail(email);
+  expect(await verdictsOf(userId!)).toEqual(["valid"]);
+});
+
+test("ranking: abre el teclado del dispositivo y la URL se traduce al cambiar de idioma", async ({ page, isMobile }) => {
+  await page.goto("/es/ranking");
+  await expect(page).toHaveURL(isMobile ? /\/es\/ranking\/tactil\/hoy$/ : /\/es\/ranking\/fisico\/hoy$/);
+  await expect(page.getByTestId("period-countdown")).toContainText("Se reinicia en");
+
+  await switchLocale(page, "en");
+  await expect(page).toHaveURL(isMobile ? /\/en\/leaderboard\/touch\/today$/ : /\/en\/leaderboard\/physical\/today$/);
+
+  await page.goto("/en/ranking/fisico/hoy");
+  await expect(page).toHaveURL(/\/en\/leaderboard\/physical\/today$/);
+});

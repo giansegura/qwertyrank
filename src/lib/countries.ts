@@ -49,3 +49,8 @@ export function countryOptions(locale: string): CountryOption[] {
 export function flagEmoji(code: CountryCode): string {
   return String.fromCodePoint(...[...code].map((char) => 0x1f1e6 + char.charCodeAt(0) - 65));
 }
+
+/** Bandera y un espacio delante del nick, o nada si no hay país (o no es válido). */
+export function flagPrefix(country: string | null): string {
+  return country && isCountryCode(country) ? `${flagEmoji(country)} ` : "";
+}

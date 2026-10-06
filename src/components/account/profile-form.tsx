@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
-import { SESSION_CHANGED_EVENT } from "@/components/user-menu";
+import { SESSION_CHANGED_EVENT } from "@/lib/viewer";
 import { flagEmoji, type CountryCode, type CountryOption } from "@/lib/countries";
 import { navigateTo } from "@/lib/navigate";
 

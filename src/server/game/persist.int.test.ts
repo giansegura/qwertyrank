@@ -3,7 +3,7 @@ import { gunzipSync } from "node:zlib";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { createDb } from "../db/client";
-import { games, keystrokeLogs } from "../db/schema";
+import { games, keystrokeLogs, periodBests, users } from "../db/schema";
 import { createSaveGame, type GameRecord } from "./persist";
 
 const db = createDb(process.env.DATABASE_URL!);
@@ -58,5 +58,24 @@ describe("saveGame (PostgreSQL)", () => {
     await expect(saveGame({ ...input, id: input.id })).rejects.toThrow();
     const rows = await db.select().from(games).where(eq(games.id, input.id));
     expect(rows).toHaveLength(1);
+  });
+
+  it("con usuario y al menos un 90 % de precisión, guarda sus marcas en la misma transacción", async () => {
+    const [user] = await db
+      .insert(users)
+      .values({ name: "", email: `${randomUUID()}@example.com`, nick: `p_${randomUUID().slice(0, 8)}` })
+      .returning({ id: users.id });
+    const input = record({ userId: user.id });
+    expect((await saveGame(input)).improved).toHaveLength(5);
+    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, input.id))).toHaveLength(5);
+  });
+
+  it("sin usuario o por debajo del 90 % de precisión, no guarda marcas", async () => {
+    expect((await saveGame(record())).improved).toEqual([]);
+    const [user] = await db
+      .insert(users)
+      .values({ name: "", email: `${randomUUID()}@example.com`, nick: `p_${randomUUID().slice(0, 8)}` })
+      .returning({ id: users.id });
+    expect((await saveGame(record({ userId: user.id, accuracy: 89.9 }))).improved).toEqual([]);
   });
 });

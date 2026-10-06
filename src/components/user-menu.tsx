@@ -4,19 +4,8 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
-
-/** Evento para que la cabecera vuelva a pedir la sesión, p. ej. tras cambiar el nick. */
-export const SESSION_CHANGED_EVENT = "qr:session-changed";
-
-type Viewer = { nick: string } | null;
-
-/** Sin el cliente de Better Auth: en la portada cada KB cuenta (spec §7.5). */
-async function fetchViewer(): Promise<Viewer> {
-  const response = await fetch("/api/auth/get-session", { cache: "no-store" });
-  if (!response.ok) return null;
-  const data = (await response.json()) as { user?: { nick?: string } } | null;
-  return data?.user?.nick ? { nick: data.user.nick } : null;
-}
+import { loginHref } from "@/lib/auth-paths";
+import { SESSION_CHANGED_EVENT, forgetViewer, getViewer, type Viewer } from "@/lib/viewer";
 
 function UserIcon({ className }: { className: string }) {
   return (
@@ -34,16 +23,16 @@ export function UserMenu() {
 
   useEffect(() => {
     let active = true;
-    const load = () =>
-      fetchViewer().then(
-        (value) => active && setViewer(value),
-        () => active && setViewer(null),
-      );
+    const load = () => getViewer().then((value) => active && setViewer(value));
+    const reload = () => {
+      forgetViewer();
+      void load();
+    };
     void load();
-    window.addEventListener(SESSION_CHANGED_EVENT, load);
+    window.addEventListener(SESSION_CHANGED_EVENT, reload);
     return () => {
       active = false;
-      window.removeEventListener(SESSION_CHANGED_EVENT, load);
+      window.removeEventListener(SESSION_CHANGED_EVENT, reload);
     };
   }, []);
 
@@ -53,7 +42,7 @@ export function UserMenu() {
     <div className="flex w-7 justify-end sm:w-32">
       {viewer === null && (
         <Link
-          href={pathname ? { pathname: "/login", query: { next: pathname } } : "/login"}
+          href={loginHref(pathname)}
           data-testid="user-menu"
           aria-label={t("signIn")}
           className="flex items-center font-medium"

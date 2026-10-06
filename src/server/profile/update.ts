@@ -20,13 +20,15 @@ function isNickTakenError(error: unknown): boolean {
   return cause?.code === "23505" && cause.constraint_name === "users_nick_lower_idx";
 }
 
-export function createUpdateProfile(db: Db) {
+/** `onChanged`: tras guardar, sus páginas en caché cambian (nick y bandera); en producción, `revalidatePlayerPages`. */
+export function createUpdateProfile(db: Db, onChanged: () => void) {
   return async (userId: string, input: ProfileInput): Promise<{ ok: true } | { ok: false; error: ProfileError }> => {
     const problem = checkNick(input.nick);
     if (problem) return { ok: false, error: problem === "invalid" ? "invalid_nick" : "profane_nick" };
     if (input.country !== null && !isCountryCode(input.country)) return { ok: false, error: "invalid_country" };
     try {
       await db.update(users).set({ nick: input.nick, country: input.country }).where(eq(users.id, userId));
+      onChanged();
       return { ok: true };
     } catch (error) {
       if (isNickTakenError(error)) return { ok: false, error: "nick_taken" };

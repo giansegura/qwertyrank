@@ -18,3 +18,8 @@ export function getDb(): Db {
   db ??= createDb(serverEnv().DATABASE_URL);
   return db;
 }
+
+/** Transacción de Drizzle: lo que recibe el callback de `db.transaction`. */
+export type DbTx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+/** Ejecuta consultas: la conexión o una transacción. */
+export type DbExecutor = Db | DbTx;

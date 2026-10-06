@@ -1,7 +1,8 @@
 import { act, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithIntl } from "@/test/render-with-intl";
-import { SESSION_CHANGED_EVENT, UserMenu } from "./user-menu";
+import { SESSION_CHANGED_EVENT, forgetViewer } from "@/lib/viewer";
+import { UserMenu } from "./user-menu";
 
 function sessionResponse(user: { nick: string } | null) {
   return new Response(JSON.stringify(user ? { session: {}, user } : null), {
@@ -11,6 +12,7 @@ function sessionResponse(user: { nick: string } | null) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  forgetViewer();
 });
 
 describe("UserMenu", () => {

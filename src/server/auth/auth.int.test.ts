@@ -2,9 +2,10 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { createDb } from "../db/client";
-import { games, keystrokeLogs, sessions, users } from "../db/schema";
+import { games, keystrokeLogs, periodBests, sessions, users } from "../db/schema";
 import type { EmailMessage } from "../email/mailer";
 import { createSaveGame } from "../game/persist";
+import { createLeaderboardStore } from "../leaderboard/store";
 import { checkNick } from "../profile/nick";
 import { createRedis } from "../redis";
 import { createAuth } from "./auth";
@@ -13,6 +14,7 @@ import { withSignInFallback } from "./sign-in-fallback";
 const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
 const outbox: EmailMessage[] = [];
+let playerChanges = 0;
 let emailProviderDown = false;
 
 const deps = {
@@ -21,6 +23,9 @@ const deps = {
   keyPrefix: process.env.REDIS_KEY_PREFIX!,
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: "http://localhost:3000",
+  onPlayerChanged: () => {
+    playerChanges++;
+  },
   sendEmail: async (message: EmailMessage) => {
     if (emailProviderDown) throw new Error("proveedor de email caído");
     outbox.push(message);
@@ -193,5 +198,55 @@ describe("cuentas con Better Auth", () => {
     expect(location.pathname).toBe("/es/entrar");
     expect(location.searchParams.get("error")).toBe("failed");
     expect(location.searchParams.get("next")).toBe("/es");
+  });
+
+  it("borrar la cuenta la quita de todos los rankings (los demás suben)", async () => {
+    const { headers, user } = await signIn(newEmail());
+    const store = createLeaderboardStore(redis, process.env.REDIS_KEY_PREFIX!);
+    const startsAt = new Date();
+    const saved = await createSaveGame(db)({
+      id: randomUUID(),
+      userId: user.id,
+      anonId: randomUUID(),
+      language: "en",
+      inputType: "touch",
+      wpm: 50,
+      rawWpm: 50,
+      accuracy: 99,
+      verdict: "valid",
+      rejectReason: null,
+      ipHash: null,
+      startsAt,
+      finishedAt: startsAt,
+      batches: [],
+    });
+    const boards = saved.improved.map((best) => ({
+      language: "en" as const,
+      inputType: "touch" as const,
+      period: best.period,
+      key: best.key,
+    }));
+    await store.add(boards.map((board, i) => ({ board, userId: user.id, score: saved.improved[i].score, achievedAt: startsAt })));
+
+    await auth.api.deleteUser({ body: {}, headers });
+
+    for (const board of boards) expect(await store.position(board, user.id)).toBeNull();
+    expect(await db.select().from(periodBests).where(eq(periodBests.userId, user.id))).toEqual([]);
+  });
+
+  it("la sesión que ve el navegador no incluye status ni role", async () => {
+    const { headers } = await signIn(newEmail());
+    const response = await auth.handler(new Request("http://localhost:3000/api/auth/get-session", { headers }));
+    const { user } = (await response.json()) as { user: Record<string, unknown> };
+    expect(user).toHaveProperty("nick");
+    expect(user).not.toHaveProperty("status");
+    expect(user).not.toHaveProperty("role");
+  });
+
+  it("borrar la cuenta avisa de que cambian sus páginas en caché (perfil y rankings)", async () => {
+    const { headers } = await signIn(newEmail());
+    const before = playerChanges;
+    await auth.api.deleteUser({ body: {}, headers });
+    expect(playerChanges).toBe(before + 1);
   });
 });

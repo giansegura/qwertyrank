@@ -17,6 +17,7 @@ export function SiteHeader() {
           {t("home")}
         </Link>
         <Link href="/practice">{t("practice")}</Link>
+        <Link href="/leaderboard">{t("leaderboard")}</Link>
         <LocaleSwitcher />
         <UserMenu />
       </div>

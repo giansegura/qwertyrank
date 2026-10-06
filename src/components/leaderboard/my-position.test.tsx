@@ -1,0 +1,49 @@
+import { screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { forgetViewer } from "@/lib/viewer";
+import { renderWithIntl } from "@/test/render-with-intl";
+import { MyPosition } from "./my-position";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  forgetViewer();
+});
+
+/** La sesión (la misma petición que hace la cabecera) y, si hay sesión, la posición. */
+function respond(viewer: { nick: string } | null, position?: unknown) {
+  const fetchMock = vi.fn(async (url: string) =>
+    url === "/api/auth/get-session"
+      ? new Response(JSON.stringify(viewer ? { session: {}, user: viewer } : null))
+      : new Response(JSON.stringify(position)),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+describe("MyPosition", () => {
+  it("con marca, enseña la posición y la marca", async () => {
+    const fetchMock = respond({ nick: "gian_42" }, { rank: 7, wpm: 88.4, accuracy: 97.6 });
+    renderWithIntl(<MyPosition language="es" input="touch" period="week" />);
+    expect(await screen.findByText("Your position: #7 · 88 wpm · 97%")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/leaderboard/me?lang=es&input=touch&period=week",
+      expect.objectContaining({ cache: "no-store" }),
+    );
+  });
+
+  it("sin marca en ese ranking, lo dice", async () => {
+    respond({ nick: "gian_42" }, { rank: null });
+    renderWithIntl(<MyPosition language="en" input="physical" period="day" />);
+    expect(await screen.findByText("You're not on this ranking yet.")).toBeInTheDocument();
+  });
+
+  it("sin sesión, invita a entrar sin preguntar por la posición", async () => {
+    const fetchMock = respond(null);
+    renderWithIntl(<MyPosition language="en" input="physical" period="day" />);
+    expect(await screen.findByRole("link", { name: "Sign in to appear in the ranking" })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^\/en\/sign-in/),
+    );
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(["/api/auth/get-session"]);
+  });
+});

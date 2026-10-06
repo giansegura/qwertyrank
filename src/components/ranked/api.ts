@@ -1,4 +1,4 @@
-import type { FinishRequest, FinishResponse, KeysRequest, StartRequest, StartResponse } from "@/lib/game/types";
+import type { ClaimResponse, FinishRequest, FinishResponse, KeysRequest, StartRequest, StartResponse } from "@/lib/game/types";
 
 /** Error HTTP de la API de partidas, con el código que devuelve el servidor (`busy`, `closed`…). */
 export class GameApiError extends Error {
@@ -62,4 +62,8 @@ export async function finishGame(
       await wait(delayMs);
     }
   }
+}
+
+export function claimGame(gameId: string): Promise<ClaimResponse> {
+  return post(`/api/game/${gameId}/claim`, {});
 }

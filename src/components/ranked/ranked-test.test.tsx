@@ -27,6 +27,7 @@ function response(overrides: Partial<FinishResponse> = {}): FinishResponse {
     inputType: "physical",
     verdict: "valid",
     reason: null,
+    ranking: { kind: "unranked" },
     ...overrides,
   };
 }
@@ -210,5 +211,18 @@ describe("RankedTest", () => {
     });
     expect(startGame).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId("countdown")).toBeInTheDocument();
+  });
+
+  it("anónima con buena partida: la posición que tendría y el botón para guardarla", async () => {
+    vi.mocked(finishGame).mockResolvedValue(
+      response({ ranking: { kind: "would_rank", ranks: { day: 4, week: 9, month: 20, all: 150 } } }),
+    );
+    renderWithIntl(<RankedTest language="es" />);
+    await startAndCountDown();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #4 today.");
+    expect(screen.getByTestId("save-game")).toHaveAttribute("href", "/en/save/g1");
   });
 });

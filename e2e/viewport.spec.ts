@@ -14,5 +14,7 @@ for (const path of ["/en", "/en/practice", "/es/practica", "/pt/pratica"]) {
       height: document.documentElement.scrollHeight,
     }));
     expect(size).toEqual({ width: viewport.width, height: viewport.height });
+    // Una sola línea: logo, Práctica, Ranking, idioma y cuenta caben a 360 px.
+    expect((await page.locator("header").boundingBox())!.height).toBeLessThanOrEqual(60);
   });
 }

@@ -11,11 +11,18 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
   automaticDeserialization: false,
 });
-const sql = postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} });
+// Bajo demanda: varios archivos de E2E comparten este módulo en el mismo worker, y el `afterAll`
+// de uno cierra la conexión (closeDb) mientras otro aún la necesita.
+let client: postgres.Sql | null = null;
+const db = () => (client ??= postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} }));
 
 const LOGIN_PATH = { en: "/en/sign-in", es: "/es/entrar", pt: "/pt/entrar" } as const;
 
-export const uniqueEmail = () => `e2e-${crypto.randomUUID()}@example.com`;
+/**
+ * Cada usuario de los E2E con su propia base de nick (`e2e1a2b3c4d`, primera palabra del email):
+ * con una base común, los registros en paralelo se disputan los mismos nicks libres.
+ */
+export const uniqueEmail = () => `e2e${crypto.randomUUID().replaceAll("-", "").slice(0, 8)}@example.com`;
 
 /**
  * En producción (`pnpm start`) Better Auth limita los enlaces por IP (5 por minuto). Todos los
@@ -42,10 +49,9 @@ export async function magicLinkFor(email: string): Promise<string> {
   return link!;
 }
 
-/** Crea una cuenta con el enlace por email. La página se queda en la bienvenida. */
-export async function signUp(page: Page, locale: keyof typeof LOGIN_PATH = "es"): Promise<string> {
+/** Ya en la página de entrar: crea una cuenta con el enlace por email y llega a la bienvenida. */
+export async function signUpOnLoginPage(page: Page): Promise<string> {
   const email = uniqueEmail();
-  await page.goto(LOGIN_PATH[locale]);
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-send").click();
   await expect(page.getByTestId("login-sent")).toBeVisible();
@@ -54,16 +60,24 @@ export async function signUp(page: Page, locale: keyof typeof LOGIN_PATH = "es")
   return email;
 }
 
+/** Crea una cuenta con el enlace por email. La página se queda en la bienvenida. */
+export async function signUp(page: Page, locale: keyof typeof LOGIN_PATH = "es"): Promise<string> {
+  await page.goto(LOGIN_PATH[locale]);
+  return signUpOnLoginPage(page);
+}
+
 export async function userIdByEmail(email: string): Promise<string | null> {
-  const [row] = await sql<{ id: string }[]>`select id from users where email = ${email}`;
+  const [row] = await db()<{ id: string }[]>`select id from users where email = ${email}`;
   return row?.id ?? null;
 }
 
 export async function verdictsOf(userId: string): Promise<string[]> {
-  const rows = await sql<{ verdict: string }[]>`select verdict from games where user_id = ${userId}`;
+  const rows = await db()<{ verdict: string }[]>`select verdict from games where user_id = ${userId}`;
   return rows.map((row) => row.verdict);
 }
 
 export async function closeDb(): Promise<void> {
-  await sql.end();
+  const open = client;
+  client = null;
+  await open?.end();
 }

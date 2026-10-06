@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { displayAccuracy, displayWpm } from "@/lib/scoring/metrics";
 import type { TestResult } from "@/lib/scoring/replay";
 import { WpmChart } from "./wpm-chart";
 
@@ -22,8 +23,8 @@ export function ResultView({ result, onRestart }: { result: TestResult; onRestar
   return (
     <div data-testid="result" role="status" aria-live="polite" className="flex flex-col gap-6">
       <dl className="grid grid-cols-3 gap-4">
-        <Stat label={t("wpm")} value={String(Math.round(result.wpm))} testId="result-wpm" />
-        <Stat label={t("accuracy")} value={`${Math.floor(result.accuracy)}%`} testId="result-accuracy" />
+        <Stat label={t("wpm")} value={String(displayWpm(result.wpm))} testId="result-wpm" />
+        <Stat label={t("accuracy")} value={`${displayAccuracy(result.accuracy)}%`} testId="result-accuracy" />
         <Stat label={t("raw")} value={String(Math.round(result.rawWpm))} testId="result-raw" />
       </dl>
       <WpmChart perSecond={result.perSecond} label={t("chartLabel")} />

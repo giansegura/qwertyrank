@@ -4,7 +4,9 @@ import { OFFICIAL_DURATION_MS } from "@/lib/scoring/durations";
 import { loadWordList } from "@/lib/words/load";
 import { getDb } from "../db/client";
 import { serverEnv } from "../env";
+import { getRanking } from "../leaderboard/instance";
 import { getRedis } from "../redis";
+import { createClaimGame } from "./claim";
 import { createSaveGame } from "./persist";
 import { createGameService, type GameService } from "./service";
 import { createGameStore } from "./store";
@@ -26,6 +28,14 @@ export function gameService(): GameService {
     random: secureRandom,
     newId: randomUUID,
     times: RANKED_TIMES,
+    rankGame: (game) => getRanking().rankGame(game),
   });
   return service;
+}
+
+let claim: ReturnType<typeof createClaimGame> | null = null;
+
+export function claimGame(): ReturnType<typeof createClaimGame> {
+  claim ??= createClaimGame({ db: getDb(), rankGame: (game) => getRanking().rankGame(game) });
+  return claim;
 }

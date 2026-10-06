@@ -6,7 +6,9 @@ import { generateWords } from "@/lib/words/generate";
 import { WORDS_PER_TEST, type TestLanguage } from "@/lib/words/languages";
 import { classifyInputType } from "../anticheat/input-type";
 import { checkEvents, checkSpeed, checkTiming, type ReceivedBatch } from "../anticheat/rules";
-import type { SaveGame } from "./persist";
+import type { GameRanking } from "@/lib/leaderboard/types";
+import type { RankGameInput } from "../leaderboard/ranking";
+import type { SaveGame, SavedGame } from "./persist";
 import type { AppendStatus, GameStore, GameTimes } from "./store";
 
 /** Categoría que se le enseña al jugador; el motivo exacto se queda en la base de datos. */
@@ -29,6 +31,8 @@ export interface GameServiceDeps {
   random: () => number;
   newId: () => string;
   times: GameTimes;
+  /** Publica las marcas y calcula las posiciones (spec §5.5–5.6); no lanza. */
+  rankGame: (game: RankGameInput) => Promise<GameRanking>;
 }
 
 export type FinishOutcome =
@@ -77,16 +81,10 @@ export function createGameService(deps: GameServiceDeps): GameService {
         checkTiming(batches, { startsAt: game.startsAt, deadline: game.deadline, finishedAt, lastSeq }) ??
         checkEvents(events, inputType) ??
         checkSpeed(result.wpm, inputType);
-      const response: FinishResponse = {
-        ...result,
-        gameId,
-        inputType,
-        verdict: reason ? "rejected" : "valid",
-        reason: reason ? PUBLIC_REASON[reason] : null,
-      };
-
+      const verdict = reason ? "rejected" : "valid";
+      let saved: SavedGame;
       try {
-        await deps.saveGame({
+        saved = await deps.saveGame({
           id: gameId,
           userId: game.userId,
           anonId: owner,
@@ -95,7 +93,7 @@ export function createGameService(deps: GameServiceDeps): GameService {
           wpm: result.wpm,
           rawWpm: result.rawWpm,
           accuracy: result.accuracy,
-          verdict: response.verdict,
+          verdict,
           rejectReason: reason,
           ipHash,
           startsAt: new Date(game.startsAt),
@@ -106,6 +104,27 @@ export function createGameService(deps: GameServiceDeps): GameService {
         await deps.store.release(gameId);
         throw error;
       }
+
+      // Ya guardada: si el ranking falla, `rankGame` responde `unavailable` y la partida se da igual.
+      const ranking = await deps.rankGame({
+        userId: game.userId,
+        language: game.language,
+        inputType,
+        verdict,
+        wpm: result.wpm,
+        accuracy: result.accuracy,
+        startsAt: new Date(game.startsAt),
+        improved: saved.improved,
+      });
+
+      const response: FinishResponse = {
+        ...result,
+        gameId,
+        inputType,
+        verdict,
+        reason: reason ? PUBLIC_REASON[reason] : null,
+        ranking,
+      };
       await deps.store.complete(gameId, JSON.stringify(response));
       return { kind: "ok", response };
     },

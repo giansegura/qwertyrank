@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FinishResponse } from "@/lib/game/types";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, finishGame, sendKeys, startGame } from "./api";
+import { solveChallenge } from "./challenge";
 import { RankedTest, SUBMIT_DEADLINE_MS } from "./ranked-test";
+
+vi.mock("./challenge", () => ({ solveChallenge: vi.fn() }));
 
 vi.mock("./api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api")>()),
@@ -224,5 +227,83 @@ describe("RankedTest", () => {
     });
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #4 today.");
     expect(screen.getByTestId("save-game")).toHaveAttribute("href", "/en/save/g1");
+  });
+});
+
+describe("RankedTest: reto y bloqueos", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "site-key");
+    vi.mocked(startGame).mockResolvedValue(GAME);
+    vi.mocked(sendKeys).mockResolvedValue(undefined);
+    vi.mocked(finishGame).mockResolvedValue(response());
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
+  });
+
+  /** Pulsa Empezar y deja que terminen las promesas y las descargas con `import()`. */
+  async function clickStart() {
+    fireEvent.click(screen.getByTestId("ranked-start"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.dynamicImportSettled();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+  }
+
+  it("si el servidor pide el reto, lo resuelve y vuelve a pedir la partida con el token", async () => {
+    vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
+    vi.mocked(solveChallenge).mockResolvedValue("tok");
+    renderWithIntl(<RankedTest language="es" />);
+    await clickStart();
+    expect(solveChallenge).toHaveBeenCalledWith(expect.any(HTMLElement), "site-key");
+    expect(startGame).toHaveBeenLastCalledWith(expect.objectContaining({ language: "es", turnstileToken: "tok" }));
+    expect(screen.getByTestId("countdown")).toBeInTheDocument();
+  });
+
+  it("si el reto falla, lo dice, ofrece la práctica y deja volver a intentarlo", async () => {
+    vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
+    vi.mocked(solveChallenge).mockRejectedValue(new Error("turnstile timeout"));
+    renderWithIntl(<RankedTest language="es" />);
+    await clickStart();
+    expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("We couldn't check that you're human");
+    expect(screen.getByRole("link", { name: "Go to practice" })).toBeInTheDocument();
+    expect(screen.getByTestId("ranked-start")).toBeEnabled();
+  });
+
+  it("si el servidor rechaza el token, no lo reintenta en bucle", async () => {
+    vi.mocked(startGame).mockRejectedValue(new GameApiError(403, "needs_challenge"));
+    vi.mocked(solveChallenge).mockResolvedValue("tok");
+    renderWithIntl(<RankedTest language="es" />);
+    await clickStart();
+    expect(startGame).toHaveBeenCalledTimes(2);
+    expect(solveChallenge).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("We couldn't check that you're human");
+  });
+
+  it("sin clave de sitio no intenta el reto", async () => {
+    vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
+    vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
+    renderWithIntl(<RankedTest language="es" />);
+    await clickStart();
+    expect(solveChallenge).not.toHaveBeenCalled();
+    expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("We couldn't check that you're human");
+  });
+
+  it("una cuenta baneada ve el aviso", async () => {
+    vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "banned"));
+    renderWithIntl(<RankedTest language="es" />);
+    await clickStart();
+    expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("Your account can't play ranked games.");
+  });
+
+  it("con el límite de partidas dice cuántos minutos faltan", async () => {
+    vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(429, "rate_limited", 125));
+    renderWithIntl(<RankedTest language="es" />);
+    await clickStart();
+    expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("Come back in 3 min.");
   });
 });

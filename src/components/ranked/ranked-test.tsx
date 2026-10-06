@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import type { FinishResponse, PublicReason } from "@/lib/game/types";
+import type { FinishResponse, PublicReason, StartResponse } from "@/lib/game/types";
 import { OFFICIAL_DURATION_MS } from "@/lib/scoring/durations";
 import type { TestResult } from "@/lib/scoring/replay";
 import type { TestLanguage } from "@/lib/words/languages";
@@ -23,6 +23,8 @@ type Phase =
   | { name: "playing" }
   | { name: "submitting" }
   | { name: "result"; response: FinishResponse }
+  | { name: "challenging" }
+  | { name: "blocked"; reason: BlockReason; minutes: number }
   | { name: "unavailable" }
   | { name: "unscored"; reason: "replaced" | "connection"; local: TestResult };
 
@@ -56,6 +58,30 @@ const REASON_MESSAGE: Record<PublicReason, VerdictMessage> = {
   letter_by_letter: "verdictLetterByLetter",
 };
 
+type BlockReason = "challenge_failed" | "banned" | "rate_limited";
+
+const BLOCK_MESSAGE: Record<BlockReason, "challengeFailed" | "banned" | "rateLimited"> = {
+  challenge_failed: "challengeFailed",
+  banned: "banned",
+  rate_limited: "rateLimited",
+};
+
+/** El reto no se pudo resolver: el script no cargó, el widget dio error o se agotó el tiempo. */
+class ChallengeFailedError extends Error {}
+
+/** Por qué no ha empezado la partida (spec 4a §2.1; spec §8.4). */
+function failurePhase(error: unknown): Phase {
+  if (error instanceof ChallengeFailedError) return { name: "blocked", reason: "challenge_failed", minutes: 0 };
+  if (!(error instanceof GameApiError)) return { name: "unavailable" };
+  // Un segundo `needs_challenge` es un token rechazado: no se reintenta en bucle.
+  if (error.code === "needs_challenge") return { name: "blocked", reason: "challenge_failed", minutes: 0 };
+  if (error.code === "banned") return { name: "blocked", reason: "banned", minutes: 0 };
+  if (error.code === "rate_limited") {
+    return { name: "blocked", reason: "rate_limited", minutes: Math.max(1, Math.ceil((error.retryAfter ?? 60) / 60)) };
+  }
+  return { name: "unavailable" };
+}
+
 type RankSummaryComponent = typeof import("./rank-summary").RankSummary;
 
 /**
@@ -76,6 +102,7 @@ export function RankedTest({ language }: { language: TestLanguage }) {
   const startingRef = useRef(false);
   const gameIdRef = useRef<string | null>(null);
   const senderRef = useRef<BatchSender | null>(null);
+  const challengeRef = useRef<HTMLDivElement>(null);
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function stopCurrent() {
@@ -111,6 +138,28 @@ export function RankedTest({ language }: { language: TestLanguage }) {
     onFinish: (local) => void submit(local),
   });
 
+  /** Pide la partida; si el servidor exige el reto (spec 4a §2.1), lo resuelve y la pide otra vez, una sola vez. */
+  async function requestStart(attempt: number): Promise<StartResponse> {
+    const body = { language, env: readClientEnv() };
+    try {
+      return await startGame(body);
+    } catch (error) {
+      if (!(error instanceof GameApiError) || error.code !== "needs_challenge") throw error;
+    }
+    if (attempt === attemptRef.current) setPhase({ name: "challenging" });
+    let turnstileToken: string;
+    try {
+      const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+      const container = challengeRef.current;
+      if (!siteKey || !container) throw new Error("turnstile not configured");
+      const { solveChallenge } = await import("./challenge");
+      turnstileToken = await solveChallenge(container, siteKey);
+    } catch (error) {
+      throw new ChallengeFailedError(undefined, { cause: error });
+    }
+    return startGame({ ...body, turnstileToken });
+  }
+
   async function start() {
     // Con un inicio en curso, repetir Tab o Espacio no pide otra partida: dos inicios a la vez
     // podrían llegar desordenados y dejar en pantalla una partida que el servidor ya cerró.
@@ -123,7 +172,7 @@ export function RankedTest({ language }: { language: TestLanguage }) {
     setPhase({ name: "starting" });
     typing.reset();
     try {
-      const game = await startGame({ language, env: readClientEnv() }).finally(() => {
+      const game = await requestStart(attempt).finally(() => {
         startingRef.current = false;
       });
       if (attempt !== attemptRef.current) return;
@@ -141,12 +190,12 @@ export function RankedTest({ language }: { language: TestLanguage }) {
         sender.start();
         setPhase({ name: "playing" });
       }, game.countdownMs);
-    } catch {
-      if (attempt === attemptRef.current) setPhase({ name: "unavailable" });
+    } catch (error) {
+      if (attempt === attemptRef.current) setPhase(failurePhase(error));
     }
   }
 
-  const waiting = phase.name === "ready" || phase.name === "unavailable";
+  const waiting = phase.name === "ready" || phase.name === "unavailable" || phase.name === "blocked";
   const done = phase.name === "result" || phase.name === "unscored";
 
   const typing = useTypingInput({
@@ -195,7 +244,7 @@ export function RankedTest({ language }: { language: TestLanguage }) {
       {/* Sin altura reservada: debajo no hay contenido que pueda saltar al crecer el resultado (CLS = 0),
           y la pantalla inicial cabe sin scroll. */}
       <div>
-        {waiting || phase.name === "starting" ? (
+        {waiting || phase.name === "starting" || phase.name === "challenging" ? (
           <div className="flex min-h-30 flex-col items-center justify-center gap-3 text-center">
             {phase.name === "unavailable" && (
               <p className="max-w-md">
@@ -205,11 +254,24 @@ export function RankedTest({ language }: { language: TestLanguage }) {
                 </Link>
               </p>
             )}
+            {phase.name === "blocked" && (
+              <p data-testid="ranked-blocked" className="max-w-md">
+                {t(BLOCK_MESSAGE[phase.reason], { minutes: phase.minutes })}{" "}
+                <Link href="/practice" className="font-medium underline">
+                  {t("practiceLink")}
+                </Link>
+              </p>
+            )}
+            {phase.name === "challenging" && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("challenge")}</p>
+            )}
+            {/* Turnstile pinta aquí su widget: invisible salvo que Cloudflare pida un clic. */}
+            <div ref={challengeRef} data-testid="ranked-challenge" />
             <button
               type="button"
               data-testid="ranked-start"
               onClick={() => void start()}
-              disabled={phase.name === "starting"}
+              disabled={phase.name === "starting" || phase.name === "challenging"}
               className="rounded-md bg-amber-500 px-6 py-3 text-lg font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-60"
             >
               {t("start")}

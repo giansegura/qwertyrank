@@ -31,3 +31,11 @@ test("texto inyectado por código: la partida no es válida", async ({ page }) =
   await expect(page.getByTestId("result")).toBeVisible({ timeout: 40_000 });
   await expect(page.getByTestId("ranked-status")).toHaveText(/Unrecognized activity/);
 });
+
+test("si el reto de Cloudflare no carga, lo dice y ofrece la práctica", async ({ page }) => {
+  await page.route("https://challenges.cloudflare.com/**", (route) => route.abort());
+  await page.goto("/en");
+  await page.getByTestId("ranked-start").click();
+  await expect(page.getByTestId("ranked-blocked")).toContainText("We couldn't check that you're human");
+  await expect(page.getByRole("link", { name: "Go to practice" })).toBeVisible();
+});

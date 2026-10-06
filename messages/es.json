@@ -56,7 +56,11 @@
     "saveIt": "Guárdalo",
     "saveHint": "Entra en los próximos 10 minutos y esta partida contará en el ranking.",
     "lowAccuracy": "Para entrar en el ranking necesitas al menos un 90 % de precisión.",
-    "rankingUnavailable": "El ranking no está disponible temporalmente: ahora no podemos enseñarte tu posición."
+    "rankingUnavailable": "El ranking no está disponible temporalmente: ahora no podemos enseñarte tu posición.",
+    "challenge": "Comprobando que eres humano…",
+    "challengeFailed": "No hemos podido comprobar que eres humano. Inténtalo de nuevo.",
+    "banned": "Tu cuenta no puede jugar partidas con ranking.",
+    "rateLimited": "Has jugado muchas partidas en la última hora. Vuelve en {minutes} min."
   },
   "Login": {
     "title": "Entra en QwertyRank",

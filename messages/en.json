@@ -56,7 +56,11 @@
     "saveIt": "Save it",
     "saveHint": "Sign in within 10 minutes and this game counts on the ranking.",
     "lowAccuracy": "To enter the ranking you need at least 90% accuracy.",
-    "rankingUnavailable": "The ranking is temporarily unavailable, so we can't show your position right now."
+    "rankingUnavailable": "The ranking is temporarily unavailable, so we can't show your position right now.",
+    "challenge": "Checking that you're human…",
+    "challengeFailed": "We couldn't check that you're human. Try again.",
+    "banned": "Your account can't play ranked games.",
+    "rateLimited": "You've played a lot of games in the last hour. Come back in {minutes} min."
   },
   "Login": {
     "title": "Sign in to QwertyRank",

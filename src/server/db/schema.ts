@@ -1,16 +1,19 @@
 import { sql } from "drizzle-orm";
 import { check, customType, doublePrecision, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { users } from "./auth-schema";
+
+export * from "./auth-schema";
 
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({
   dataType: () => "bytea",
 });
 
-/** Una fila por partida Ranked terminada (spec §5.2). `user_id` se enlaza con `users` en la fase 3. */
+/** Una fila por partida Ranked terminada (spec §5.2). Al borrar la cuenta, `user_id` pasa a NULL. */
 export const games = pgTable(
   "games",
   {
     id: uuid("id").primaryKey(),
-    userId: uuid("user_id"),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     anonId: text("anon_id"),
     language: text("language", { enum: ["en", "es", "pt"] }).notNull(),
     inputType: text("input_type", { enum: ["physical", "touch"] }).notNull(),

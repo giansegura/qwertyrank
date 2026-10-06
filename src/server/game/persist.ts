@@ -8,6 +8,7 @@ import type { ReceivedBatch } from "../anticheat/rules";
 
 export interface GameRecord {
   id: string;
+  userId: string | null;
   anonId: string;
   language: TestLanguage;
   inputType: InputType;

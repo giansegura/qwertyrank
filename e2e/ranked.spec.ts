@@ -1,16 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { startRanked } from "./helpers/ranked";
 
 test.describe.configure({ timeout: 90_000 });
-
-async function startRanked(page: Page) {
-  await page.goto("/en");
-  await page.getByTestId("ranked-start").click();
-  await expect(page.getByTestId("countdown")).toBeVisible();
-  await expect(page.getByTestId("word").first()).toBeVisible({ timeout: 5_000 });
-  return page
-    .getByTestId("word")
-    .evaluateAll((elements) => elements.slice(0, 6).map((el) => el.getAttribute("data-word") ?? ""));
-}
 
 test("el texto de Ranked no viene en el HTML: lo envía el servidor al empezar", async ({ page }) => {
   const html = await (await page.request.get("/en")).text();

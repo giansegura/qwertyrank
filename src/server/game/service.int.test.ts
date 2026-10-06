@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { TypingEvent } from "@/lib/scoring/types";
 import { typed } from "@/test/typing-events";
 import { createDb } from "../db/client";
-import { games } from "../db/schema";
+import { games, users } from "../db/schema";
 import { createRedis } from "../redis";
 import { createSaveGame } from "./persist";
 import { createGameService } from "./service";
@@ -35,9 +35,9 @@ async function storedReason(gameId: string) {
   return row?.reason;
 }
 
-async function play(events: TypingEvent[], { waitBeforeSend = 400, waitBeforeFinish = 0 } = {}) {
+async function play(events: TypingEvent[], { waitBeforeSend = 400, waitBeforeFinish = 0, userId = null as string | null } = {}) {
   const owner = randomUUID();
-  const { gameId, words } = await service.start({ owner, language: "es", env: ENV });
+  const { gameId, words } = await service.start({ owner, userId, language: "es", env: ENV });
   await sleep(waitBeforeSend);
   expect(await service.appendKeys({ owner, gameId, seq: 1, events })).toBe("ok");
   await sleep(waitBeforeFinish);
@@ -88,8 +88,19 @@ describe("GameService (Redis + PostgreSQL)", () => {
 
   it("empezar otra partida cierra la anterior", async () => {
     const owner = randomUUID();
-    const first = await service.start({ owner, language: "en", env: ENV });
-    await service.start({ owner, language: "en", env: ENV });
+    const first = await service.start({ owner, userId: null, language: "en", env: ENV });
+    await service.start({ owner, userId: null, language: "en", env: ENV });
     expect(await service.finish({ owner, gameId: first.gameId, lastSeq: 0, ipHash: null })).toEqual({ kind: "closed" });
+  });
+
+  it("una partida con sesión se guarda a nombre del usuario (y con la cookie anónima del navegador)", async () => {
+    const [user] = await db
+      .insert(users)
+      .values({ name: "", email: `${randomUUID()}@example.com`, nick: `t_${randomUUID().slice(0, 8)}` })
+      .returning({ id: users.id });
+    const { owner, gameId, outcome } = await play(typed("hola ", { every: 50, hold: 30 }), { userId: user.id });
+    expect(outcome).toMatchObject({ kind: "ok", response: { verdict: "valid" } });
+    const [row] = await db.select({ userId: games.userId, anonId: games.anonId }).from(games).where(eq(games.id, gameId));
+    expect(row).toEqual({ userId: user.id, anonId: owner });
   });
 });

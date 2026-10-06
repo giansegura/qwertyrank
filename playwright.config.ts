@@ -21,5 +21,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}/en`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    // Playwright lo mezcla con process.env: solo cambia la URL pública de Better Auth.
+    env: { BETTER_AUTH_URL: `http://localhost:${PORT}` },
   },
 });

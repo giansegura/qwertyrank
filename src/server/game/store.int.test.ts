@@ -11,6 +11,7 @@ function newGame(owner = randomUUID()): NewGame {
   return {
     id: randomUUID(),
     owner,
+    userId: null,
     language: "es",
     words: ["hola", "mundo"],
     env: { coarse: false, touchPoints: 0 },
@@ -94,5 +95,30 @@ describe("GameStore (Redis)", () => {
     expect(await store.append(first.id, owner, 1, "[]", 1)).toBe("closed");
     expect(await store.claimFinish(first.id, owner)).toEqual({ kind: "closed" });
     expect(await store.append(second.id, owner, 1, "[]", 1)).toBe("ok");
+  });
+
+  it("guarda el usuario de la partida", async () => {
+    const input = { ...newGame(), userId: randomUUID() };
+    await store.create(input);
+    expect(await store.claimFinish(input.id, input.owner)).toMatchObject({
+      kind: "ready",
+      game: { userId: input.userId },
+    });
+  });
+
+  it("una partida sin sesión no tiene usuario", async () => {
+    const input = newGame();
+    await store.create(input);
+    expect(await store.claimFinish(input.id, input.owner)).toMatchObject({ kind: "ready", game: { userId: null } });
+  });
+
+  it("un usuario solo tiene una partida activa, aunque juegue en dos navegadores", async () => {
+    const userId = randomUUID();
+    const first = { ...newGame(), userId };
+    const second = { ...newGame(), userId };
+    await store.create(first);
+    await store.create(second);
+    expect(await store.append(first.id, first.owner, 1, "[]", 1)).toBe("closed");
+    expect(await store.append(second.id, second.owner, 1, "[]", 1)).toBe("ok");
   });
 });

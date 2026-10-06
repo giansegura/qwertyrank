@@ -16,6 +16,7 @@ afterAll(async () => {
 function record(overrides: Partial<GameRecord> = {}): GameRecord {
   return {
     id: randomUUID(),
+    userId: null,
     anonId: randomUUID(),
     language: "pt",
     inputType: "touch",

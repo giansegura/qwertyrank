@@ -13,13 +13,30 @@ describe("LeaderboardTable", () => {
         ]}
       />,
     );
+    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+      "#",
+      "Player",
+      "WPM",
+      "Accuracy",
+    ]);
     const [first, second] = screen.getAllByTestId("leaderboard-row");
     expect(first).toHaveTextContent("1");
     expect(first).toHaveTextContent("🇪🇸 gian_42");
-    expect(first).toHaveTextContent("99 wpm");
+    expect(first).toHaveTextContent("99");
     expect(first).toHaveTextContent("99%");
     expect(screen.getByRole("link", { name: /gian_42/ })).toHaveAttribute("href", "/en/u/gian_42");
     expect(second).toHaveAttribute("data-nick", "ana");
+  });
+
+  it("cabeceras y precisión con el formato de cada idioma", () => {
+    renderWithIntl(<LeaderboardTable entries={[{ rank: 1, nick: "ana", country: null, wpm: 80, accuracy: 95.7 }]} />, "es");
+    expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+      "#",
+      "Jugador",
+      "PPM",
+      "Precisión",
+    ]);
+    expect(screen.getByTestId("leaderboard-row")).toHaveTextContent("95 %");
   });
 
   it("sin jugadores, invita a jugar", () => {

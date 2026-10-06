@@ -1,7 +1,10 @@
 import type { VisiblePeriod } from "./periods";
 
-/** Posición en cada ranking visible (spec §3.4: "posición en cada periodo"). 1 = el mejor. */
-export type PeriodRanks = Record<VisiblePeriod, number>;
+/**
+ * Posición en cada ranking visible que sigue abierto (spec §3.4: "posición en cada periodo"). 1 = el mejor.
+ * Una partida empezada antes de medianoche y terminada después no tiene la de "hoy": su día ya ha acabado.
+ */
+export type PeriodRanks = Partial<Record<VisiblePeriod, number>> & { all: number };
 
 /**
  * El ranking de una partida, al terminarla o al reclamarla:
@@ -9,14 +12,15 @@ export type PeriodRanks = Record<VisiblePeriod, number>;
  * - `would_rank`: anónima; la posición que tendría, sin escribir en el ranking (spec §5.6);
  * - `low_accuracy`: válida, pero con menos del 90 % de precisión;
  * - `unranked`: partida no válida;
- * - `unavailable`: no se pudo calcular (Redis caído), aunque la partida sí está guardada.
+ * - `unavailable`: no se pudo calcular (Redis caído), aunque la partida sí está guardada; `canSave` si es
+ *   anónima y se puede guardar en una cuenta.
  */
 export type GameRanking =
   | { kind: "ranked"; ranks: PeriodRanks; improved: VisiblePeriod[] }
   | { kind: "would_rank"; ranks: PeriodRanks }
   | { kind: "low_accuracy" }
   | { kind: "unranked" }
-  | { kind: "unavailable" };
+  | { kind: "unavailable"; canSave: boolean };
 
 /** Una fila del top de un ranking. */
 export interface TopEntry {

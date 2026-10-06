@@ -19,30 +19,50 @@ export function LeaderboardTable({ entries }: { entries: TopEntry[] }) {
   }
 
   return (
-    <ol data-testid="leaderboard" className="flex flex-col">
-      {entries.map((entry) => (
-        <li
-          key={entry.nick}
-          data-testid="leaderboard-row"
-          data-nick={entry.nick}
-          className="grid grid-cols-[2.5rem_1fr_auto_3.5rem] items-center gap-3 border-b border-zinc-200 py-2 dark:border-zinc-800"
-        >
-          <span className="font-mono text-zinc-500 tabular-nums">{entry.rank}</span>
-          {/* Sin precarga: serían hasta 100 perfiles regenerándose por cada visita (límite de Vercel Hobby). */}
-          <Link
-            href={{ pathname: "/u/[nick]", params: { nick: entry.nick } }}
-            prefetch={false}
-            className="truncate font-medium"
+    <table data-testid="leaderboard" className="w-full table-fixed border-collapse">
+      <thead>
+        <tr className="border-b border-zinc-300 text-left text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+          <th scope="col" className="w-10 py-2 font-medium">
+            {t("column.rank")}
+          </th>
+          <th scope="col" className="py-2 font-medium">
+            {t("column.player")}
+          </th>
+          <th scope="col" className="w-16 py-2 pl-3 text-right font-medium">
+            {t("column.wpm")}
+          </th>
+          <th scope="col" className="w-24 py-2 pl-3 text-right font-medium">
+            {t("column.accuracy")}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((entry) => (
+          <tr
+            key={entry.nick}
+            data-testid="leaderboard-row"
+            data-nick={entry.nick}
+            className="border-b border-zinc-200 dark:border-zinc-800"
           >
-            {flagPrefix(entry.country)}
-            {entry.nick}
-          </Link>
-          <span className="font-mono tabular-nums">
-            {displayWpm(entry.wpm)} <span className="text-xs text-zinc-500">{t("wpm")}</span>
-          </span>
-          <span className="text-right font-mono text-sm text-zinc-500 tabular-nums">{displayAccuracy(entry.accuracy)}%</span>
-        </li>
-      ))}
-    </ol>
+            <td className="py-2 font-mono text-zinc-500 tabular-nums">{entry.rank}</td>
+            <td className="truncate py-2">
+              {/* Sin precarga: serían hasta 100 perfiles regenerándose por cada visita (límite de Vercel Hobby). */}
+              <Link
+                href={{ pathname: "/u/[nick]", params: { nick: entry.nick } }}
+                prefetch={false}
+                className="font-medium"
+              >
+                {flagPrefix(entry.country)}
+                {entry.nick}
+              </Link>
+            </td>
+            <td className="py-2 pl-3 text-right font-mono tabular-nums">{displayWpm(entry.wpm)}</td>
+            <td className="py-2 pl-3 text-right font-mono text-sm text-zinc-500 tabular-nums">
+              {t("accuracyValue", { accuracy: displayAccuracy(entry.accuracy) })}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

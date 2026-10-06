@@ -1,8 +1,9 @@
 import "server-only";
+import { NICK_PATTERN } from "@/lib/nick";
 import { isProfane } from "./profanity";
 
 /** Spec §3.6: 3–20 caracteres `[a-zA-Z0-9_]`, único sin distinguir mayúsculas, sin palabrotas. */
-export const NICK_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
+export { NICK_PATTERN };
 
 export type NickProblem = "invalid" | "profane";
 

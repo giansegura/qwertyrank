@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { switchLocale } from "./helpers/locale";
 
 test.describe("navegador en español", () => {
   test.use({ locale: "es-ES" });
@@ -29,7 +30,7 @@ test("la práctica tiene ruta traducida en cada idioma", async ({ page }) => {
 
 test("cambiar de idioma conserva la página", async ({ page }) => {
   await page.goto("/en/practice");
-  await page.getByRole("link", { name: "es", exact: true }).click();
+  await switchLocale(page, "es");
   await expect(page).toHaveURL(/\/es\/practica$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Práctica");
 });
@@ -43,7 +44,7 @@ test("el texto inicial de la práctica está en el idioma de la página", async 
 
 test("el idioma elegido se recuerda aunque se cierre el navegador", async ({ page, context }) => {
   await page.goto("/en/practice");
-  await page.getByRole("link", { name: "es", exact: true }).click();
+  await switchLocale(page, "es");
   await expect(page).toHaveURL(/\/es\/practica$/);
   const cookie = (await context.cookies()).find((c) => c.name === "NEXT_LOCALE");
   expect(cookie?.value).toBe("es");

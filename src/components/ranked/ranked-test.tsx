@@ -56,6 +56,8 @@ const REASON_MESSAGE: Record<PublicReason, VerdictMessage> = {
   letter_by_letter: "verdictLetterByLetter",
 };
 
+type RankSummaryComponent = typeof import("./rank-summary").RankSummary;
+
 /**
  * Partida Ranked (spec §3.4): Empezar → el servidor envía el texto → cuenta atrás 3-2-1 con
  * el texto oculto → 30 s que no se pueden parar → las pulsaciones se envían cada ~3 s →
@@ -65,6 +67,9 @@ export function RankedTest({ language }: { language: TestLanguage }) {
   const t = useTranslations("Ranked");
   const tt = useTranslations("TypingTest");
   const [phase, setPhase] = useState<Phase>({ name: "ready" });
+  // El resumen de posición solo hace falta al terminar: se descarga durante la partida y no pesa en
+  // el JS inicial de la portada (spec §7.5). A los 30 s ya está cargado, así que no hay salto (CLS = 0).
+  const [RankSummary, setRankSummary] = useState<RankSummaryComponent | null>(null);
 
   // Cada partida empezada tiene un número; las respuestas de partidas anteriores se ignoran.
   const attemptRef = useRef(0);
@@ -111,6 +116,8 @@ export function RankedTest({ language }: { language: TestLanguage }) {
     // podrían llegar desordenados y dejar en pantalla una partida que el servidor ya cerró.
     if (startingRef.current) return;
     startingRef.current = true;
+    // Si la descarga falla, el resultado sale sin el resumen y se reintenta en la siguiente partida.
+    if (!RankSummary) import("./rank-summary").then((module) => setRankSummary(() => module.RankSummary), () => {});
     const attempt = ++attemptRef.current;
     stopCurrent();
     setPhase({ name: "starting" });
@@ -240,7 +247,17 @@ export function RankedTest({ language }: { language: TestLanguage }) {
             )}
           </div>
         ) : (
-          <ResultView result={phase.name === "result" ? phase.response : phase.local} onRestart={() => void start()} />
+          <div className="flex flex-col gap-6">
+            {phase.name === "result" && RankSummary && (
+              <RankSummary
+                ranking={phase.response.ranking}
+                gameId={phase.response.gameId}
+                language={language}
+                inputType={phase.response.inputType}
+              />
+            )}
+            <ResultView result={phase.name === "result" ? phase.response : phase.local} onRestart={() => void start()} />
+          </div>
         )}
       </div>
 

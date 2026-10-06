@@ -18,6 +18,11 @@ export function welcomePath(locale: Locale, next: string): string {
   return `${getPathname({ locale, href: "/settings" })}?welcome=1&next=${encodeURIComponent(next)}`;
 }
 
+/** Enlace a entrar que vuelve a la página actual (`pathname` de `usePathname()` de `next/navigation`). */
+export function loginHref(pathname: string | null) {
+  return pathname ? { pathname: "/login" as const, query: { next: pathname } } : ("/login" as const);
+}
+
 export function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }

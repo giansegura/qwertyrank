@@ -6,7 +6,10 @@ import { users } from "../db/schema";
 import { createUpdateProfile } from "./update";
 
 const db = createDb(process.env.DATABASE_URL!);
-const updateProfile = createUpdateProfile(db);
+let changes = 0;
+const updateProfile = createUpdateProfile(db, () => {
+  changes++;
+});
 
 afterAll(async () => {
   await db.$client.end();
@@ -64,5 +67,14 @@ describe("cambiar nick y país", () => {
       ok: false,
       error: "invalid_country",
     });
+  });
+
+  it("cada cambio guardado (nick o país) avisa de que cambian sus páginas en caché; uno rechazado, no", async () => {
+    const id = await newUser();
+    const before = changes;
+    await updateProfile(id, { nick: freeNick("cambio"), country: "ES" });
+    expect(changes).toBe(before + 1);
+    await updateProfile(id, { nick: "a b", country: null });
+    expect(changes).toBe(before + 1);
   });
 });

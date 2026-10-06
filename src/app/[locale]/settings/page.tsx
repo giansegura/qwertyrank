@@ -6,7 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { AccountActions } from "@/components/account/account-actions";
 import { PasskeyList } from "@/components/account/passkey-list";
 import { ProfileForm } from "@/components/account/profile-form";
-import { getPathname } from "@/i18n/navigation";
+import { Link, getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { firstParam, loginPath, safeNext } from "@/lib/auth-paths";
 import { countryOptions, isCountryCode } from "@/lib/countries";
@@ -44,6 +44,9 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
       />
       {!welcome && (
         <>
+          <Link href={{ pathname: "/u/[nick]", params: { nick: user.nick } }} className="self-start font-medium underline">
+            {t("viewProfile")}
+          </Link>
           <PasskeyList locale={locale} />
           <AccountActions locale={locale} />
         </>

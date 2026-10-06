@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { closeDb, randomClientIp, signUp, userIdByEmail, verdictsOf } from "./helpers/accounts";
-import { startRanked } from "./helpers/ranked";
+import { playValidGame } from "./helpers/ranked";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -19,8 +19,8 @@ test("registro con enlace por email: nick propuesto, bienvenida y cambio de nick
   await signUp(page, "es");
   await expect(page).toHaveURL(/\/es\/ajustes\?welcome=1/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("¡Te damos la bienvenida a QwertyRank!");
-  // e2e-<uuid>@example.com → primera palabra "e2e" + dos cifras.
-  await expect(page.getByTestId("profile-nick")).toHaveValue(/^e2e_\d{2}$/);
+  // e2e1a2b3c4d@example.com → la primera palabra del email + dos cifras.
+  await expect(page.getByTestId("profile-nick")).toHaveValue(/^e2e[0-9a-f]{8}_\d{2}$/);
 
   const nick = `e2e_${crypto.randomUUID().slice(0, 8)}`;
   await page.getByTestId("profile-nick").fill(nick);
@@ -33,9 +33,7 @@ test("registro con enlace por email: nick propuesto, bienvenida y cambio de nick
 
 test("una partida Ranked con sesión se guarda a nombre del jugador", async ({ page }) => {
   const email = await signUp(page, "en");
-  const words = await startRanked(page);
-  await page.keyboard.type(`${words.join(" ")} `, { delay: 120 });
-  await expect(page.getByTestId("result")).toBeVisible({ timeout: 40_000 });
+  await playValidGame(page);
   await expect(page.getByTestId("ranked-status")).toHaveText("Valid game");
 
   const userId = await userIdByEmail(email);

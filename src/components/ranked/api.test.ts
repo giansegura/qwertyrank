@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GameApiError, REQUEST_TIMEOUT_MS, finishGame, isRetryable, sendKeys, startGame } from "./api";
+import { GameApiError, REQUEST_TIMEOUT_MS, claimGame, finishGame, isRetryable, sendKeys, startGame } from "./api";
 
 function reply(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -61,5 +61,13 @@ describe("api de partidas", () => {
     vi.stubGlobal("fetch", fetchMock);
     await expect(finishGame("g1", { lastSeq: 0 }, { delayMs: 0 })).rejects.toMatchObject({ code: "closed" });
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("claimGame hace POST a /api/game/{id}/claim y devuelve el ranking", async () => {
+    const claimed = { ranking: { kind: "low_accuracy" }, language: "es", inputType: "touch" };
+    const fetchMock = vi.fn(async () => reply(200, claimed));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await claimGame("g1")).toEqual(claimed);
+    expect(fetchMock).toHaveBeenCalledWith("/api/game/g1/claim", expect.objectContaining({ method: "POST" }));
   });
 });

@@ -11,8 +11,10 @@ import { createDeleteUserData } from "../account/delete-user-data";
 import { getDb, type Db } from "../db/client";
 import { accounts, passkeys, sessions, users, verifications } from "../db/schema";
 import { magicLinkEmail } from "../email/magic-link";
+import { revalidatePlayerPages } from "../cache";
 import { createMailer, type SendEmail } from "../email/mailer";
 import { serverEnv } from "../env";
+import { createLeaderboardStore } from "../leaderboard/store";
 import { findFreeNick, nickBase } from "../profile/nick";
 import { getRedis } from "../redis";
 import { isDisposableEmail } from "./disposable";
@@ -29,12 +31,14 @@ export interface AuthDeps {
   secret: string;
   baseURL: string;
   google?: { clientId: string; clientSecret: string };
+  /** Han cambiado páginas en caché de un jugador (al borrar su cuenta); en producción, `revalidatePlayerPages`. */
+  onPlayerChanged?: () => void;
   random?: () => number;
 }
 
 export function createAuth(deps: AuthDeps) {
   const random = deps.random ?? Math.random;
-  const deleteUserData = createDeleteUserData(deps.db);
+  const deleteUserData = createDeleteUserData(deps.db, createLeaderboardStore(deps.redis, deps.keyPrefix));
 
   async function isNickTaken(nick: string): Promise<boolean> {
     const rows = await deps.db
@@ -83,13 +87,24 @@ export function createAuth(deps: AuthDeps) {
       additionalFields: {
         nick: { type: "string", required: true, input: false },
         country: { type: "string", required: false, input: false },
-        role: { type: ["user", "admin"], required: true, defaultValue: "user", input: false },
-        status: { type: ["active", "shadowbanned", "banned"], required: true, defaultValue: "active", input: false },
+        // No salen en la sesión que ve el navegador: un shadow-ban no debe notarse (spec §4.7).
+        role: { type: ["user", "admin"], required: true, defaultValue: "user", input: false, returned: false },
+        status: {
+          type: ["active", "shadowbanned", "banned"],
+          required: true,
+          defaultValue: "active",
+          input: false,
+          returned: false,
+        },
       },
       deleteUser: {
         enabled: true,
         beforeDelete: async (user) => {
           await deleteUserData(user.id);
+        },
+        // Ya sin el usuario: sus páginas en caché (perfil y rankings) se regeneran sin él.
+        afterDelete: async () => {
+          deps.onPlayerChanged?.();
         },
       },
     },
@@ -144,6 +159,7 @@ export function getAuth(): Auth {
     sendEmail: createMailer(env, getRedis()),
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    onPlayerChanged: revalidatePlayerPages,
     google:
       env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }

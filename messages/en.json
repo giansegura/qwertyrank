@@ -7,10 +7,12 @@
     "home": "Ranked",
     "practice": "Practice",
     "signIn": "Sign in",
-    "account": "Your account: {nick}"
+    "account": "Your account: {nick}",
+    "leaderboard": "Ranking"
   },
   "LocaleSwitcher": {
-    "label": "Language"
+    "label": "Language",
+    "open": "Change language"
   },
   "Home": {
     "title": "How fast do you type?"
@@ -46,7 +48,14 @@
     "verdictConnection": "Connection problem: this game doesn't count.",
     "verdictUnrecognized": "Unrecognized activity: this game doesn't count.",
     "verdictLetterByLetter": "In Ranked you have to type letter by letter: this game doesn't count.",
-    "replaced": "You started another game, so this one was closed."
+    "replaced": "You started another game, so this one was closed.",
+    "rankIn": "#{rank} {period, select, day {today} week {this week} month {this month} all {all time} other {}}",
+    "newBest": "New personal best!",
+    "viewLeaderboard": "View ranking",
+    "wouldRank": "You'd be #{rank} today.",
+    "saveIt": "Save it",
+    "saveHint": "Sign in within 10 minutes and this game counts on the ranking.",
+    "lowAccuracy": "To enter the ranking you need at least 90% accuracy."
   },
   "Login": {
     "title": "Sign in to QwertyRank",
@@ -96,7 +105,43 @@
     "deleteCancel": "Cancel",
     "errorDelete": "We couldn't delete your account. Try again.",
     "reauthMessage": "For your security, sign in again to do this.",
-    "reauthButton": "Sign in again"
+    "reauthButton": "Sign in again",
+    "viewProfile": "View my public profile"
+  },
+  "Leaderboard": {
+    "title": "Ranking · {language, select, en {English} es {Spanish} pt {Portuguese} other {}}",
+    "metaTitle": "{language, select, en {English} es {Spanish} pt {Portuguese} other {}} typing ranking · {input, select, physical {physical keyboard} touch {touch keyboard} other {}} · {period, select, day {today} week {this week} month {this month} all {all time} other {}}",
+    "rule": "Each player's best game counts, with at least 90% accuracy.",
+    "inputLabel": "Keyboard",
+    "periodLabel": "Period",
+    "input": "{input, select, physical {Physical keyboard} touch {Touch keyboard} other {}}",
+    "period": "{period, select, day {Today} week {This week} month {This month} all {All time} other {}}",
+    "resetsIn": "Resets in {time}",
+    "empty": "Nobody is on this ranking yet. Be the first!",
+    "play": "Play Ranked",
+    "wpm": "wpm",
+    "you": "Your position: #{rank} · {wpm} wpm · {accuracy}%",
+    "youNone": "You're not on this ranking yet.",
+    "youSignIn": "Sign in to appear in the ranking"
+  },
+  "Save": {
+    "title": "Save your game",
+    "saving": "Saving your game…",
+    "saved": "Game saved to your account.",
+    "expired": "More than 10 minutes have passed: this game can no longer be saved.",
+    "notFound": "We couldn't find this game in this browser.",
+    "failed": "We couldn't save the game. Try again.",
+    "retry": "Try again",
+    "play": "Play again"
+  },
+  "Profile": {
+    "memberSince": "Playing since {date}",
+    "records": "Personal records",
+    "noRecords": "No records on the ranking yet.",
+    "history": "Recent games",
+    "noHistory": "No games yet.",
+    "board": "{language, select, en {English} es {Spanish} pt {Portuguese} other {}} · {input, select, physical {physical keyboard} touch {touch keyboard} other {}}",
+    "score": "{wpm} wpm · {accuracy}%"
   },
   "Email": {
     "magicLinkSubject": "Your QwertyRank sign-in link",

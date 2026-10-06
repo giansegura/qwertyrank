@@ -7,10 +7,12 @@
     "home": "Ranked",
     "practice": "Práctica",
     "signIn": "Entrar",
-    "account": "Tu cuenta: {nick}"
+    "account": "Tu cuenta: {nick}",
+    "leaderboard": "Ranking"
   },
   "LocaleSwitcher": {
-    "label": "Idioma"
+    "label": "Idioma",
+    "open": "Cambiar idioma"
   },
   "Home": {
     "title": "¿A qué velocidad escribes?"
@@ -46,7 +48,14 @@
     "verdictConnection": "Problema de conexión: esta partida no cuenta.",
     "verdictUnrecognized": "Actividad no reconocida: esta partida no cuenta.",
     "verdictLetterByLetter": "En Ranked hay que teclear letra a letra: esta partida no cuenta.",
-    "replaced": "Has empezado otra partida, así que esta se ha cerrado."
+    "replaced": "Has empezado otra partida, así que esta se ha cerrado.",
+    "rankIn": "#{rank} {period, select, day {hoy} week {esta semana} month {este mes} all {de siempre} other {}}",
+    "newBest": "¡Nueva mejor marca!",
+    "viewLeaderboard": "Ver ranking",
+    "wouldRank": "Entrarías el #{rank} de hoy.",
+    "saveIt": "Guárdalo",
+    "saveHint": "Entra en los próximos 10 minutos y esta partida contará en el ranking.",
+    "lowAccuracy": "Para entrar en el ranking necesitas al menos un 90 % de precisión."
   },
   "Login": {
     "title": "Entra en QwertyRank",
@@ -96,7 +105,43 @@
     "deleteCancel": "Cancelar",
     "errorDelete": "No hemos podido borrar tu cuenta. Inténtalo de nuevo.",
     "reauthMessage": "Por seguridad, vuelve a iniciar sesión para hacer esto.",
-    "reauthButton": "Volver a entrar"
+    "reauthButton": "Volver a entrar",
+    "viewProfile": "Ver mi perfil público"
+  },
+  "Leaderboard": {
+    "title": "Ranking · {language, select, en {inglés} es {español} pt {portugués} other {}}",
+    "metaTitle": "Ranking de mecanografía en {language, select, en {inglés} es {español} pt {portugués} other {}} · {input, select, physical {teclado físico} touch {teclado táctil} other {}} · {period, select, day {hoy} week {esta semana} month {este mes} all {siempre} other {}}",
+    "rule": "Cuenta la mejor partida de cada jugador, con al menos un 90 % de precisión.",
+    "inputLabel": "Teclado",
+    "periodLabel": "Periodo",
+    "input": "{input, select, physical {Teclado físico} touch {Teclado táctil} other {}}",
+    "period": "{period, select, day {Hoy} week {Semana} month {Mes} all {Siempre} other {}}",
+    "resetsIn": "Se reinicia en {time}",
+    "empty": "Todavía no hay nadie en este ranking. ¡Sé el primero!",
+    "play": "Jugar Ranked",
+    "wpm": "ppm",
+    "you": "Tu posición: #{rank} · {wpm} ppm · {accuracy} %",
+    "youNone": "Todavía no estás en este ranking.",
+    "youSignIn": "Entra para aparecer en el ranking"
+  },
+  "Save": {
+    "title": "Guarda tu partida",
+    "saving": "Guardando tu partida…",
+    "saved": "Partida guardada en tu cuenta.",
+    "expired": "Han pasado más de 10 minutos: esta partida ya no se puede guardar.",
+    "notFound": "No encontramos esta partida en este navegador.",
+    "failed": "No hemos podido guardar la partida. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "play": "Jugar otra"
+  },
+  "Profile": {
+    "memberSince": "Juega desde el {date}",
+    "records": "Récords",
+    "noRecords": "Todavía no tiene récords en el ranking.",
+    "history": "Partidas recientes",
+    "noHistory": "Todavía no hay partidas.",
+    "board": "{language, select, en {Inglés} es {Español} pt {Portugués} other {}} · {input, select, physical {teclado físico} touch {teclado táctil} other {}}",
+    "score": "{wpm} ppm · {accuracy} %"
   },
   "Email": {
     "magicLinkSubject": "Tu enlace para entrar en QwertyRank",

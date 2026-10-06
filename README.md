@@ -27,6 +27,13 @@ pnpm dev                      # http://localhost:3000
 - **Resend (producción):** verifica el dominio en Resend y define `RESEND_API_KEY` y `EMAIL_FROM`. En la producción de Vercel la clave es obligatoria.
 - **Passkeys:** se añaden en Ajustes, con una sesión de menos de un día, y sirven para entrar. No crean cuentas.
 
+## Rankings
+
+- **Fuente de verdad:** `period_bests` en PostgreSQL, con la mejor partida de cada jugador por idioma, teclado y periodo (día, semana ISO, mes, año y siempre, en UTC).
+- **Redis** guarda un ranking por combinación (`lb:{idioma}:{teclado}:{periodo}:{clave}`) y calcula las posiciones.
+- **El top 100** de la pantalla de ranking se lee de PostgreSQL. La página se regenera cada 60 s, y al momento cuando alguien entra en el top.
+- **Partidas anónimas:** se pueden guardar en una cuenta en los 10 minutos siguientes ("Guárdalo").
+
 ## Tests
 
 | Comando | Qué ejecuta | Necesita |

@@ -40,7 +40,12 @@ test("una denuncia llega a la cola y el admin banea desde la ficha", async ({ pa
   const email = await newAccount(page);
   await setRole(email, "admin");
 
+  const row = page.locator(`[data-testid="leaderboard-row"][data-nick="${target}"]`);
+  await page.goto("/en/leaderboard/physical/all-time");
+  await expect(row).toBeVisible();
+
   await page.goto(`/en/u/${target}`);
+  expect((await page.request.get(`/en/u/${target}`)).status()).toBe(200);
   await page.getByTestId("report-open").click();
   await page.getByLabel("Cheating").check();
   await page.getByTestId("report-send").click();
@@ -54,7 +59,7 @@ test("una denuncia llega a la cola y el admin banea desde la ficha", async ({ pa
   await expect(page.getByTestId("admin-notice")).toHaveText("Jugador baneado.");
 
   await page.goto("/en/leaderboard/physical/all-time");
-  await expect(page.locator(`[data-testid="leaderboard-row"][data-nick="${target}"]`)).toHaveCount(0);
+  await expect(row).toHaveCount(0);
   expect((await page.request.get(`/en/u/${target}`)).status()).toBe(404);
 });
 

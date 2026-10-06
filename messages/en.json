@@ -52,10 +52,11 @@
     "rankIn": "#{rank} {period, select, day {today} week {this week} month {this month} all {all time} other {}}",
     "newBest": "New personal best!",
     "viewLeaderboard": "View ranking",
-    "wouldRank": "You'd be #{rank} today.",
+    "wouldRank": "You'd be #{rank} {period, select, day {today} week {this week} month {this month} all {all time} other {}}.",
     "saveIt": "Save it",
     "saveHint": "Sign in within 10 minutes and this game counts on the ranking.",
-    "lowAccuracy": "To enter the ranking you need at least 90% accuracy."
+    "lowAccuracy": "To enter the ranking you need at least 90% accuracy.",
+    "rankingUnavailable": "The ranking is temporarily unavailable, so we can't show your position right now."
   },
   "Login": {
     "title": "Sign in to QwertyRank",
@@ -116,10 +117,17 @@
     "periodLabel": "Period",
     "input": "{input, select, physical {Physical keyboard} touch {Touch keyboard} other {}}",
     "period": "{period, select, day {Today} week {This week} month {This month} all {All time} other {}}",
-    "resetsIn": "Resets in {time}",
+    "resetsIn": "Resets in {unit, select, days {{days}d {hours}h} hours {{hours}h {minutes}m} other {{minutes}m}}",
+    "resetting": "Resetting…",
     "empty": "Nobody is on this ranking yet. Be the first!",
     "play": "Play Ranked",
-    "wpm": "wpm",
+    "column": {
+      "rank": "#",
+      "player": "Player",
+      "wpm": "WPM",
+      "accuracy": "Accuracy"
+    },
+    "accuracyValue": "{accuracy}%",
     "you": "Your position: #{rank} · {wpm} wpm · {accuracy}%",
     "youNone": "You're not on this ranking yet.",
     "youSignIn": "Sign in to appear in the ranking"

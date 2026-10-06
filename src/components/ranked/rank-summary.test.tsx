@@ -27,9 +27,41 @@ describe("RankSummary", () => {
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("at least 90% accuracy");
   });
 
-  it("si no hay ranking (no válida o Redis caído), no enseña nada", () => {
+  it("si el día ya ha acabado (partida de antes de medianoche), empieza por la semana y enlaza a ella", () => {
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "ranked", ranks: { week: 10, month: 25, all: 120 }, improved: [] }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+      />,
+    );
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent(/^#10 this week · #25 this month · #120 all time/);
+    expect(screen.getByRole("link", { name: "View ranking" })).toHaveAttribute("href", "/es/ranking/fisico/semana");
+  });
+
+  it("anónima sin el día: la posición que tendría en la semana", () => {
+    renderWithIntl(
+      <RankSummary ranking={{ kind: "would_rank", ranks: { week: 10, all: 120 } }} gameId="g1" language="en" inputType="touch" />,
+    );
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #10 this week.");
+  });
+
+  it("con Redis caído avisa de que el ranking no está disponible, y la anónima se puede guardar igual", () => {
+    renderWithIntl(<RankSummary ranking={{ kind: "unavailable", canSave: true }} gameId="g1" language="en" inputType="touch" />);
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("The ranking is temporarily unavailable");
+    expect(screen.getByTestId("save-game")).toHaveAttribute("href", "/en/save/g1");
+  });
+
+  it("con Redis caído y cuenta, solo el aviso", () => {
+    renderWithIntl(<RankSummary ranking={{ kind: "unavailable", canSave: false }} gameId="g1" language="en" inputType="touch" />);
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("The ranking is temporarily unavailable");
+    expect(screen.queryByTestId("save-game")).toBeNull();
+  });
+
+  it("una partida no válida no enseña nada", () => {
     const { container } = renderWithIntl(
-      <RankSummary ranking={{ kind: "unavailable" }} gameId="g1" language="en" inputType="touch" />,
+      <RankSummary ranking={{ kind: "unranked" }} gameId="g1" language="en" inputType="touch" />,
     );
     expect(container).toBeEmptyDOMElement();
   });

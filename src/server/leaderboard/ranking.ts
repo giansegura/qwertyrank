@@ -37,6 +37,8 @@ export interface RankingDeps {
   store: LeaderboardStore;
   /** En producción, `revalidatePath` de la página de cada ranking que cambia. */
   onTopChanged: (changes: BoardChange[]) => void;
+  /** Hora actual; los tests la fijan. */
+  now?: () => Date;
 }
 
 type VisibleBoard = Board & { period: VisiblePeriod };
@@ -75,12 +77,12 @@ export function createRanking(deps: RankingDeps) {
     if (game.accuracy < RANKED_MIN_ACCURACY) return { kind: "low_accuracy" };
 
     const keys = periodKeys(game.startsAt);
-    const boards: VisibleBoard[] = VISIBLE_PERIODS.map((period) => ({
-      language: game.language,
-      inputType: game.inputType,
-      period,
-      key: keys[period],
-    }));
+    const current = periodKeys(deps.now?.() ?? new Date());
+    // Posiciones solo en los rankings que siguen abiertos: si la partida empezó antes de medianoche y
+    // acabó (o se reclama) después, cuenta en el de ayer, pero "#N hoy" sería el ranking de otro día.
+    const boards: VisibleBoard[] = VISIBLE_PERIODS.filter((period) => keys[period] === current[period]).map(
+      (period) => ({ language: game.language, inputType: game.inputType, period, key: keys[period] }),
+    );
     const score = encodeScore({ wpm: game.wpm, accuracy: game.accuracy, achievedAt: game.startsAt });
 
     if (!game.userId) {
@@ -115,9 +117,16 @@ export function createRanking(deps: RankingDeps) {
     }
     const ranks = await ranksFor(boards, async (board, index) => listed[index] ?? deps.store.positionFor(board, score));
     const changes = boards
-      .filter((board) => improved.includes(board.period) && ranks[board.period] <= TOP_SIZE)
+      .filter((board) => improved.includes(board.period) && (ranks[board.period] ?? Infinity) <= TOP_SIZE)
       .map(({ language, inputType, period }) => ({ language, inputType, period }));
-    if (changes.length > 0) deps.onTopChanged(changes);
+    if (changes.length > 0) {
+      try {
+        deps.onTopChanged(changes);
+      } catch (error) {
+        // La página se regenera igual a los 60 s: no es motivo para perder las posiciones ya calculadas.
+        console.error("leaderboard revalidation failed", error);
+      }
+    }
     return { kind: "ranked", ranks, improved };
   }
 
@@ -131,7 +140,7 @@ export function createRanking(deps: RankingDeps) {
       return await computeRanking(game);
     } catch (error) {
       console.error("ranking failed", error);
-      return { kind: "unavailable" };
+      return { kind: "unavailable", canSave: game.userId === null };
     }
   }
 

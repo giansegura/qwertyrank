@@ -1,16 +1,20 @@
 import { render } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactElement } from "react";
-import messages from "../../messages/en.json";
+import en from "../../messages/en.json";
+import es from "../../messages/es.json";
+import pt from "../../messages/pt.json";
 
-export function withIntl(ui: ReactElement) {
+const MESSAGES = { en, es, pt };
+
+export function withIntl(ui: ReactElement, locale: keyof typeof MESSAGES = "en") {
   return (
-    <NextIntlClientProvider locale="en" messages={messages}>
+    <NextIntlClientProvider locale={locale} messages={MESSAGES[locale]}>
       {ui}
     </NextIntlClientProvider>
   );
 }
 
-export function renderWithIntl(ui: ReactElement) {
-  return render(withIntl(ui));
+export function renderWithIntl(ui: ReactElement, locale: keyof typeof MESSAGES = "en") {
+  return render(withIntl(ui, locale));
 }

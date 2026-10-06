@@ -52,10 +52,11 @@
     "rankIn": "#{rank} {period, select, day {hoje} week {nesta semana} month {neste mês} all {de sempre} other {}}",
     "newBest": "Novo recorde pessoal!",
     "viewLeaderboard": "Ver ranking",
-    "wouldRank": "Você entraria em #{rank} hoje.",
+    "wouldRank": "Você entraria em #{rank} {period, select, day {hoje} week {nesta semana} month {neste mês} all {de sempre} other {}}.",
     "saveIt": "Salvar",
     "saveHint": "Entre nos próximos 10 minutos e esta partida vai contar no ranking.",
-    "lowAccuracy": "Para entrar no ranking você precisa de pelo menos 90% de precisão."
+    "lowAccuracy": "Para entrar no ranking você precisa de pelo menos 90% de precisão.",
+    "rankingUnavailable": "O ranking está temporariamente indisponível: agora não conseguimos mostrar sua posição."
   },
   "Login": {
     "title": "Entre no QwertyRank",
@@ -116,10 +117,17 @@
     "periodLabel": "Período",
     "input": "{input, select, physical {Teclado físico} touch {Teclado touch} other {}}",
     "period": "{period, select, day {Hoje} week {Semana} month {Mês} all {Sempre} other {}}",
-    "resetsIn": "Reinicia em {time}",
+    "resetsIn": "Reinicia em {unit, select, days {{days} d {hours} h} hours {{hours} h {minutes} min} other {{minutes} min}}",
+    "resetting": "Reiniciando…",
     "empty": "Ainda não há ninguém neste ranking. Seja o primeiro!",
     "play": "Jogar Ranked",
-    "wpm": "ppm",
+    "column": {
+      "rank": "#",
+      "player": "Jogador",
+      "wpm": "PPM",
+      "accuracy": "Precisão"
+    },
+    "accuracyValue": "{accuracy}%",
     "you": "Sua posição: #{rank} · {wpm} ppm · {accuracy}%",
     "youNone": "Você ainda não está neste ranking.",
     "youSignIn": "Entre para aparecer no ranking"

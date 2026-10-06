@@ -73,6 +73,7 @@
     "passkey": "Entrar com uma passkey",
     "errorDisposable": "Emails temporários não são permitidos. Use seu email habitual.",
     "errorThrottled": "Acabamos de enviar um link. Espere um minuto antes de pedir outro.",
+    "errorBlocked": "Não é possível criar a conta.",
     "errorFailed": "Algo deu errado. Tente novamente em instantes.",
     "errorLinkInvalid": "Esse link expirou ou já foi usado. Peça um novo.",
     "errorPasskey": "Não foi possível entrar com uma passkey. Primeiro adicione uma nas configurações da sua conta."

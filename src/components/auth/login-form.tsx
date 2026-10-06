@@ -7,7 +7,13 @@ import { authClient } from "@/lib/auth-client";
 import { loginPath, welcomePath } from "@/lib/auth-paths";
 import { navigateTo } from "@/lib/navigate";
 
-type LoginMessage = "errorDisposable" | "errorThrottled" | "errorFailed" | "errorLinkInvalid" | "errorPasskey";
+type LoginMessage =
+  | "errorDisposable"
+  | "errorThrottled"
+  | "errorFailed"
+  | "errorLinkInvalid"
+  | "errorPasskey"
+  | "errorBlocked";
 
 type FormState =
   | { name: "idle" }
@@ -18,11 +24,13 @@ type FormState =
 const EMAIL_ERRORS: Record<string, LoginMessage> = {
   DISPOSABLE_EMAIL: "errorDisposable",
   EMAIL_THROTTLED: "errorThrottled",
+  ACCOUNT_BLOCKED: "errorBlocked",
 };
 
-/** Error con el que Better Auth vuelve a esta página (`?error=…`) tras un enlace caducado o ya usado. */
+/** Error con el que Better Auth vuelve a esta página (`?error=…`) tras un enlace caducado, ya usado o bloqueado. */
 export function messageForCallbackError(code: string | null): LoginMessage | null {
   if (!code) return null;
+  if (code === "ACCOUNT_BLOCKED") return "errorBlocked";
   return code === "INVALID_TOKEN" || code === "EXPIRED_TOKEN" ? "errorLinkInvalid" : "errorFailed";
 }
 

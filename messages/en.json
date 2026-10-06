@@ -73,6 +73,7 @@
     "passkey": "Sign in with a passkey",
     "errorDisposable": "Temporary email addresses aren't allowed. Use your usual email.",
     "errorThrottled": "We just sent you a link. Wait a minute before asking for another one.",
+    "errorBlocked": "This account can't be created.",
     "errorFailed": "Something went wrong. Try again in a moment.",
     "errorLinkInvalid": "That link has expired or was already used. Ask for a new one.",
     "errorPasskey": "We couldn't sign you in with a passkey. Add one from your account settings first."

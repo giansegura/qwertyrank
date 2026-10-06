@@ -6,6 +6,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { magicLink } from "better-auth/plugins";
+import { eq } from "drizzle-orm";
 import { createDeleteUserData } from "../account/delete-user-data";
 import { getDb, type Db } from "../db/client";
 import { accounts, passkeys, sessions, users, verifications } from "../db/schema";
@@ -14,6 +15,7 @@ import { revalidatePlayerPages } from "../cache";
 import { createMailer, type SendEmail } from "../email/mailer";
 import { serverEnv } from "../env";
 import { createLeaderboardStore } from "../leaderboard/store";
+import { accountBlocked, identityHash, isBannedIdentity } from "../moderation/identities";
 import { findFreeNick, nickBase } from "../profile/nick";
 import { createNickAvailability } from "../profile/nick-reservation";
 import { getRedis } from "../redis";
@@ -29,6 +31,8 @@ export interface AuthDeps {
   keyPrefix: string;
   sendEmail: SendEmail;
   secret: string;
+  /** Clave de los hashes de identidades baneadas (spec 4a §3.3); en producción, `IP_HASH_SECRET`. */
+  identitySecret: string;
   baseURL: string;
   google?: { clientId: string; clientSecret: string };
   /** Han cambiado páginas en caché de un jugador (al borrar su cuenta); en producción, `revalidatePlayerPages`. */
@@ -40,6 +44,19 @@ export function createAuth(deps: AuthDeps) {
   const random = deps.random ?? Math.random;
   const deleteUserData = createDeleteUserData(deps.db, createLeaderboardStore(deps.redis, deps.keyPrefix));
   const isNickTaken = createNickAvailability(deps.db, deps.redis, deps.keyPrefix);
+
+  const isBannedEmail = (email: string) => isBannedIdentity(deps.db, identityHash("email", email, deps.identitySecret));
+
+  /** Solo para cuentas nuevas: un baneado con cuenta sigue pudiendo entrar (spec 4a §3.4). */
+  async function isBlockedSignUp(email: string): Promise<boolean> {
+    if (!(await isBannedEmail(email))) return false;
+    const existing = await deps.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email.trim().toLowerCase()))
+      .limit(1);
+    return existing.length === 0;
+  }
 
   const magicLinkKey = (email: string) =>
     `${deps.keyPrefix}magic-link:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;
@@ -105,9 +122,22 @@ export function createAuth(deps: AuthDeps) {
       user: {
         create: {
           // Toda cuenta nace con un nick válido y libre (spec §3.6); el jugador lo cambia en la bienvenida.
-          before: async (user) => ({
-            data: { ...user, nick: await findFreeNick(nickBase(user.email, user.name), isNickTaken, random) },
-          }),
+          before: async (user) => {
+            if (await isBannedEmail(user.email)) throw accountBlocked();
+            return { data: { ...user, nick: await findFreeNick(nickBase(user.email, user.name), isNickTaken, random) } };
+          },
+        },
+      },
+      account: {
+        create: {
+          // Google crea el usuario y la cuenta en una transacción: si esto lanza, no queda nada a medias.
+          before: async (account) => {
+            const banned =
+              account.providerId === "google" &&
+              (await isBannedIdentity(deps.db, identityHash("google", account.accountId, deps.identitySecret)));
+            if (banned) throw accountBlocked();
+            return { data: account };
+          },
         },
       },
       session: {
@@ -124,6 +154,7 @@ export function createAuth(deps: AuthDeps) {
         if (isDisposableEmail(email)) {
           throw new APIError("BAD_REQUEST", { code: "DISPOSABLE_EMAIL", message: "Disposable email addresses are not allowed" });
         }
+        if (await isBlockedSignUp(email)) throw accountBlocked();
       }),
     },
     plugins: [
@@ -150,6 +181,7 @@ export function getAuth(): Auth {
     keyPrefix: env.REDIS_KEY_PREFIX,
     sendEmail: createMailer(env, getRedis()),
     secret: env.BETTER_AUTH_SECRET,
+    identitySecret: env.IP_HASH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     onPlayerChanged: revalidatePlayerPages,
     google:

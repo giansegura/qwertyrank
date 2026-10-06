@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { periodKey } from "@/lib/leaderboard/periods";
 import { createDb } from "../db/client";
 import { accounts, bannedIdentities, moderationActions, reports, users } from "../db/schema";
@@ -104,6 +104,32 @@ describe("sanciones", () => {
       kind: "rejected",
       why: "unchanged",
     });
+  });
+
+  it("si Redis falla tras confirmar la sanción: el estado queda guardado, las páginas se revalidan y se avisa", async () => {
+    const [admin, player] = [await newUser("admin"), await newUser()];
+    const failing = createSanctions({
+      db,
+      store: {
+        ...store,
+        async remove() {
+          throw new Error("redis caído");
+        },
+      },
+      identitySecret: SECRET,
+      isNickTaken: async () => false,
+      onPlayerChanged: () => {
+        changes++;
+      },
+    });
+    const before = changes;
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(await failing.setStatus(admin.id, player.id, "shadowbanned", "trampas")).toEqual({ kind: "redis_failed" });
+    error.mockRestore();
+    const [row] = await db.select({ status: users.status }).from(users).where(eq(users.id, player.id));
+    expect(row.status).toBe("shadowbanned");
+    expect(changes).toBe(before + 1);
   });
 
   it("ban: guarda los hashes de su email y de su Google; restaurar los quita y le devuelve a los rankings", async () => {

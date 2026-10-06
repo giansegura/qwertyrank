@@ -11,7 +11,8 @@ import { identitiesOf } from "./identities";
 
 export type PlayerStatus = "active" | "shadowbanned" | "banned";
 export type SanctionRejection = "not_found" | "admin" | "self" | "unchanged";
-export type SanctionOutcome = { kind: "ok" } | { kind: "rejected"; why: SanctionRejection };
+/** `redis_failed`: PostgreSQL ya tiene la sanción, pero Redis no se actualizó (hay que ejecutar `pnpm redis:rebuild`). */
+export type SanctionOutcome = { kind: "ok" } | { kind: "redis_failed" } | { kind: "rejected"; why: SanctionRejection };
 
 export interface SanctionsDeps {
   db: Db;
@@ -84,9 +85,16 @@ export function createSanctions(deps: SanctionsDeps) {
     });
 
     // PostgreSQL ya está al día: Redis se limpia o se reescribe con sus marcas vivas.
-    if (status === "active") await deps.store.add(await liveBests(deps.db, now(), targetId));
-    else await deps.store.remove(targetId, await userBoards(deps.db, targetId));
-    deps.onPlayerChanged();
+    // Las páginas se revalidan aunque Redis falle: la sanción ya está confirmada.
+    try {
+      if (status === "active") await deps.store.add(await liveBests(deps.db, now(), targetId));
+      else await deps.store.remove(targetId, await userBoards(deps.db, targetId));
+    } catch (error) {
+      console.error("setStatus: PostgreSQL actualizado pero Redis falló", error);
+      return { kind: "redis_failed" };
+    } finally {
+      deps.onPlayerChanged();
+    }
     return { kind: "ok" };
   }
 

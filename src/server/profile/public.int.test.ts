@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
 import { createSaveGame, type GameRecord } from "../game/persist";
-import { getPublicProfile } from "./public";
+import { getOwnProfile, getPublicProfile } from "./public";
 
 const db = createDb(process.env.DATABASE_URL!);
 const saveGame = createSaveGame(db);
@@ -59,5 +59,12 @@ describe("perfil público", () => {
     expect(await getPublicProfile(db, `nadie_${randomUUID().slice(0, 6)}`)).toBeNull();
     const hidden = await newUser("shadowbanned");
     expect(await getPublicProfile(db, hidden.nick)).toBeNull();
+  });
+
+  it("el perfil propio sale aunque esté en shadow-ban", async () => {
+    const { id, nick } = await newUser("shadowbanned");
+    await saveGame(game(id));
+    expect(await getPublicProfile(db, nick)).toBeNull();
+    expect(await getOwnProfile(db, id)).toMatchObject({ nick, records: [expect.objectContaining({ language: "pt" })] });
   });
 });

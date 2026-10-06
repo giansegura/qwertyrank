@@ -154,7 +154,10 @@
     "history": "Partidas recentes",
     "noHistory": "Ainda não há partidas.",
     "board": "{language, select, en {Inglês} es {Espanhol} pt {Português} other {}} · {input, select, physical {teclado físico} touch {teclado touch} other {}}",
-    "score": "{wpm} ppm · {accuracy}%"
+    "score": "{wpm} ppm · {accuracy}%",
+    "notFoundTitle": "Jogador não encontrado",
+    "notFoundText": "Não há nenhum jogador com esse nick.",
+    "notFoundHome": "Voltar ao início"
   },
   "Email": {
     "magicLinkSubject": "Seu link para entrar no QwertyRank",

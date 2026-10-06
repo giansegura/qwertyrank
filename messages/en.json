@@ -154,7 +154,10 @@
     "history": "Recent games",
     "noHistory": "No games yet.",
     "board": "{language, select, en {English} es {Spanish} pt {Portuguese} other {}} · {input, select, physical {physical keyboard} touch {touch keyboard} other {}}",
-    "score": "{wpm} wpm · {accuracy}%"
+    "score": "{wpm} wpm · {accuracy}%",
+    "notFoundTitle": "Player not found",
+    "notFoundText": "There's no player with that nick.",
+    "notFoundHome": "Back to the start"
   },
   "Email": {
     "magicLinkSubject": "Your QwertyRank sign-in link",

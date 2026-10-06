@@ -13,7 +13,10 @@
     "test:e2e": "playwright test",
     "test:int": "vitest run --project integration",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "admin:grant": "node --conditions=react-server --import tsx scripts/admin-role.ts grant",
+    "admin:revoke": "node --conditions=react-server --import tsx scripts/admin-role.ts revoke",
+    "redis:rebuild": "node --conditions=react-server --import tsx scripts/redis-rebuild.ts"
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.7",
@@ -48,6 +51,7 @@
     "eslint-config-next": "16.3.8",
     "jsdom": "^30.1.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^8.3.2",
     "vitest": "5.0.3"

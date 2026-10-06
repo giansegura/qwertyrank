@@ -1,0 +1,78 @@
+import { randomUUID } from "node:crypto";
+import { afterAll, describe, expect, it } from "vitest";
+import { createDb } from "../db/client";
+import { users } from "../db/schema";
+import { createSaveGame } from "../game/persist";
+import { createRedis } from "../redis";
+import { rebuildLeaderboards } from "./rebuild";
+import { boardKey, currentBoard } from "./store";
+
+const db = createDb(process.env.DATABASE_URL!);
+const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
+const prefix = `${process.env.REDIS_KEY_PREFIX}rebuild-${randomUUID().slice(0, 8)}:`;
+const saveGame = createSaveGame(db);
+
+afterAll(async () => {
+  const keys = await redis.keys(`${prefix}*`);
+  if (keys.length > 0) await redis.del(...keys);
+  await db.$client.end();
+});
+
+async function playerWithGame(status: "active" | "banned"): Promise<string> {
+  const [row] = await db
+    .insert(users)
+    .values({ name: "", email: `${randomUUID()}@example.com`, nick: `rb_${randomUUID().slice(0, 8)}`, status })
+    .returning({ id: users.id });
+  const startsAt = new Date();
+  await saveGame({
+    id: randomUUID(),
+    userId: row.id,
+    anonId: randomUUID(),
+    language: "en",
+    inputType: "physical",
+    wpm: 80,
+    rawWpm: 80,
+    accuracy: 95,
+    verdict: "valid",
+    rejectReason: null,
+    ipHash: null,
+    startsAt,
+    finishedAt: startsAt,
+    batches: [],
+  });
+  return row.id;
+}
+
+describe("reconstrucción de Redis", () => {
+  it("sin --yes solo cuenta; con --yes reescribe, quita fantasmas y borra lo que sobra", async () => {
+    const player = await playerWithGame("active");
+    const banned = await playerWithGame("banned");
+    const today = boardKey(prefix, currentBoard("en", "physical", "day"));
+    await redis.zadd(today, { score: 1, member: "ghost" });
+    const stale = `${prefix}lb:en:physical:day:2020-01-01`;
+    await redis.zadd(stale, { score: 1, member: "old" });
+
+    const dryRun = await rebuildLeaderboards(db, redis, prefix, { write: false });
+    expect(dryRun.boards).toBeGreaterThan(0);
+    expect(dryRun.removed).toBeGreaterThanOrEqual(1);
+    expect(await redis.zscore(today, "ghost")).not.toBeNull();
+    expect(await redis.zscore(today, player)).toBeNull();
+
+    await rebuildLeaderboards(db, redis, prefix, { write: true });
+    expect(await redis.zscore(today, "ghost")).toBeNull();
+    expect(await redis.zscore(today, player)).not.toBeNull();
+    expect(await redis.zscore(today, banned)).toBeNull();
+    expect(await redis.exists(stale)).toBe(0);
+    expect(await redis.ttl(today)).toBeGreaterThan(0);
+  });
+
+  it("borra las claves temporales que dejó una ejecución interrumpida", async () => {
+    await playerWithGame("active");
+    const today = boardKey(prefix, currentBoard("en", "physical", "day"));
+    const leftover = `${today.replace(/day:[^:]+$/, "day:2020-01-02")}:rebuild`;
+    await redis.zadd(leftover, { score: 1, member: "half" });
+    await rebuildLeaderboards(db, redis, prefix, { write: true });
+    expect(await redis.exists(leftover)).toBe(0);
+    expect(await redis.exists(`${today}:rebuild`)).toBe(0);
+  });
+});

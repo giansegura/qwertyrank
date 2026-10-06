@@ -4,12 +4,15 @@ import { z } from "zod";
 /** Una variable vacía en `.env` (`GOOGLE_CLIENT_ID=`) cuenta como no definida. */
 const optional = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional());
 
+/** Prefijo de las claves de Redis cuando `REDIS_KEY_PREFIX` no está definida. */
+export const DEFAULT_REDIS_KEY_PREFIX = "qr:";
+
 const schema = z
   .object({
     DATABASE_URL: z.url(),
     UPSTASH_REDIS_REST_URL: z.url(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
-    REDIS_KEY_PREFIX: z.string().min(1).default("qr:"),
+    REDIS_KEY_PREFIX: z.string().min(1).default(DEFAULT_REDIS_KEY_PREFIX),
     ANON_COOKIE_SECRET: z.string().min(32),
     IP_HASH_SECRET: z.string().min(32),
     BETTER_AUTH_SECRET: z.string().min(32),

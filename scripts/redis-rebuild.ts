@@ -1,16 +1,16 @@
-import { loadEnvConfig } from "@next/env";
 import { createDb } from "@/server/db/client";
 import { rebuildLeaderboards } from "@/server/leaderboard/rebuild";
 import { createRedis } from "@/server/redis";
+import { loadScriptEnv } from "./env";
 
-/** `pnpm redis:rebuild [--yes]`: rehace los rankings de Redis desde PostgreSQL (spec 4a §6.1). */
+/** `pnpm redis:rebuild [--env <archivo>] [--yes]`: rehace los rankings de Redis desde PostgreSQL (spec 4a §6.1). */
 async function main() {
-  loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
-  const write = process.argv.includes("--yes");
-  const db = createDb(process.env.DATABASE_URL!);
-  const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
+  const { env, args } = loadScriptEnv(process.argv.slice(2));
+  const write = args.includes("--yes");
+  const db = createDb(env.databaseUrl);
+  const redis = createRedis(env.redisUrl, env.redisToken);
   try {
-    const report = await rebuildLeaderboards(db, redis, process.env.REDIS_KEY_PREFIX ?? "qr:", { write });
+    const report = await rebuildLeaderboards(db, redis, env.redisKeyPrefix, { write });
     console.log(
       write
         ? `Reescritos ${report.boards} rankings (${report.entries} marcas); borradas ${report.removed} claves sobrantes.`
@@ -22,6 +22,6 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(error);
+  console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });

@@ -157,7 +157,14 @@
     "score": "{wpm} ppm · {accuracy}%",
     "notFoundTitle": "Jogador não encontrado",
     "notFoundText": "Não há nenhum jogador com esse nick.",
-    "notFoundHome": "Voltar ao início"
+    "notFoundHome": "Voltar ao início",
+    "report": "Denunciar",
+    "reportTitle": "Por que você está denunciando {nick}?",
+    "reportReason": "{reason, select, cheating {Trapaça} offensive_nick {Nick ofensivo} other {}}",
+    "reportSend": "Enviar",
+    "reportCancel": "Cancelar",
+    "reportSent": "Obrigado, vamos analisar.",
+    "reportFailed": "Não conseguimos enviar a denúncia. Tente de novo."
   },
   "Email": {
     "magicLinkSubject": "Seu link para entrar no QwertyRank",

@@ -157,7 +157,14 @@
     "score": "{wpm} wpm · {accuracy}%",
     "notFoundTitle": "Player not found",
     "notFoundText": "There's no player with that nick.",
-    "notFoundHome": "Back to the start"
+    "notFoundHome": "Back to the start",
+    "report": "Report",
+    "reportTitle": "Why are you reporting {nick}?",
+    "reportReason": "{reason, select, cheating {Cheating} offensive_nick {Offensive nick} other {}}",
+    "reportSend": "Send",
+    "reportCancel": "Cancel",
+    "reportSent": "Thanks, we'll look into it.",
+    "reportFailed": "We couldn't send the report. Try again."
   },
   "Email": {
     "magicLinkSubject": "Your QwertyRank sign-in link",

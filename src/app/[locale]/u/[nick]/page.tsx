@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
+import { ReportButton } from "@/components/profile/report-button";
 import { ProfileView } from "@/components/profile/profile-view";
 import { redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
@@ -33,5 +34,5 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     redirect({ href: { pathname: "/u/[nick]", params: { nick: profile.nick } }, locale });
   }
 
-  return <ProfileView profile={profile} />;
+  return <ProfileView profile={profile} actions={<ReportButton nick={profile.nick} />} />;
 }

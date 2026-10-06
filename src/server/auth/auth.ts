@@ -6,7 +6,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { magicLink } from "better-auth/plugins";
-import { sql } from "drizzle-orm";
 import { createDeleteUserData } from "../account/delete-user-data";
 import { getDb, type Db } from "../db/client";
 import { accounts, passkeys, sessions, users, verifications } from "../db/schema";
@@ -16,6 +15,7 @@ import { createMailer, type SendEmail } from "../email/mailer";
 import { serverEnv } from "../env";
 import { createLeaderboardStore } from "../leaderboard/store";
 import { findFreeNick, nickBase } from "../profile/nick";
+import { createNickAvailability } from "../profile/nick-reservation";
 import { getRedis } from "../redis";
 import { isDisposableEmail } from "./disposable";
 
@@ -39,15 +39,7 @@ export interface AuthDeps {
 export function createAuth(deps: AuthDeps) {
   const random = deps.random ?? Math.random;
   const deleteUserData = createDeleteUserData(deps.db, createLeaderboardStore(deps.redis, deps.keyPrefix));
-
-  async function isNickTaken(nick: string): Promise<boolean> {
-    const rows = await deps.db
-      .select({ id: users.id })
-      .from(users)
-      .where(sql`lower(${users.nick}) = lower(${nick})`)
-      .limit(1);
-    return rows.length > 0;
-  }
+  const isNickTaken = createNickAvailability(deps.db, deps.redis, deps.keyPrefix);
 
   const magicLinkKey = (email: string) =>
     `${deps.keyPrefix}magic-link:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;

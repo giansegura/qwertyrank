@@ -13,6 +13,16 @@ export const routing = defineRouting({
       es: "/practica",
       pt: "/pratica",
     },
+    "/login": {
+      en: "/sign-in",
+      es: "/entrar",
+      pt: "/entrar",
+    },
+    "/settings": {
+      en: "/settings",
+      es: "/ajustes",
+      pt: "/configuracoes",
+    },
   },
 });
 

@@ -36,16 +36,16 @@ export type FinishOutcome =
   | { kind: "busy" | "closed" | "not_found" };
 
 export interface GameService {
-  start(input: StartRequest & { owner: string }): Promise<StartResponse>;
+  start(input: StartRequest & { owner: string; userId: string | null }): Promise<StartResponse>;
   appendKeys(input: { owner: string; gameId: string; seq: number; events: TypingEvent[] }): Promise<AppendStatus>;
   finish(input: { owner: string; gameId: string; lastSeq: number; ipHash: string | null }): Promise<FinishOutcome>;
 }
 
 export function createGameService(deps: GameServiceDeps): GameService {
   return {
-    async start({ owner, language, env }) {
+    async start({ owner, userId, language, env }) {
       const words = generateWords(await deps.loadWords(language), WORDS_PER_TEST, deps.random);
-      const game = await deps.store.create({ id: deps.newId(), owner, language, words, env, times: deps.times });
+      const game = await deps.store.create({ id: deps.newId(), owner, userId, language, words, env, times: deps.times });
       return {
         gameId: game.id,
         words: game.words,
@@ -88,6 +88,7 @@ export function createGameService(deps: GameServiceDeps): GameService {
       try {
         await deps.saveGame({
           id: gameId,
+          userId: game.userId,
           anonId: owner,
           language: game.language,
           inputType,

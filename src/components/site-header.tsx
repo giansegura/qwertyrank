@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LocaleSwitcher } from "./locale-switcher";
+import { UserMenu } from "./user-menu";
 
 export function SiteHeader() {
   const t = useTranslations("Nav");
@@ -11,9 +12,13 @@ export function SiteHeader() {
         QwertyRank
       </Link>
       <div className="flex items-center gap-3 text-sm sm:gap-6">
-        <Link href="/">{t("home")}</Link>
+        {/* En móvil el logo ya lleva a Ranked: sin este enlace, la cabecera con el menú de cuenta cabe en 360 px. */}
+        <Link href="/" className="hidden sm:inline">
+          {t("home")}
+        </Link>
         <Link href="/practice">{t("practice")}</Link>
         <LocaleSwitcher />
+        <UserMenu />
       </div>
     </header>
   );

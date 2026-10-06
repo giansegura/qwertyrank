@@ -5,7 +5,9 @@
   },
   "Nav": {
     "home": "Ranked",
-    "practice": "Prática"
+    "practice": "Prática",
+    "signIn": "Entrar",
+    "account": "Sua conta: {nick}"
   },
   "LocaleSwitcher": {
     "label": "Idioma"
@@ -45,5 +47,61 @@
     "verdictUnrecognized": "Atividade não reconhecida: esta partida não conta.",
     "verdictLetterByLetter": "No Ranked é preciso digitar letra por letra: esta partida não conta.",
     "replaced": "Você começou outra partida, então esta foi encerrada."
+  },
+  "Login": {
+    "title": "Entre no QwertyRank",
+    "intro": "Você precisa de uma conta para aparecer no ranking. Sem senhas: enviamos um link por email, ou entre com o Google ou com uma passkey.",
+    "emailLabel": "Email",
+    "sendLink": "Envie-me um link para entrar",
+    "sentTitle": "Confira seu email",
+    "sentBody": "Enviamos um link para {email}. Abra-o neste mesmo dispositivo para entrar aqui. Ele expira em 10 minutos.",
+    "google": "Continuar com o Google",
+    "passkey": "Entrar com uma passkey",
+    "errorDisposable": "Emails temporários não são permitidos. Use seu email habitual.",
+    "errorThrottled": "Acabamos de enviar um link. Espere um minuto antes de pedir outro.",
+    "errorFailed": "Algo deu errado. Tente novamente em instantes.",
+    "errorLinkInvalid": "Esse link expirou ou já foi usado. Peça um novo.",
+    "errorPasskey": "Não foi possível entrar com uma passkey. Primeiro adicione uma nas configurações da sua conta."
+  },
+  "Settings": {
+    "title": "Sua conta",
+    "welcomeTitle": "Boas-vindas ao QwertyRank!",
+    "welcomeIntro": "Este é o nick com que você vai aparecer no ranking. Mude se quiser e adicione seu país (opcional).",
+    "nickLabel": "Nick",
+    "nickHelp": "De 3 a 20 letras, números ou _.",
+    "countryLabel": "País",
+    "noCountry": "Sem país",
+    "save": "Salvar",
+    "saveAndContinue": "Salvar e continuar",
+    "saved": "Salvo.",
+    "errorNickTaken": "Esse nick já está em uso. Tente outro.",
+    "errorNickInvalid": "Use de 3 a 20 letras, números ou _.",
+    "errorNickProfane": "Esse nick não é permitido. Escolha outro.",
+    "errorCountry": "Escolha um país da lista.",
+    "errorSave": "Não foi possível salvar as alterações. Tente novamente.",
+    "passkeysTitle": "Passkeys",
+    "passkeysIntro": "Entre com sua digital, seu rosto ou o bloqueio de tela em vez de um link por email.",
+    "noPasskeys": "Você ainda não adicionou nenhuma passkey.",
+    "passkeyAdd": "Adicionar uma passkey",
+    "passkeyAdded": "Passkey adicionada.",
+    "passkeyUnnamed": "Passkey",
+    "passkeyCreated": "adicionada em {date}",
+    "passkeyDelete": "Remover",
+    "errorPasskeyAdd": "Não foi possível adicionar a passkey. Tente novamente.",
+    "accountTitle": "Sessão e conta",
+    "signOut": "Sair",
+    "deleteAccount": "Excluir minha conta",
+    "deleteWarning": "Sua conta, seu nick e suas marcas são excluídos para sempre e você desaparece de todos os rankings. Não dá para desfazer.",
+    "deleteConfirm": "Sim, excluir para sempre",
+    "deleteCancel": "Cancelar",
+    "errorDelete": "Não foi possível excluir sua conta. Tente novamente.",
+    "reauthMessage": "Por segurança, entre novamente para fazer isso.",
+    "reauthButton": "Entrar novamente"
+  },
+  "Email": {
+    "magicLinkSubject": "Seu link para entrar no QwertyRank",
+    "magicLinkIntro": "Use este link para entrar no QwertyRank. Ele expira em 10 minutos e só funciona uma vez.",
+    "magicLinkButton": "Entrar no QwertyRank",
+    "magicLinkIgnore": "Se você não pediu este email, pode ignorá-lo."
   }
 }

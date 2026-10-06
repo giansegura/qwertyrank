@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { createDb } from "./client";
-import { games, keystrokeLogs } from "./schema";
+import { games, keystrokeLogs, users } from "./schema";
 
 const db = createDb(process.env.DATABASE_URL!);
 
@@ -21,6 +22,10 @@ function game() {
     startsAt: new Date(),
     finishedAt: new Date(),
   };
+}
+
+function user(nick: string) {
+  return { name: "", email: `${randomUUID()}@example.com`, nick };
 }
 
 describe("esquema de la base de datos", () => {
@@ -46,5 +51,25 @@ describe("esquema de la base de datos", () => {
     await expect(db.insert(keystrokeLogs).values({ gameId: randomUUID(), events: Buffer.from("x") })).rejects.toMatchObject({
       cause: { constraint_name: "keystroke_logs_game_id_games_id_fk" },
     });
+  });
+
+  it("el nick es único sin distinguir mayúsculas", async () => {
+    const nick = `Nick_${randomUUID().slice(0, 8)}`;
+    await db.insert(users).values(user(nick));
+    await expect(db.insert(users).values(user(nick.toLowerCase()))).rejects.toMatchObject({
+      cause: { constraint_name: "users_nick_lower_idx" },
+    });
+  });
+
+  it("al borrar un usuario, sus partidas se quedan sin usuario", async () => {
+    const [created] = await db
+      .insert(users)
+      .values(user(`u_${randomUUID().slice(0, 8)}`))
+      .returning({ id: users.id });
+    const row = { ...game(), userId: created.id };
+    await db.insert(games).values(row);
+    await db.delete(users).where(eq(users.id, created.id));
+    const [after] = await db.select({ userId: games.userId }).from(games).where(eq(games.id, row.id));
+    expect(after.userId).toBeNull();
   });
 });

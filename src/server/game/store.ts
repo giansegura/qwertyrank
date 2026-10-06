@@ -23,6 +23,7 @@ export interface GameTimes {
 export interface NewGame {
   id: string;
   owner: string;
+  userId: string | null;
   language: TestLanguage;
   words: readonly string[];
   env: ClientEnv;
@@ -32,6 +33,7 @@ export interface NewGame {
 export interface StoredGame {
   id: string;
   owner: string;
+  userId: string | null;
   language: TestLanguage;
   words: string[];
   env: ClientEnv;
@@ -72,7 +74,7 @@ const CREATE = `${NOW_MS}
 local startsAt = now + tonumber(ARGV[6])
 local deadline = startsAt + tonumber(ARGV[7]) + tonumber(ARGV[8])
 redis.call('HSET', KEYS[1],
-  'owner', ARGV[2], 'language', ARGV[3], 'words', ARGV[4], 'env', ARGV[5], 'durationMs', ARGV[7],
+  'owner', ARGV[2], 'userId', ARGV[10], 'language', ARGV[3], 'words', ARGV[4], 'env', ARGV[5], 'durationMs', ARGV[7],
   'issuedAt', string.format('%.0f', now), 'startsAt', string.format('%.0f', startsAt),
   'deadline', string.format('%.0f', deadline), 'lastSeq', '0', 'status', 'active')
 redis.call('EXPIRE', KEYS[1], ARGV[9])
@@ -129,6 +131,7 @@ function parseGame(id: string, flat: string[]): StoredGame {
   return {
     id,
     owner: field("owner"),
+    userId: field("userId") || null,
     language: field("language") as TestLanguage,
     words: JSON.parse(field("words")),
     env: JSON.parse(field("env")),
@@ -154,14 +157,16 @@ function parseBatch(entry: string): StoredBatch {
 export function createGameStore(redis: Redis, prefix: string): GameStore {
   const gameKey = (id: string) => `${prefix}game:${id}`;
   const eventsKey = (id: string) => `${prefix}game:${id}:events`;
-  const activeKey = (owner: string) => `${prefix}owner:${owner}:active`;
+  // Una sola partida activa por jugador (spec §4.2): por usuario si tiene sesión; si no, por navegador.
+  const activeKey = (game: Pick<NewGame, "owner" | "userId">) =>
+    `${prefix}active:${game.userId ? `user:${game.userId}` : `anon:${game.owner}`}`;
 
   return {
     async create(game) {
       const { countdownMs, durationMs, graceMs } = game.times;
       const [issuedAt, previous] = (await redis.eval(
         CREATE,
-        [gameKey(game.id), activeKey(game.owner)],
+        [gameKey(game.id), activeKey(game)],
         [
           game.id,
           game.owner,
@@ -172,6 +177,7 @@ export function createGameStore(redis: Redis, prefix: string): GameStore {
           String(durationMs),
           String(graceMs),
           String(GAME_TTL_SECONDS),
+          game.userId ?? "",
         ],
       )) as [string, string];
       if (previous && previous !== game.id) await redis.eval(ABANDON, [gameKey(previous)], []);
@@ -179,6 +185,7 @@ export function createGameStore(redis: Redis, prefix: string): GameStore {
       return {
         id: game.id,
         owner: game.owner,
+        userId: game.userId,
         language: game.language,
         words: [...game.words],
         env: game.env,

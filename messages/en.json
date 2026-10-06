@@ -5,7 +5,9 @@
   },
   "Nav": {
     "home": "Ranked",
-    "practice": "Practice"
+    "practice": "Practice",
+    "signIn": "Sign in",
+    "account": "Your account: {nick}"
   },
   "LocaleSwitcher": {
     "label": "Language"
@@ -45,5 +47,61 @@
     "verdictUnrecognized": "Unrecognized activity: this game doesn't count.",
     "verdictLetterByLetter": "In Ranked you have to type letter by letter: this game doesn't count.",
     "replaced": "You started another game, so this one was closed."
+  },
+  "Login": {
+    "title": "Sign in to QwertyRank",
+    "intro": "You need an account to appear in the rankings. No passwords: we email you a link, or use Google or a passkey.",
+    "emailLabel": "Email",
+    "sendLink": "Email me a sign-in link",
+    "sentTitle": "Check your email",
+    "sentBody": "We sent a link to {email}. Open it on this device to sign in here. It expires in 10 minutes.",
+    "google": "Continue with Google",
+    "passkey": "Sign in with a passkey",
+    "errorDisposable": "Temporary email addresses aren't allowed. Use your usual email.",
+    "errorThrottled": "We just sent you a link. Wait a minute before asking for another one.",
+    "errorFailed": "Something went wrong. Try again in a moment.",
+    "errorLinkInvalid": "That link has expired or was already used. Ask for a new one.",
+    "errorPasskey": "We couldn't sign you in with a passkey. Add one from your account settings first."
+  },
+  "Settings": {
+    "title": "Your account",
+    "welcomeTitle": "Welcome to QwertyRank!",
+    "welcomeIntro": "This is the nick you'll have in the rankings. Change it if you like and add your country (optional).",
+    "nickLabel": "Nick",
+    "nickHelp": "3–20 letters, numbers or _.",
+    "countryLabel": "Country",
+    "noCountry": "No country",
+    "save": "Save",
+    "saveAndContinue": "Save and continue",
+    "saved": "Saved.",
+    "errorNickTaken": "That nick is taken. Try another one.",
+    "errorNickInvalid": "Use 3–20 letters, numbers or _.",
+    "errorNickProfane": "That nick isn't allowed. Choose another one.",
+    "errorCountry": "Choose a country from the list.",
+    "errorSave": "We couldn't save your changes. Try again.",
+    "passkeysTitle": "Passkeys",
+    "passkeysIntro": "Sign in with your fingerprint, face or screen lock instead of an email link.",
+    "noPasskeys": "You haven't added any passkeys yet.",
+    "passkeyAdd": "Add a passkey",
+    "passkeyAdded": "Passkey added.",
+    "passkeyUnnamed": "Passkey",
+    "passkeyCreated": "added on {date}",
+    "passkeyDelete": "Remove",
+    "errorPasskeyAdd": "We couldn't add the passkey. Try again.",
+    "accountTitle": "Session and account",
+    "signOut": "Sign out",
+    "deleteAccount": "Delete my account",
+    "deleteWarning": "Your account, nick and records are deleted for good and you disappear from every ranking. This can't be undone.",
+    "deleteConfirm": "Yes, delete it forever",
+    "deleteCancel": "Cancel",
+    "errorDelete": "We couldn't delete your account. Try again.",
+    "reauthMessage": "For your security, sign in again to do this.",
+    "reauthButton": "Sign in again"
+  },
+  "Email": {
+    "magicLinkSubject": "Your QwertyRank sign-in link",
+    "magicLinkIntro": "Use this link to sign in to QwertyRank. It expires in 10 minutes and works only once.",
+    "magicLinkButton": "Sign in to QwertyRank",
+    "magicLinkIgnore": "If you didn't ask for this email, you can ignore it."
   }
 }

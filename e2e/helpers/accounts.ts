@@ -76,6 +76,34 @@ export async function verdictsOf(userId: string): Promise<string[]> {
   return rows.map((row) => row.verdict);
 }
 
+/** Cambia el rol de una cuenta directamente en la base de datos. */
+export async function setRole(email: string, role: "user" | "admin"): Promise<void> {
+  await db()`update users set role = ${role} where email = ${email}`;
+}
+
+/** Cambia el estado de una cuenta directamente en la base de datos (sin pasar por el panel). */
+export async function setStatus(email: string, status: "active" | "shadowbanned" | "banned"): Promise<void> {
+  await db()`update users set status = ${status} where email = ${email}`;
+}
+
+/**
+ * Un jugador con la mejor marca de siempre en inglés y teclado físico, sin jugar: el top de un ranking
+ * se lee de PostgreSQL, así que basta con su partida y su `period_bests`.
+ */
+export async function seedRankedPlayer(nick: string): Promise<string> {
+  const [user] = await db()<{ id: string }[]>`
+    insert into users (name, email, nick) values ('', ${`${nick}@example.com`}, ${nick}) returning id`;
+  const gameId = crypto.randomUUID();
+  const now = new Date();
+  await db()`
+    insert into games (id, user_id, anon_id, language, input_type, wpm, raw_wpm, accuracy, verdict, starts_at, finished_at)
+    values (${gameId}, ${user.id}, ${crypto.randomUUID()}, 'en', 'physical', 250, 250, 99, 'valid', ${now}, ${now})`;
+  await db()`
+    insert into period_bests (user_id, language, input_type, period_type, period_key, game_id, wpm, accuracy, score, achieved_at)
+    values (${user.id}, 'en', 'physical', 'all', 'all', ${gameId}, 250, 99, ${Number.MAX_SAFE_INTEGER}, ${now})`;
+  return user.id;
+}
+
 export async function closeDb(): Promise<void> {
   const open = client;
   client = null;

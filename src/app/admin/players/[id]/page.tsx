@@ -37,6 +37,7 @@ const ERROR: Record<string, string> = {
   unchanged: "El jugador ya tenía ese estado.",
   not_found: "El jugador no existe.",
   invalid: "Falta el motivo o no es válido (de 1 a 500 caracteres).",
+  redis: "Estado guardado, pero Redis no se ha actualizado: ejecuta pnpm redis:rebuild.",
 };
 const STATUS_BUTTONS = [
   { status: "shadowbanned", label: "Shadow-ban" },
@@ -59,7 +60,9 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
   const player = await playerDetail(getDb(), id);
   if (!player) notFound();
   const { done, error } = await searchParams;
-  const notice = error ? ERROR[error] : done ? DONE[done] : undefined;
+  // `Object.hasOwn`: `?error=constructor` no debe devolver algo del prototipo.
+  const notice =
+    error && Object.hasOwn(ERROR, error) ? ERROR[error] : done && Object.hasOwn(DONE, done) ? DONE[done] : undefined;
 
   return (
     <>

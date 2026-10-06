@@ -1,15 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { requireAdmin } from "@/server/moderation/admin";
 import { getSanctions } from "@/server/moderation/instance";
-
-const playerId = z.uuid();
-const reason = z.string().trim().min(1).max(500);
-const statusInput = z.object({ playerId, reason, status: z.enum(["active", "shadowbanned", "banned"]) });
-const nickInput = z.object({ playerId, reason });
-const dismissInput = z.object({ playerId });
+import { dismissInput, nickInput, statusInput } from "./schemas";
 
 /** Solo los campos de texto del formulario (Next añade los suyos; Zod los ignora). */
 const fields = (formData: FormData) =>
@@ -25,7 +19,9 @@ export async function setStatusAction(formData: FormData): Promise<void> {
   if (!input.success) redirect(`${playerPath(formData.get("playerId"))}?error=invalid`);
   const { playerId: id, status, reason: why } = input.data;
   const outcome = await getSanctions().setStatus(admin.id, id, status, why);
-  redirect(`/admin/players/${id}?${outcome.kind === "ok" ? `done=${status}` : `error=${outcome.why}`}`);
+  const query =
+    outcome.kind === "ok" ? `done=${status}` : outcome.kind === "redis_failed" ? "error=redis" : `error=${outcome.why}`;
+  redirect(`/admin/players/${id}?${query}`);
 }
 
 export async function resetNickAction(formData: FormData): Promise<void> {
@@ -33,7 +29,9 @@ export async function resetNickAction(formData: FormData): Promise<void> {
   const input = nickInput.safeParse(fields(formData));
   if (!input.success) redirect(`${playerPath(formData.get("playerId"))}?error=invalid`);
   const outcome = await getSanctions().resetNick(admin.id, input.data.playerId, input.data.reason);
-  redirect(`/admin/players/${input.data.playerId}?${outcome.kind === "ok" ? "done=nick" : `error=${outcome.why}`}`);
+  // `resetNick` no toca Redis: nunca devuelve `redis_failed`.
+  const query = outcome.kind === "rejected" ? `error=${outcome.why}` : "done=nick";
+  redirect(`/admin/players/${input.data.playerId}?${query}`);
 }
 
 export async function dismissReportsAction(formData: FormData): Promise<void> {

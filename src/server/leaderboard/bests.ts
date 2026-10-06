@@ -72,3 +72,16 @@ export function isBoard(board: Board): SQL {
     eq(periodBests.periodKey, board.key),
   )!;
 }
+
+/** Rankings en los que tiene marca un jugador (todos sus `period_bests`), para sacarle de Redis. */
+export async function userBoards(db: DbExecutor, userId: string): Promise<Board[]> {
+  return db
+    .select({
+      language: periodBests.language,
+      inputType: periodBests.inputType,
+      period: periodBests.periodType,
+      key: periodBests.periodKey,
+    })
+    .from(periodBests)
+    .where(eq(periodBests.userId, userId));
+}

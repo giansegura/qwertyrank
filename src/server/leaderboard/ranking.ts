@@ -115,6 +115,14 @@ export function createRanking(deps: RankingDeps) {
       await deps.store.add((await bestsFor(userId, game, keys)).map(toEntry));
       listed = await positions();
     }
+    // Si le han sancionado o ha borrado la cuenta mientras tanto, se deshace lo escrito (spec 4a §3.5):
+    // si la sanción llegó antes de esta lectura, limpia la partida; si llega después, limpia la sanción.
+    if (!(await isActive(userId))) {
+      await deps.store.remove(
+        userId,
+        PERIODS.map((period) => ({ language: game.language, inputType: game.inputType, period, key: keys[period] })),
+      );
+    }
     const ranks = await ranksFor(boards, async (board, index) => listed[index] ?? deps.store.positionFor(board, score));
     const changes = boards
       .filter((board) => improved.includes(board.period) && (ranks[board.period] ?? Infinity) <= TOP_SIZE)

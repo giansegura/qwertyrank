@@ -171,5 +171,8 @@
     "magicLinkIntro": "Usa este enlace para entrar en QwertyRank. Caduca en 10 minutos y solo funciona una vez.",
     "magicLinkButton": "Entrar en QwertyRank",
     "magicLinkIgnore": "Si no has pedido este email, puedes ignorarlo."
+  },
+  "Verification": {
+    "canvasLabel": "Texto que hay que teclear, en una imagen"
   }
 }

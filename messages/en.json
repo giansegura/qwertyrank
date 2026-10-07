@@ -171,5 +171,8 @@
     "magicLinkIntro": "Use this link to sign in to QwertyRank. It expires in 10 minutes and works only once.",
     "magicLinkButton": "Sign in to QwertyRank",
     "magicLinkIgnore": "If you didn't ask for this email, you can ignore it."
+  },
+  "Verification": {
+    "canvasLabel": "Text to type, shown as an image"
   }
 }

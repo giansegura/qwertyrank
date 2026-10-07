@@ -1,7 +1,7 @@
 import { memo } from "react";
+import { letterStatus, type LetterStatus, type WordState } from "./letter-status";
 
-export type WordState = "done" | "active" | "pending";
-type LetterStatus = "pending" | "correct" | "incorrect" | "extra" | "missed";
+export type { WordState };
 
 const LETTER_CLASS: Record<LetterStatus, string> = {
   pending: "text-zinc-400 dark:text-zinc-500",
@@ -16,12 +16,6 @@ interface WordProps {
   target: string;
   typed: string;
   state: WordState;
-}
-
-function letterStatus(expected: string | undefined, actual: string | undefined, state: WordState): LetterStatus {
-  if (actual === undefined) return state === "done" ? "missed" : "pending";
-  if (expected === undefined) return "extra";
-  return actual === expected ? "correct" : "incorrect";
 }
 
 /** Una palabra del texto. Memoizada: al teclear solo se vuelve a pintar la palabra activa. */

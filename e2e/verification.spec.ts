@@ -27,14 +27,17 @@ test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": randomClientIp() });
 });
 
-/** Crea una cuenta en inglés, guarda la bienvenida y vuelve a la portada. Devuelve su id. */
+/**
+ * Crea una cuenta en inglés, guarda la bienvenida y vuelve a la portada. Devuelve su id. La cuenta se
+ * apunta para borrarla en cuanto existe: si falla la bienvenida, tampoco se queda en la base de datos.
+ */
 async function newAccount(page: Page, nick?: string): Promise<string> {
   const email = await signUp(page, "en");
+  const userId = (await userIdByEmail(email))!;
+  created.push(userId);
   if (nick) await page.getByTestId("profile-nick").fill(nick);
   await page.getByTestId("profile-save").click();
   await expect(page).toHaveURL((url) => url.pathname === "/en");
-  const userId = (await userIdByEmail(email))!;
-  created.push(userId);
   return userId;
 }
 

@@ -6,13 +6,16 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { PERIODS } from "../../lib/leaderboard/periods";
+import { REPORT_REASONS } from "../../lib/reports";
 import { users } from "./auth-schema";
 
 export * from "./auth-schema";
@@ -91,5 +94,79 @@ export const periodBests = pgTable(
       table.score.desc(),
     ),
     check("period_bests_period_type_check", sql`${table.periodType} in ('day', 'week', 'month', 'year', 'all')`),
+  ],
+);
+
+export const REPORT_STATUSES = ["open", "dismissed", "actioned"] as const;
+export const MODERATION_ACTIONS = ["shadowban", "ban", "restore", "reset_nick", "grant_admin", "revoke_admin"] as const;
+export const IDENTITY_KINDS = ["email", "google"] as const;
+
+/**
+ * Denuncias de jugadores (spec 4a §4). Una sola abierta por denunciante, denunciado y motivo. Si el
+ * denunciado borra su cuenta, sus denuncias desaparecen; si la borra el denunciante, quedan sin él.
+ */
+export const reports = pgTable(
+  "reports",
+  {
+    id: uuid("id").default(sql`gen_random_uuid()`).primaryKey(),
+    reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
+    targetUserId: uuid("target_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason", { enum: REPORT_REASONS }).notNull(),
+    status: text("status", { enum: REPORT_STATUSES }).notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolvedBy: uuid("resolved_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    uniqueIndex("reports_open_unique_idx")
+      .on(table.reporterId, table.targetUserId, table.reason)
+      .where(sql`${table.status} = 'open'`),
+    // La cola del panel: denuncias abiertas agrupadas por denunciado.
+    index("reports_status_target_idx").on(table.status, table.targetUserId),
+    check("reports_reason_check", sql`${table.reason} in ('cheating', 'offensive_nick')`),
+    check("reports_status_check", sql`${table.status} in ('open', 'dismissed', 'actioned')`),
+  ],
+);
+
+/** Registro de cada acción de moderación (spec §4.7). Sin `admin_id` cuando la hace un script. */
+export const moderationActions = pgTable(
+  "moderation_actions",
+  {
+    id: uuid("id").default(sql`gen_random_uuid()`).primaryKey(),
+    adminId: uuid("admin_id").references(() => users.id, { onDelete: "set null" }),
+    targetUserId: uuid("target_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    action: text("action", { enum: MODERATION_ACTIONS }).notNull(),
+    reason: text("reason").notNull(),
+    details: jsonb("details").$type<Record<string, string>>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("moderation_actions_target_idx").on(table.targetUserId, table.createdAt),
+    check(
+      "moderation_actions_action_check",
+      sql`${table.action} in ('shadowban', 'ban', 'restore', 'reset_nick', 'grant_admin', 'revoke_admin')`,
+    ),
+  ],
+);
+
+/**
+ * Identidades de cuentas baneadas (spec 4a §3.3): HMAC del email normalizado o de la cuenta de Google.
+ * Sobreviven al borrado de la cuenta (`user_id` pasa a NULL): es lo que impide volver.
+ */
+export const bannedIdentities = pgTable(
+  "banned_identities",
+  {
+    hash: text("hash").primaryKey(),
+    kind: text("kind", { enum: IDENTITY_KINDS }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("banned_identities_user_idx").on(table.userId),
+    check("banned_identities_kind_check", sql`${table.kind} in ('email', 'google')`),
   ],
 );

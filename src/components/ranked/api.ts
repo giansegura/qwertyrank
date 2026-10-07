@@ -5,6 +5,8 @@ export class GameApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
+    /** Segundos que faltan, en `rate_limited` (spec 4a §2). */
+    readonly retryAfter: number | null = null,
   ) {
     super(`${status} ${code}`);
   }
@@ -24,8 +26,9 @@ async function post<T>(path: string, body: unknown): Promise<T> {
       signal: controller.signal,
     });
     if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new GameApiError(response.status, data.error ?? "unknown");
+      const data = (await response.json().catch(() => ({}))) as { error?: string; retryAfter?: unknown };
+      const retryAfter = typeof data.retryAfter === "number" ? data.retryAfter : null;
+      throw new GameApiError(response.status, data.error ?? "unknown", retryAfter);
     }
     return (await response.json()) as T;
   } finally {

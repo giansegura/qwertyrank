@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authClient } from "@/lib/auth-client";
 import { navigateTo } from "@/lib/navigate";
 import { renderWithIntl } from "@/test/render-with-intl";
-import { LoginForm } from "./login-form";
+import { LoginForm, messageForCallbackError } from "./login-form";
 
 vi.mock("@/lib/auth-client", () => ({
   authClient: { signIn: { magicLink: vi.fn(), passkey: vi.fn(), social: vi.fn() } },
@@ -75,5 +75,13 @@ describe("LoginForm", () => {
     expect(screen.queryByTestId("login-google")).toBeNull();
     renderForm({ googleEnabled: true });
     expect(screen.getByTestId("login-google")).toBeInTheDocument();
+  });
+
+  it("una cuenta bloqueada lo dice, al pedir el enlace y al volver del enlace", async () => {
+    magicLink.mockResolvedValue({ data: null, error: { code: "ACCOUNT_BLOCKED" } } as never);
+    renderForm();
+    askForLink("ana@example.com");
+    expect(await screen.findByTestId("login-error")).toHaveTextContent("This account can't be created.");
+    expect(messageForCallbackError("ACCOUNT_BLOCKED")).toBe("errorBlocked");
   });
 });

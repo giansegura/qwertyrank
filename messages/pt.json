@@ -56,7 +56,11 @@
     "saveIt": "Salvar",
     "saveHint": "Entre nos próximos 10 minutos e esta partida vai contar no ranking.",
     "lowAccuracy": "Para entrar no ranking você precisa de pelo menos 90% de precisão.",
-    "rankingUnavailable": "O ranking está temporariamente indisponível: agora não conseguimos mostrar sua posição."
+    "rankingUnavailable": "O ranking está temporariamente indisponível: agora não conseguimos mostrar sua posição.",
+    "challenge": "Verificando se você é humano…",
+    "challengeFailed": "Não conseguimos verificar se você é humano. Tente de novo.",
+    "banned": "Sua conta não pode jogar partidas com ranking.",
+    "rateLimited": "Você jogou muitas partidas na última hora. Volte em {minutes} min."
   },
   "Login": {
     "title": "Entre no QwertyRank",
@@ -69,6 +73,7 @@
     "passkey": "Entrar com uma passkey",
     "errorDisposable": "Emails temporários não são permitidos. Use seu email habitual.",
     "errorThrottled": "Acabamos de enviar um link. Espere um minuto antes de pedir outro.",
+    "errorBlocked": "Não é possível criar a conta.",
     "errorFailed": "Algo deu errado. Tente novamente em instantes.",
     "errorLinkInvalid": "Esse link expirou ou já foi usado. Peça um novo.",
     "errorPasskey": "Não foi possível entrar com uma passkey. Primeiro adicione uma nas configurações da sua conta."
@@ -149,7 +154,17 @@
     "history": "Partidas recentes",
     "noHistory": "Ainda não há partidas.",
     "board": "{language, select, en {Inglês} es {Espanhol} pt {Português} other {}} · {input, select, physical {teclado físico} touch {teclado touch} other {}}",
-    "score": "{wpm} ppm · {accuracy}%"
+    "score": "{wpm} ppm · {accuracy}%",
+    "notFoundTitle": "Jogador não encontrado",
+    "notFoundText": "Não há nenhum jogador com esse nick.",
+    "notFoundHome": "Voltar ao início",
+    "report": "Denunciar",
+    "reportTitle": "Por que você está denunciando {nick}?",
+    "reportReason": "{reason, select, cheating {Trapaça} offensive_nick {Nick ofensivo} other {}}",
+    "reportSend": "Enviar",
+    "reportCancel": "Cancelar",
+    "reportSent": "Obrigado, vamos analisar.",
+    "reportFailed": "Não conseguimos enviar a denúncia. Tente de novo."
   },
   "Email": {
     "magicLinkSubject": "Seu link para entrar no QwertyRank",

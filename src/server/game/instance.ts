@@ -5,11 +5,14 @@ import { loadWordList } from "@/lib/words/load";
 import { getDb } from "../db/client";
 import { serverEnv } from "../env";
 import { getRanking } from "../leaderboard/instance";
+import { createRateLimiter } from "../rate-limit";
 import { getRedis } from "../redis";
 import { createClaimGame } from "./claim";
 import { createSaveGame } from "./persist";
 import { createGameService, type GameService } from "./service";
+import { createStartGate, type StartGate } from "./start-gate";
 import { createGameStore } from "./store";
+import { createTurnstileVerifier } from "./turnstile";
 
 /** Cuenta atrás de 3 s, 30 s de partida y 3 s de margen para la latencia (spec §3.4 y §4.2). */
 export const RANKED_TIMES = { countdownMs: 3_000, durationMs: OFFICIAL_DURATION_MS, graceMs: 3_000 };
@@ -38,4 +41,19 @@ let claim: ReturnType<typeof createClaimGame> | null = null;
 export function claimGame(): ReturnType<typeof createClaimGame> {
   claim ??= createClaimGame({ db: getDb(), rankGame: (game) => getRanking().rankGame(game) });
   return claim;
+}
+
+let gate: StartGate | null = null;
+
+export function startGate(): StartGate {
+  if (gate) return gate;
+  const env = serverEnv();
+  gate = createStartGate({
+    db: getDb(),
+    limit: createRateLimiter(getRedis(), env.REDIS_KEY_PREFIX),
+    verifyTurnstile: env.TURNSTILE_SECRET_KEY ? createTurnstileVerifier(env.TURNSTILE_SECRET_KEY) : null,
+    passSecret: env.ANON_COOKIE_SECRET,
+    ipSecret: env.IP_HASH_SECRET,
+  });
+  return gate;
 }

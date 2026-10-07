@@ -5,6 +5,7 @@ const PORT = 3100;
 export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -21,7 +22,12 @@ export default defineConfig({
     url: `http://localhost:${PORT}/en`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    // Playwright lo mezcla con process.env: solo cambia la URL pública de Better Auth.
-    env: { BETTER_AUTH_URL: `http://localhost:${PORT}` },
+    // Playwright lo mezcla con process.env. Claves de prueba de Cloudflare (spec 4a §2.2): el widget
+    // invisible siempre aprueba y `siteverify` siempre acepta. La del sitio se fija en el build.
+    env: {
+      BETTER_AUTH_URL: `http://localhost:${PORT}`,
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000BB",
+      TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA",
+    },
   },
 });

@@ -56,7 +56,11 @@
     "saveIt": "Save it",
     "saveHint": "Sign in within 10 minutes and this game counts on the ranking.",
     "lowAccuracy": "To enter the ranking you need at least 90% accuracy.",
-    "rankingUnavailable": "The ranking is temporarily unavailable, so we can't show your position right now."
+    "rankingUnavailable": "The ranking is temporarily unavailable, so we can't show your position right now.",
+    "challenge": "Checking that you're human…",
+    "challengeFailed": "We couldn't check that you're human. Try again.",
+    "banned": "Your account can't play ranked games.",
+    "rateLimited": "You've played a lot of games in the last hour. Come back in {minutes} min."
   },
   "Login": {
     "title": "Sign in to QwertyRank",
@@ -69,6 +73,7 @@
     "passkey": "Sign in with a passkey",
     "errorDisposable": "Temporary email addresses aren't allowed. Use your usual email.",
     "errorThrottled": "We just sent you a link. Wait a minute before asking for another one.",
+    "errorBlocked": "This account can't be created.",
     "errorFailed": "Something went wrong. Try again in a moment.",
     "errorLinkInvalid": "That link has expired or was already used. Ask for a new one.",
     "errorPasskey": "We couldn't sign you in with a passkey. Add one from your account settings first."
@@ -149,7 +154,17 @@
     "history": "Recent games",
     "noHistory": "No games yet.",
     "board": "{language, select, en {English} es {Spanish} pt {Portuguese} other {}} · {input, select, physical {physical keyboard} touch {touch keyboard} other {}}",
-    "score": "{wpm} wpm · {accuracy}%"
+    "score": "{wpm} wpm · {accuracy}%",
+    "notFoundTitle": "Player not found",
+    "notFoundText": "There's no player with that nick.",
+    "notFoundHome": "Back to the start",
+    "report": "Report",
+    "reportTitle": "Why are you reporting {nick}?",
+    "reportReason": "{reason, select, cheating {Cheating} offensive_nick {Offensive nick} other {}}",
+    "reportSend": "Send",
+    "reportCancel": "Cancel",
+    "reportSent": "Thanks, we'll look into it.",
+    "reportFailed": "We couldn't send the report. Try again."
   },
   "Email": {
     "magicLinkSubject": "Your QwertyRank sign-in link",

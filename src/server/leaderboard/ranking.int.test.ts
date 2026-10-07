@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Verdict } from "@/lib/game/types";
 import { periodKey } from "@/lib/leaderboard/periods";
@@ -188,5 +189,20 @@ describe("ranking de una partida", () => {
     expect(await store.position({ ...TODAY, key: periodKey("day", startsAt) }, player)).toBe(1);
     expect(changes.flat().map((change) => change.period)).not.toContain("day");
     expect(await play(null, 500, { startsAt, using: late })).toMatchObject({ kind: "would_rank", ranks: { week: 1 } });
+  });
+
+  it("si le sancionan mientras se escribe su partida, no se queda en Redis", async () => {
+    const player = await newUser();
+    // La sanción llega justo después de escribir en Redis y antes de la comprobación final.
+    const sanctionedMidway: LeaderboardStore = {
+      ...store,
+      async add(entries) {
+        await store.add(entries);
+        await db.update(users).set({ status: "shadowbanned" }).where(eq(users.id, player));
+      },
+    };
+    const racing = createRanking({ db, store: sanctionedMidway, onTopChanged: () => {} });
+    await play(player, 160, { using: racing });
+    expect(await store.position(TODAY, player)).toBeNull();
   });
 });

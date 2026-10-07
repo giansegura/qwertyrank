@@ -4,7 +4,8 @@ import { expect, type Page } from "@playwright/test";
 export async function startRanked(page: Page, locale: "en" | "es" | "pt" = "en"): Promise<string[]> {
   await page.goto(`/${locale}`);
   await page.getByTestId("ranked-start").click();
-  await expect(page.getByTestId("countdown")).toBeVisible();
+  // Turnstile añade una ida y vuelta antes de que empiece la cuenta atrás.
+  await expect(page.getByTestId("countdown")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("word").first()).toBeVisible({ timeout: 5_000 });
   return page
     .getByTestId("word")

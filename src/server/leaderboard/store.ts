@@ -38,6 +38,13 @@ const DAY_SECONDS = 86_400;
 /** Spec §5.4: los de día caducan a los 8 días y los de semana a las 6 semanas; mes, año y siempre, nunca. */
 const TTL_DAYS: Partial<Record<Period, number>> = { day: 8, week: 42 };
 
+/** Cuándo caduca un ranking (segundos Unix), desde el inicio de su periodo; `null` si nunca (spec §5.4). */
+export function boardExpiresAt(period: Period, achievedAt: Date): number | null {
+  const days = TTL_DAYS[period];
+  const start = periodStart(period, achievedAt);
+  return days && start ? Math.floor(start.getTime() / 1000) + days * DAY_SECONDS : null;
+}
+
 export function boardKey(prefix: string, board: Board): string {
   return `${prefix}lb:${board.language}:${board.inputType}:${board.period}:${board.key}`;
 }
@@ -52,9 +59,8 @@ export function createLeaderboardStore(redis: Redis, prefix: string): Leaderboar
       for (const { board, userId, score, achievedAt } of entries) {
         // GT: la puntuación solo sube; un jugador nuevo se añade igualmente.
         pipeline.zadd(key(board), { gt: true }, { score, member: userId });
-        const days = TTL_DAYS[board.period];
-        const start = periodStart(board.period, achievedAt);
-        if (days && start) pipeline.expireat(key(board), Math.floor(start.getTime() / 1000) + days * DAY_SECONDS);
+        const expiresAt = boardExpiresAt(board.period, achievedAt);
+        if (expiresAt) pipeline.expireat(key(board), expiresAt);
       }
       await pipeline.exec();
     },

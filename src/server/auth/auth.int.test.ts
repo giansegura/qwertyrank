@@ -1,11 +1,12 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { createDb } from "../db/client";
-import { games, keystrokeLogs, periodBests, sessions, users } from "../db/schema";
+import { bannedIdentities, games, keystrokeLogs, periodBests, sessions, users } from "../db/schema";
 import type { EmailMessage } from "../email/mailer";
 import { createSaveGame } from "../game/persist";
 import { createLeaderboardStore } from "../leaderboard/store";
+import { identityHash } from "../moderation/identities";
 import { checkNick } from "../profile/nick";
 import { createRedis } from "../redis";
 import { createAuth } from "./auth";
@@ -22,6 +23,7 @@ const deps = {
   redis,
   keyPrefix: process.env.REDIS_KEY_PREFIX!,
   secret: process.env.BETTER_AUTH_SECRET!,
+  identitySecret: process.env.IP_HASH_SECRET!,
   baseURL: "http://localhost:3000",
   onPlayerChanged: () => {
     playerChanges++;
@@ -248,5 +250,55 @@ describe("cuentas con Better Auth", () => {
     const before = playerChanges;
     await auth.api.deleteUser({ body: {}, headers });
     expect(playerChanges).toBe(before + 1);
+  });
+
+  async function ban(kind: "email" | "google", value: string) {
+    await db.insert(bannedIdentities).values({ hash: identityHash(kind, value, deps.identitySecret), kind });
+  }
+
+  /** Olvida el "un enlace por minuto" de ese email, para volver a entrar en el mismo test. */
+  async function forgetThrottle(email: string) {
+    await redis.del(`${deps.keyPrefix}magic-link:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`);
+  }
+
+  it("un email baneado (o un alias suyo) no puede pedir enlace para una cuenta nueva", async () => {
+    const local = randomUUID().replaceAll("-", "").slice(0, 12);
+    await ban("email", `${local}@gmail.com`);
+    const alias = `${local.slice(0, 4)}.${local.slice(4)}+otra@googlemail.com`;
+    await expect(askForLink(alias)).rejects.toMatchObject({ body: { code: "ACCOUNT_BLOCKED" } });
+    expect(outbox.some((message) => message.to === alias)).toBe(false);
+  });
+
+  it("un baneado que ya tiene cuenta sigue pudiendo entrar", async () => {
+    const email = newEmail();
+    await signIn(email);
+    await ban("email", email);
+    await forgetThrottle(email);
+    const { user } = await signIn(email);
+    expect(user.email).toBe(email);
+  });
+
+  it("si se banea el email entre pedir el enlace y abrirlo, vuelve con ACCOUNT_BLOCKED y no crea la cuenta", async () => {
+    const email = newEmail();
+    await askForLink(email);
+    await ban("email", email);
+    const response = await auth.handler(new Request(linkSentTo(email)));
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toContain("error=ACCOUNT_BLOCKED");
+    expect(await db.select().from(users).where(eq(users.email, email))).toEqual([]);
+  });
+
+  it("una cuenta de Google baneada no crea el usuario (ni lo deja a medias)", async () => {
+    const googleId = randomUUID();
+    await ban("google", googleId);
+    const email = newEmail();
+    const context = await auth.$context;
+    await expect(
+      context.internalAdapter.createOAuthUser(
+        { email, name: "Gian", emailVerified: true } as never,
+        { providerId: "google", accountId: googleId } as never,
+      ),
+    ).rejects.toMatchObject({ body: { code: "ACCOUNT_BLOCKED" } });
+    expect(await db.select().from(users).where(eq(users.email, email))).toEqual([]);
   });
 });

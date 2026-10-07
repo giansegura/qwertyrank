@@ -41,6 +41,11 @@ describe("API de partidas", () => {
     expect((await start(post(`${BASE}/start`, "no es json"))).status).toBe(400);
   });
 
+  it("un token de Turnstile demasiado largo es un cuerpo inválido", async () => {
+    const response = await start(post(`${BASE}/start`, { ...START, turnstileToken: "x".repeat(2_049) }));
+    expect(response.status).toBe(400);
+  });
+
   it("keys y finish sin cookie, o de una partida ajena, dan 404", async () => {
     const res = await start(post(`${BASE}/start`, START));
     const { gameId } = await res.json();

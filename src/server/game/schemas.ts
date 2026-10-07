@@ -28,6 +28,8 @@ export const startBodySchema = z.object({
     coarse: z.boolean(),
     touchPoints: z.number().int().min(0).max(32),
   }),
+  // Token del reto de Turnstile (spec 4a §2), solo al repetir `start` tras `needs_challenge`.
+  turnstileToken: z.string().min(1).max(2_048).optional(),
 });
 
 // Una partida honesta de 30 s son ~11 tandas de pocos cientos de eventos: los límites cortan abusos.

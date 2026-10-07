@@ -31,6 +31,8 @@ export interface ClientEnv {
 export interface StartRequest {
   language: TestLanguage;
   env: ClientEnv;
+  /** Solo al repetir `start` tras `needs_challenge` (spec 4a §2.1). */
+  turnstileToken?: string;
 }
 
 export interface StartResponse {

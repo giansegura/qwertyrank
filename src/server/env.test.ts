@@ -24,7 +24,20 @@ describe("parseServerEnv", () => {
   });
 
   it("en producción de Vercel exige la clave de Resend", () => {
-    expect(() => parseServerEnv({ ...BASE, VERCEL_ENV: "production" })).toThrow(/RESEND_API_KEY/);
-    expect(parseServerEnv({ ...BASE, VERCEL_ENV: "production", RESEND_API_KEY: "re_x" }).RESEND_API_KEY).toBe("re_x");
+    const turnstile = { TURNSTILE_SECRET_KEY: "1x0", NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x0" };
+    expect(() => parseServerEnv({ ...BASE, ...turnstile, VERCEL_ENV: "production" })).toThrow(/RESEND_API_KEY/);
+    expect(
+      parseServerEnv({ ...BASE, ...turnstile, VERCEL_ENV: "production", RESEND_API_KEY: "re_x" }).RESEND_API_KEY,
+    ).toBe("re_x");
+  });
+
+  it("las dos claves de Turnstile van juntas", () => {
+    expect(() => parseServerEnv({ ...BASE, TURNSTILE_SECRET_KEY: "1x0" })).toThrow(/TURNSTILE/);
+    expect(() => parseServerEnv({ ...BASE, NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x0" })).toThrow(/TURNSTILE/);
+    expect(parseServerEnv(BASE).TURNSTILE_SECRET_KEY).toBeUndefined();
+  });
+
+  it("en producción de Vercel exige las claves de Turnstile", () => {
+    expect(() => parseServerEnv({ ...BASE, VERCEL_ENV: "production", RESEND_API_KEY: "re_x" })).toThrow(/Turnstile/);
   });
 });

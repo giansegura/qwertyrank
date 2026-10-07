@@ -1,7 +1,8 @@
 import "server-only";
 import { eq, inArray } from "drizzle-orm";
 import type { Db } from "../db/client";
-import { games, keystrokeLogs, periodBests } from "../db/schema";
+import { games, keystrokeLogs } from "../db/schema";
+import { userBoards } from "../leaderboard/bests";
 import type { LeaderboardStore } from "../leaderboard/store";
 
 /**
@@ -14,15 +15,7 @@ import type { LeaderboardStore } from "../leaderboard/store";
  */
 export function createDeleteUserData(db: Db, store: LeaderboardStore) {
   return async (userId: string): Promise<void> => {
-    const boards = await db
-      .select({
-        language: periodBests.language,
-        inputType: periodBests.inputType,
-        period: periodBests.periodType,
-        key: periodBests.periodKey,
-      })
-      .from(periodBests)
-      .where(eq(periodBests.userId, userId));
+    const boards = await userBoards(db, userId);
     await store.remove(userId, boards);
 
     await db.transaction(async (tx) => {

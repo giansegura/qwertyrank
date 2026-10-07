@@ -22,7 +22,7 @@ const inputEvent = z.object({
 
 export const typingEventSchema = z.discriminatedUnion("type", [keyEvent, inputEvent]);
 
-export const startBodySchema = z.object({
+const startBase = {
   language: z.enum(TEST_LANGUAGES),
   env: z.object({
     coarse: z.boolean(),
@@ -30,7 +30,13 @@ export const startBodySchema = z.object({
   }),
   // Token del reto de Turnstile (spec 4a §2), solo al repetir `start` tras `needs_challenge`.
   turnstileToken: z.string().min(1).max(2_048).optional(),
-});
+};
+
+/** Ranked (sin `mode`, como hasta la 4b) o verificación de un récord, que dice cuál (spec 4b §3.1). */
+export const startBodySchema = z.union([
+  z.object({ ...startBase, mode: z.literal("ranked").optional() }),
+  z.object({ ...startBase, mode: z.literal("verification"), verificationId: z.uuid() }),
+]);
 
 // Una partida honesta de 30 s son ~11 tandas de pocos cientos de eventos: los límites cortan abusos.
 export const keysBodySchema = z.object({

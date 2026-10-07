@@ -9,7 +9,7 @@ import { checkEvents, checkSpeed, checkTiming, type ReceivedBatch } from "../ant
 import type { GameRanking } from "@/lib/leaderboard/types";
 import type { RankGameInput } from "../leaderboard/ranking";
 import type { SaveGame, SavedGame } from "./persist";
-import type { AppendStatus, GameStore, GameTimes } from "./store";
+import type { AppendStatus, GameStore, GameTimes, StartedVerification } from "./store";
 
 /** Categoría que se le enseña al jugador; el motivo exacto se queda en la base de datos. */
 const PUBLIC_REASON: Record<RejectReason, PublicReason> = {
@@ -40,16 +40,32 @@ export type FinishOutcome =
   | { kind: "busy" | "closed" | "not_found" };
 
 export interface GameService {
-  start(input: StartRequest & { owner: string; userId: string | null }): Promise<StartResponse>;
+  /** Con `verification`, una partida de verificación de un intento ya gastado (spec 4b §3.1). */
+  start(
+    input: Pick<StartRequest, "language" | "env"> & {
+      owner: string;
+      userId: string | null;
+      verification?: StartedVerification;
+    },
+  ): Promise<StartResponse>;
   appendKeys(input: { owner: string; gameId: string; seq: number; events: TypingEvent[] }): Promise<AppendStatus>;
   finish(input: { owner: string; gameId: string; lastSeq: number; ipHash: string | null }): Promise<FinishOutcome>;
 }
 
 export function createGameService(deps: GameServiceDeps): GameService {
   return {
-    async start({ owner, userId, language, env }) {
+    async start({ owner, userId, language, env, verification }) {
       const words = generateWords(await deps.loadWords(language), WORDS_PER_TEST, deps.random);
-      const game = await deps.store.create({ id: deps.newId(), owner, userId, language, words, env, times: deps.times });
+      const game = await deps.store.create({
+        id: deps.newId(),
+        owner,
+        userId,
+        language,
+        words,
+        env,
+        times: deps.times,
+        verification,
+      });
       return {
         gameId: game.id,
         words: game.words,

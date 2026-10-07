@@ -121,4 +121,15 @@ describe("GameStore (Redis)", () => {
     expect(await store.append(first.id, first.owner, 1, "[]", 1)).toBe("closed");
     expect(await store.append(second.id, second.owner, 1, "[]", 1)).toBe("ok");
   });
+
+  it("una partida de verificación recuerda su verificación y su intento; una Ranked, ninguna", async () => {
+    const verification = { id: randomUUID(), attempt: 2 };
+    const input = { ...newGame(), userId: randomUUID(), verification };
+    expect((await store.create(input)).verification).toEqual(verification);
+    expect(await store.claimFinish(input.id, input.owner)).toMatchObject({ kind: "ready", game: { verification } });
+
+    const ranked = newGame();
+    await store.create(ranked);
+    expect(await store.claimFinish(ranked.id, ranked.owner)).toMatchObject({ kind: "ready", game: { verification: null } });
+  });
 });

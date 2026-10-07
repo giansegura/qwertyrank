@@ -151,7 +151,8 @@ export async function seedPendingVerification(
 /**
  * Borra la cuenta con sus partidas y la saca de Redis: las marcas de una prueba no deben quitarle a la
  * siguiente ejecución el top 10 de hoy. Al contrario que al borrarla desde ajustes, también se van sus
- * partidas y, en cascada, sus registros de pulsaciones y sus verificaciones: así no se acumulan.
+ * partidas y, en cascada, sus registros de pulsaciones y sus verificaciones: así no se acumulan. Antes
+ * que las partidas, sus mejores marcas (`period_bests`), que las referencian sin cascada.
  */
 export async function deleteAccount(userId: string): Promise<void> {
   const match = `${process.env.REDIS_KEY_PREFIX ?? "qr:"}lb:*`;
@@ -165,6 +166,7 @@ export async function deleteAccount(userId: string): Promise<void> {
     }
     cursor = String(next);
   } while (cursor !== "0");
+  await db()`delete from period_bests where user_id = ${userId}`;
   await db()`delete from games where user_id = ${userId}`;
   await db()`delete from users where id = ${userId}`;
 }

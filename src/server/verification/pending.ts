@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gt, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, lt, lte, sql } from "drizzle-orm";
 import type { InputType } from "@/lib/game/types";
 import { VERIFICATION_ATTEMPTS, VERIFICATION_HOURS, requiredWpm, type PendingVerification } from "@/lib/verification";
 import type { TestLanguage } from "@/lib/words/languages";
@@ -123,4 +123,25 @@ export async function findPendingVerification(db: DbExecutor, id: string): Promi
       ),
     );
   return row ? toPending(row) : null;
+}
+
+/**
+ * Las verificaciones que el jugador aún puede hacer (spec 4b §4.3): pendientes, sin caducar y con algún
+ * intento; la que antes caduca, primero. Las comparten `GET /api/verification` y `/verify`.
+ */
+export async function pendingVerifications(db: DbExecutor, userId: string): Promise<PendingVerification[]> {
+  const rows = await db
+    .select(PENDING_FIELDS)
+    .from(recordVerifications)
+    .innerJoin(games, eq(games.id, recordVerifications.gameId))
+    .where(
+      and(
+        eq(recordVerifications.userId, userId),
+        eq(recordVerifications.status, "pending"),
+        gt(recordVerifications.expiresAt, sql`now()`),
+        lt(recordVerifications.attempts, VERIFICATION_ATTEMPTS),
+      ),
+    )
+    .orderBy(asc(recordVerifications.expiresAt));
+  return rows.map(toPending);
 }

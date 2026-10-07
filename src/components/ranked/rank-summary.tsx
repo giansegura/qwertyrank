@@ -12,6 +12,10 @@ import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import type { TestLanguage } from "@/lib/words/languages";
 import { useNow } from "../use-now";
 
+// RankedTest descarga este módulo durante la partida y saca de él también la partida de verificación de
+// "Verificar ahora" (spec 4b §4.1): con un solo `import()`, la portada no paga otro.
+export { LazyVerificationGame } from "../verification/use-verification-module";
+
 export interface RankSummaryProps {
   ranking: GameRanking;
   gameId: string;

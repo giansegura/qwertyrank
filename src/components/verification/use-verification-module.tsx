@@ -1,32 +1,50 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
 import type { PendingVerification } from "@/lib/verification";
+import type { VerificationGameProps } from "./verification-game";
 
 type VerificationGameComponent = typeof import("./verification-game").VerificationGame;
 
 /**
- * La partida de verificación elegida, en la misma pantalla (spec 4b §4.1, §4.3): tras «Guárdalo» o en
- * `/verify`. Su módulo (con el `canvas`) se descarga con `import()` al elegirla; si la descarga falla,
- * Ranked no está disponible. RankedTest tiene su propia copia: con este hook, el JS de la portada pasaría
- * de los 30 KB (+131 B).
+ * La partida de verificación, en lugar de la pantalla en la que se eligió (spec 4b §4.1, §4.3). Su módulo
+ * (con el `canvas`) se descarga con `import()` al montarse: no pesa en la portada. Mientras llega,
+ * "Cargando…"; si la descarga falla, `onUnavailable`.
+ */
+export function LazyVerificationGame({ onUnavailable, ...props }: VerificationGameProps & { onUnavailable: () => void }) {
+  const t = useTranslations("Ranked");
+  const [VerificationGame, setVerificationGame] = useState<VerificationGameComponent | null>(null);
+  const unavailable = useEffectEvent(onUnavailable);
+
+  useEffect(() => {
+    let active = true;
+    import("./verification-game").then(
+      (module) => active && setVerificationGame(() => module.VerificationGame),
+      () => active && unavailable(),
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return VerificationGame ? (
+    <VerificationGame {...props} />
+  ) : (
+    <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">
+      {t("verifyLoading")}
+    </p>
+  );
+}
+
+/**
+ * La partida de verificación elegida, en la misma pantalla: tras «Guárdalo» o en `/verify`. Si su módulo no
+ * se puede descargar, Ranked no está disponible.
  */
 export function useVerificationModule() {
   const t = useTranslations("Ranked");
   const [chosen, setChosen] = useState<PendingVerification | "unavailable" | null>(null);
-  const [VerificationGame, setVerificationGame] = useState<VerificationGameComponent | null>(null);
-
-  function verify(verification: PendingVerification) {
-    setChosen(verification);
-    if (!VerificationGame) {
-      import("./verification-game").then(
-        (module) => setVerificationGame(() => module.VerificationGame),
-        () => setChosen("unavailable"),
-      );
-    }
-  }
 
   /**
    * Lo que se enseña en lugar de la pantalla mientras se verifica, o `null`. `onDone`, al acabar la partida
@@ -44,14 +62,12 @@ export function useVerificationModule() {
       );
     }
     if (!chosen) return null;
-    return VerificationGame ? (
-      <VerificationGame verification={chosen} onDone={onDone} />
-    ) : (
-      <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">
-        {t("verifyLoading")}
-      </p>
-    );
+    return <LazyVerificationGame verification={chosen} onDone={onDone} onUnavailable={() => setChosen("unavailable")} />;
   }
 
-  return { verify, view, close: () => setChosen(null) };
+  return {
+    verify: (verification: PendingVerification) => setChosen(verification),
+    view,
+    close: () => setChosen(null),
+  };
 }

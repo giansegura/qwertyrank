@@ -12,11 +12,10 @@ import { Timer } from "../typing-test/timer";
 import { useTypingInput } from "../typing-test/use-typing-input";
 import { WordsView } from "../typing-test/words-view";
 import { readClientEnv } from "./client-env";
-import { BLOCK_MESSAGE, REASON_MESSAGE } from "./game-flow";
+import { BLOCK_MESSAGE, REASON_MESSAGE, type StartFailure } from "./game-flow";
 import { useServerGame } from "./use-server-game";
 
-type RankSummaryComponent = typeof import("./rank-summary").RankSummary;
-type VerificationGameComponent = typeof import("../verification/verification-game").VerificationGame;
+type RankSummaryModule = typeof import("./rank-summary");
 
 /**
  * Partida Ranked (spec §3.4): Empezar → el servidor envía el texto → cuenta atrás 3-2-1 con
@@ -27,34 +26,25 @@ export function RankedTest({ language }: { language: TestLanguage }) {
   const t = useTranslations("Ranked");
   const tt = useTranslations("TypingTest");
   const { phase, session, challengeRef, ...game } = useServerGame<FinishResponse>();
-  // El resumen de posición solo hace falta al terminar: se descarga durante la partida y no pesa en
-  // el JS inicial de la portada (spec §7.5). A los 30 s ya está cargado, así que no hay salto (CLS = 0).
-  const [RankSummary, setRankSummary] = useState<RankSummaryComponent | null>(null);
-  // "Verificar ahora" (spec 4b §4.1): la partida de verificación (texto en `canvas`) ocupa esta pantalla
-  // y se descarga al pulsarlo.
+  // El resumen de posición solo hace falta al terminar: su módulo se descarga durante la partida y no pesa
+  // en el JS inicial de la portada (spec §7.5). A los 30 s ya está cargado, así que no hay salto (CLS = 0).
+  const [summary, setSummary] = useState<RankSummaryModule | null>(null);
+  // "Verificar ahora" (spec 4b §4.1): la partida de verificación ocupa esta pantalla. La descarga y la pinta
+  // el módulo del resumen; aquí solo se esconde Ranked mientras tanto.
   const [verifying, setVerifying] = useState<PendingVerification | null>(null);
-  const [VerificationGame, setVerificationGame] = useState<VerificationGameComponent | null>(null);
 
   function start() {
     void game.start({ language, env: readClientEnv() }, () => {
       // Si la descarga falla, el resultado sale sin el resumen y se reintenta en la siguiente partida.
-      if (!RankSummary) import("./rank-summary").then((module) => setRankSummary(() => module.RankSummary), () => {});
+      if (!summary) import("./rank-summary").then(setSummary, () => {});
       typing.reset();
     });
   }
 
-  function verify(verification: PendingVerification) {
-    game.leave();
-    setVerifying(verification);
-    if (!VerificationGame) {
-      import("../verification/verification-game").then(
-        (module) => setVerificationGame(() => module.VerificationGame),
-        () => {
-          setVerifying(null);
-          game.leave({ kind: "unavailable" });
-        },
-      );
-    }
+  /** Al acabar la verificación, de vuelta al principio de Ranked (o a `failure`, si no se pudo descargar). */
+  function endVerification(failure?: StartFailure) {
+    game.leave(failure);
+    setVerifying(null);
   }
 
   const waiting = phase.name === "idle" || phase.name === "not_started";
@@ -74,13 +64,13 @@ export function RankedTest({ language }: { language: TestLanguage }) {
     },
   });
 
-  if (verifying) {
-    return VerificationGame ? (
-      <VerificationGame verification={verifying} onDone={() => setVerifying(null)} />
-    ) : (
-      <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">
-        {t("verifyLoading")}
-      </p>
+  if (summary && verifying) {
+    return (
+      <summary.LazyVerificationGame
+        verification={verifying}
+        onDone={() => endVerification()}
+        onUnavailable={() => endVerification({ kind: "unavailable" })}
+      />
     );
   }
 
@@ -183,13 +173,13 @@ export function RankedTest({ language }: { language: TestLanguage }) {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {phase.name === "result" && RankSummary && (
-              <RankSummary
+            {phase.name === "result" && summary && (
+              <summary.RankSummary
                 ranking={phase.response.ranking}
                 gameId={phase.response.gameId}
                 language={language}
                 inputType={phase.response.inputType}
-                onVerify={verify}
+                onVerify={setVerifying}
               />
             )}
             <ResultView result={phase.name === "result" ? phase.response : phase.local} onRestart={start} />

@@ -289,6 +289,44 @@ describe("RankedTest: récord en review", () => {
     fireEvent.click(screen.getByTestId("verification-game"));
     expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
   });
+
+  /** Juega una partida que queda en `review` (con el resumen ya descargado). */
+  async function playToReview() {
+    renderWithIntl(<RankedTest language="es" />);
+    await startAndCountDown();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.dynamicImportSettled();
+    });
+  }
+
+  /** Pulsa «Verificar ahora» y deja que se descargue la partida de verificación. */
+  async function verifyNow() {
+    fireEvent.click(screen.getByTestId("verify-now"));
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+  }
+
+  it("si no se puede descargar la partida de verificación, vuelve a Ranked y dice que no está disponible", async () => {
+    await playToReview();
+    // Con el resumen ya descargado, falla la descarga de la partida de verificación.
+    const fakeGame = await import("../verification/verification-game");
+    vi.doMock("../verification/verification-game", () => {
+      throw new Error("chunk load failed");
+    });
+    vi.resetModules();
+    try {
+      await verifyNow();
+      expect(screen.queryByTestId("verification-game")).toBeNull();
+      expect(screen.getByText(/isn't available right now/)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Go to practice" })).toBeInTheDocument();
+      expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
+    } finally {
+      vi.doMock("../verification/verification-game", () => fakeGame);
+      vi.resetModules();
+    }
+  });
 });
 
 describe("RankedTest: reto y bloqueos", () => {

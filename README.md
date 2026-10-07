@@ -58,6 +58,7 @@ pnpm dev                      # http://localhost:3000
 | `pnpm test:int` | Tests de integración contra PostgreSQL y Redis reales | `docker compose up -d` |
 | `pnpm test:e2e` | Tests E2E con Playwright, en escritorio y móvil emulado | `docker compose up -d` y `.env.local` |
 | `pnpm lint` / `pnpm typecheck` | ESLint y TypeScript | — |
+| `pnpm budget` | JS propio de la portada (y de `/practice`) en gzip, por encima de `/_not-found`; falla si la portada pasa de 30,0 KB | `pnpm build` antes, y `python3` |
 
 ## Base de datos
 

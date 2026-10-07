@@ -10,6 +10,7 @@ import { games, keystrokeLogs, periodBests, users } from "../db/schema";
 import { createRanking } from "../leaderboard/ranking";
 import { createLeaderboardStore, currentBoard } from "../leaderboard/store";
 import { createRedis } from "../redis";
+import { createSaveVerificationGame } from "../verification/finish";
 import { decodeKeystrokeLog } from "./keystroke-log";
 import { createSaveGame } from "./persist";
 import { createGameService } from "./service";
@@ -25,6 +26,7 @@ const ranking = createRanking({ db, store: leaderboard, onTopChanged: () => {} }
 const service = createGameService({
   store: createGameStore(redis, process.env.REDIS_KEY_PREFIX!),
   saveGame: createSaveGame(db),
+  saveVerificationGame: createSaveVerificationGame(db),
   loadWords: async () => ["hola"],
   random: Math.random,
   newId: randomUUID,

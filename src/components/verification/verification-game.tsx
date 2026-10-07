@@ -61,11 +61,14 @@ export function VerificationGame({ verification, onDone }: VerificationGameProps
     return () => clearTimeout(timer);
   }, []);
 
-  // La verificación ha cambiado (superada, con un intento menos o agotada) o ya no existe: el aviso de la
-  // cabecera vuelve a pedir las pendientes.
+  // La verificación ha cambiado (superada, con un intento menos o agotada; también con la partida sin
+  // puntuar, que ya gastó su intento: tras el tercero no queda nada que verificar) o ya no existe: el aviso
+  // de la cabecera vuelve a pedir las pendientes.
   const gone = phase.name === "not_started" && phase.failure.kind === "no_pending";
   useEffect(() => {
-    if (phase.name === "result" || gone) window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
+    if (phase.name === "result" || phase.name === "unscored" || gone) {
+      window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
+    }
   }, [phase, gone]);
 
   const doneButton = (

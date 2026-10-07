@@ -210,11 +210,14 @@ describe("VerificationGame", () => {
     expect(screen.getByTestId("verify-retry")).toBeInTheDocument();
   });
 
-  it("si el final no llega al servidor, lo dice como problema de conexión y deja reintentar", async () => {
+  it("si el final no llega al servidor, lo dice como problema de conexión, avisa a la cabecera y deja reintentar", async () => {
     vi.mocked(finishGame).mockRejectedValue(new GameApiError(404, "not_found"));
+    const changed = listenVerificationChanged();
     await mount();
     await playToTheEnd();
     expect(screen.getByTestId("verify-result")).toHaveTextContent("Connection problem: this game doesn't count.");
+    // El intento se ha gastado igual (y si era el tercero, ya no quedan): el aviso vuelve a pedir las pendientes.
+    expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-retry"));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);

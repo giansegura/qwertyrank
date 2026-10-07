@@ -202,6 +202,19 @@ export async function seedRejectedGame(userId: string, log: unknown): Promise<st
   return gameId;
 }
 
+/**
+ * Nivel verificado de 1.000 PPM en todos los idiomas y teclados (spec 4b §2.1): sus partidas nunca esperan
+ * verificación, aunque entren en el top 10 de hoy de la base de datos de los E2E.
+ */
+export async function seedVerifiedLevels(email: string): Promise<void> {
+  await db()`
+    insert into verified_levels (user_id, language, input_type, wpm)
+    select users.id, l.language, i.input_type, 1000 from users,
+      (values ('en'), ('es'), ('pt')) as l(language), (values ('physical'), ('touch')) as i(input_type)
+    where users.email = ${email}
+    on conflict do nothing`;
+}
+
 export async function closeDb(): Promise<void> {
   const open = client;
   client = null;

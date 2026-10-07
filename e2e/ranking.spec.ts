@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { closeDb, randomClientIp, signUp, signUpOnLoginPage, userIdByEmail, verdictsOf } from "./helpers/accounts";
+import {
+  closeDb,
+  randomClientIp,
+  seedVerifiedLevels,
+  signUp,
+  signUpOnLoginPage,
+  userIdByEmail,
+  verdictsOf,
+} from "./helpers/accounts";
 import { switchLocale } from "./helpers/locale";
 import { playValidGame } from "./helpers/ranked";
 
@@ -14,7 +22,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("con cuenta: la partida da su posición, aparece en el ranking y en su perfil", async ({ page }) => {
-  await signUp(page, "en");
+  // Ya verificado: su partida se publica aunque entre en el top 10 (spec 4b §2.1).
+  await seedVerifiedLevels(await signUp(page, "en"));
   const nick = `e2e_${crypto.randomUUID().slice(0, 8)}`;
   await page.getByTestId("profile-nick").fill(nick);
   await page.getByTestId("profile-save").click();
@@ -50,6 +59,7 @@ test("anónimo: «Guárdalo» lleva a crear la cuenta y la partida pasa a ella",
   await expect(page).toHaveURL(/\/en\/sign-in\?next=%2Fen%2Fsave%2F/);
 
   const email = await signUpOnLoginPage(page);
+  await seedVerifiedLevels(email);
   await page.getByTestId("profile-save").click();
   await expect(page).toHaveURL(/\/en\/save\/[0-9a-f-]{36}$/);
   await expect(page.getByTestId("save-result")).toContainText("Game saved to your account.");

@@ -4,9 +4,19 @@ import type { FinishResponse } from "@/lib/game/types";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, finishGame, sendKeys, startGame } from "./api";
 import { solveChallenge } from "./challenge";
-import { RankedTest, SUBMIT_DEADLINE_MS } from "./ranked-test";
+import { SUBMIT_DEADLINE_MS } from "./game-flow";
+import { RankedTest } from "./ranked-test";
 
 vi.mock("./challenge", () => ({ solveChallenge: vi.fn() }));
+
+// La partida de verificación tiene sus propias pruebas: aquí solo importa que se carga en su lugar.
+vi.mock("../verification/verification-game", () => ({
+  VerificationGame: ({ verification, onDone }: { verification: { id: string }; onDone: () => void }) => (
+    <button type="button" data-testid="verification-game" onClick={onDone}>
+      {verification.id}
+    </button>
+  ),
+}));
 
 vi.mock("./api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api")>()),
@@ -227,6 +237,51 @@ describe("RankedTest", () => {
     });
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #4 today.");
     expect(screen.getByTestId("save-game")).toHaveAttribute("href", "/en/save/g1");
+  });
+});
+
+describe("RankedTest: récord en review", () => {
+  const VERIFICATION = {
+    id: "v1",
+    language: "es" as const,
+    inputType: "physical" as const,
+    targetWpm: 120,
+    requiredWpm: 102,
+    attemptsLeft: 3,
+    expiresAt: "2026-10-08T10:00:00.000Z",
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.mocked(startGame).mockResolvedValue(GAME);
+    vi.mocked(sendKeys).mockResolvedValue(undefined);
+    vi.mocked(finishGame).mockResolvedValue(
+      response({ verdict: "review", ranking: { kind: "review", ranks: { day: 1, all: 7 }, verification: VERIFICATION } }),
+    );
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  it("«Verificar ahora» carga la partida de verificación en la misma pantalla; al acabar, vuelve a Ranked", async () => {
+    renderWithIntl(<RankedTest language="es" />);
+    await startAndCountDown();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.dynamicImportSettled();
+    });
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1 today · #7 all time.");
+
+    fireEvent.click(screen.getByTestId("verify-now"));
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    expect(screen.getByTestId("verification-game")).toHaveTextContent("v1");
+    expect(screen.queryByTestId("typing-area")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("verification-game"));
+    expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
   });
 });
 

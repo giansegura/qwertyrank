@@ -60,7 +60,12 @@
     "challenge": "Comprobando que eres humano…",
     "challengeFailed": "No hemos podido comprobar que eres humano. Inténtalo de nuevo.",
     "banned": "Tu cuenta no puede jugar partidas con ranking.",
-    "rateLimited": "Has jugado muchas partidas en la última hora. Vuelve en {minutes} min."
+    "rateLimited": "Has jugado muchas partidas en la última hora. Vuelve en {minutes} min.",
+    "reviewWouldRank": "Tu marca entraría {ranks}.",
+    "reviewExplain": "Para que aparezca en el ranking, verifícala: una partida de 30 s con el texto en una imagen. Necesitas {required, number} ppm.",
+    "reviewLeft": "{attempts, plural, one {# intento} other {# intentos}} · quedan {hours} h",
+    "verifyNow": "Verificar ahora",
+    "verifyLoading": "Preparando la verificación…"
   },
   "Login": {
     "title": "Entra en QwertyRank",
@@ -173,6 +178,19 @@
     "magicLinkIgnore": "Si no has pedido este email, puedes ignorarlo."
   },
   "Verification": {
-    "canvasLabel": "Texto que hay que teclear, en una imagen"
+    "canvasLabel": "Texto que hay que teclear, en una imagen",
+    "label": "Verificación de récord",
+    "starting": "Preparando tu partida de verificación…",
+    "needs": "Necesitas {required, number} ppm",
+    "verified": "¡Verificado! Tu marca ya está en el ranking.",
+    "score": "{wpm} ppm · {accuracy} %",
+    "short": "Te faltaron {wpm, number} ppm.",
+    "lowAccuracy": "Necesitas al menos un 90 % de precisión.",
+    "otherKeyboard": "Tienes que usar el mismo teclado que en tu récord ({input, select, physical {físico} touch {táctil} other {}}).",
+    "attemptsLeft": "{attempts, plural, one {Te queda # intento.} other {Te quedan # intentos.}}",
+    "retry": "Reintentar",
+    "exhausted": "No se ha podido verificar. Tu partida no entra en el ranking; puedes intentarlo con otra.",
+    "noLongerAvailable": "Esta verificación ya no está disponible.",
+    "play": "Jugar Ranked"
   }
 }

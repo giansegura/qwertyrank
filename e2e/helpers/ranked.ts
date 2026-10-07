@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-/** Abre la portada, pulsa Empezar y espera a que acabe la cuenta atrás. Devuelve las primeras palabras. */
-export async function startRanked(page: Page, locale: "en" | "es" | "pt" = "en"): Promise<string[]> {
+/** Abre la portada, pulsa Empezar y espera a que acabe la cuenta atrás. Devuelve las `count` primeras palabras. */
+export async function startRanked(page: Page, locale: "en" | "es" | "pt" = "en", count = 6): Promise<string[]> {
   await page.goto(`/${locale}`);
   await page.getByTestId("ranked-start").click();
   // Turnstile añade una ida y vuelta antes de que empiece la cuenta atrás.
@@ -9,7 +9,7 @@ export async function startRanked(page: Page, locale: "en" | "es" | "pt" = "en")
   await expect(page.getByTestId("word").first()).toBeVisible({ timeout: 5_000 });
   return page
     .getByTestId("word")
-    .evaluateAll((elements) => elements.slice(0, 6).map((el) => el.getAttribute("data-word") ?? ""));
+    .evaluateAll((elements, n) => elements.slice(0, n).map((el) => el.getAttribute("data-word") ?? ""), count);
 }
 
 /** Una partida Ranked válida: las primeras palabras, bien escritas. Espera al resultado. */

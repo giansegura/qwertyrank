@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Verdict } from "@/lib/game/types";
 import { periodKey } from "@/lib/leaderboard/periods";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
@@ -35,6 +36,7 @@ async function newUser(status: "active" | "shadowbanned" = "active"): Promise<st
     .insert(users)
     .values({ name: "", email: `${randomUUID()}@example.com`, nick: `r_${randomUUID().slice(0, 8)}`, status })
     .returning({ id: users.id });
+  await verifyEverywhere(db, row.id);
   return row.id;
 }
 
@@ -58,6 +60,7 @@ async function play(
     ipHash: null,
     startsAt,
     finishedAt: startsAt,
+    words: [],
     batches: [],
   });
   return using.rankGame({

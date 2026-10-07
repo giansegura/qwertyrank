@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getDb } from "@/server/db/client";
@@ -9,6 +10,7 @@ import {
   ACTION_LABEL,
   CELL,
   HEAD_ROW,
+  MODE_LABEL,
   REASON_LABEL,
   REPORT_STATUS_LABEL,
   ROW,
@@ -149,34 +151,60 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Últimas partidas</h2>
-        <table className={TABLE}>
-          <thead>
-            <tr className={HEAD_ROW}>
-              <th scope="col" className={CELL}>Fecha</th>
-              <th scope="col" className={CELL}>Idioma</th>
-              <th scope="col" className={CELL}>Teclado</th>
-              <th scope="col" className={CELL}>PPM</th>
-              <th scope="col" className={CELL}>Precisión</th>
-              <th scope="col" className={CELL}>Veredicto</th>
-            </tr>
-          </thead>
-          <tbody>
-            {player.games.map((game) => (
-              <tr key={game.id} className={ROW}>
-                <td className={CELL}>{formatDate(game.startsAt)}</td>
-                <td className={CELL}>{game.language}</td>
-                <td className={CELL}>{game.inputType}</td>
-                <td className={`${CELL} tabular-nums`}>{game.wpm.toFixed(1)}</td>
-                <td className={`${CELL} tabular-nums`}>{game.accuracy.toFixed(1)} %</td>
-                <td className={CELL}>
-                  {game.verdict}
-                  {game.rejectReason ? ` (${game.rejectReason})` : ""}
-                </td>
-              </tr>
+        <h2 className="text-lg font-semibold">Niveles verificados</h2>
+        {player.verifiedLevels.length === 0 ? (
+          <p className="text-zinc-600 dark:text-zinc-400">Sin niveles verificados.</p>
+        ) : (
+          <ul data-testid="admin-verified-levels" className="text-sm">
+            {player.verifiedLevels.map((level) => (
+              <li key={`${level.language}-${level.inputType}`}>
+                {level.language} · {level.inputType}: {level.wpm.toFixed(1)} ppm, {formatDate(level.verifiedAt)}
+              </li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">Últimas partidas</h2>
+        {/* Ocho columnas: en pantallas estrechas, la tabla se desplaza en horizontal. */}
+        <div className="overflow-x-auto">
+          <table className={TABLE}>
+            <thead>
+              <tr className={HEAD_ROW}>
+                <th scope="col" className={CELL}>Fecha</th>
+                <th scope="col" className={CELL}>Idioma</th>
+                <th scope="col" className={CELL}>Teclado</th>
+                <th scope="col" className={CELL}>PPM</th>
+                <th scope="col" className={CELL}>Precisión</th>
+                <th scope="col" className={CELL}>Veredicto</th>
+                <th scope="col" className={CELL}>Modo</th>
+                <th scope="col" className={CELL}>Reproducción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {player.games.map((game) => (
+                <tr key={game.id} className={ROW}>
+                  <td className={CELL}>{formatDate(game.startsAt)}</td>
+                  <td className={CELL}>{game.language}</td>
+                  <td className={CELL}>{game.inputType}</td>
+                  <td className={`${CELL} tabular-nums`}>{game.wpm.toFixed(1)}</td>
+                  <td className={`${CELL} tabular-nums`}>{game.accuracy.toFixed(1)} %</td>
+                  <td className={CELL}>
+                    {game.verdict}
+                    {game.rejectReason ? ` (${game.rejectReason})` : ""}
+                  </td>
+                  <td className={CELL}>{MODE_LABEL[game.mode]}</td>
+                  <td className={CELL}>
+                    <Link href={`/admin/games/${game.id}`} data-testid="admin-game-link" className="underline">
+                      Ver
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="flex flex-col gap-2">

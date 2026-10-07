@@ -42,6 +42,14 @@ pnpm dev                      # http://localhost:3000
 - **Reconstruir Redis:** `pnpm redis:rebuild` dice lo que haría; `pnpm redis:rebuild --yes` lo hace.
 - **Contra producción:** `vercel env pull .env.vercel-prod --environment=production` y después `pnpm redis:rebuild --env .env.vercel-prod [--yes]` (o `pnpm admin:grant tu@email.com --env .env.vercel-prod`). Con `--env` el script lee solo ese archivo y muestra los hosts de PostgreSQL y Redis antes de actuar. Borra `.env.vercel-prod` al terminar. No uses nunca `.env.production.local` en local: `next build`, `next start` y los E2E lo cargarían y actuarían contra producción.
 
+## Verificación de récords
+
+- **Cuándo:** una partida con cuenta que entraría en el top 10 de un ranking visible y abierto (día, semana, mes o siempre, contado en PostgreSQL entre jugadores activos) queda en `review` si sus PPM pasan del 110 % del nivel verificado del jugador en ese idioma y teclado (sin nivel, siempre). No entra en los rankings hasta verificarla.
+- **Cómo:** una partida de 30 s con el texto dibujado en un `canvas`, con el mismo teclado, al menos un 90 % de precisión y el 85 % de las PPM del récord. Hasta 3 intentos en 24 h, desde el resultado ("Verificar ahora") o desde `/verify`. Al superarla se publican todas sus partidas en `review` (cada una en los rankings de su fecha) y el nivel verificado sube al del récord.
+- **Caducidad:** se decide al leer, sin tarea programada. Las partidas de una verificación fallida o caducada se quedan en `review`, fuera de los rankings y del perfil.
+- **Panel:** `/admin/records` (pendientes, verificados y fallidos o caducados de los últimos 7 días) y `/admin/games/<id>` (reproducción y ritmo de cualquier partida). Es de consulta: se actúa con las sanciones de la ficha.
+- **E2E:** los jugadores de los E2E de ranking empiezan con un nivel verificado; los de `e2e/verification.spec.ts` juegan una partida de unas 140 PPM para entrar en el top 10 de hoy (la base de datos de `.env.local` no debe tener diez jugadores activos más rápidos hoy en inglés) y se borran al acabar.
+
 ## Tests
 
 | Comando | Qué ejecuta | Necesita |
@@ -50,6 +58,7 @@ pnpm dev                      # http://localhost:3000
 | `pnpm test:int` | Tests de integración contra PostgreSQL y Redis reales | `docker compose up -d` |
 | `pnpm test:e2e` | Tests E2E con Playwright, en escritorio y móvil emulado | `docker compose up -d` y `.env.local` |
 | `pnpm lint` / `pnpm typecheck` | ESLint y TypeScript | — |
+| `pnpm budget` | JS propio de la portada (y de `/practice`) en gzip, por encima de `/_not-found`; falla si la portada pasa de 30,0 KB | `pnpm build` antes, y `python3` |
 
 ## Base de datos
 

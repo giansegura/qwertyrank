@@ -52,14 +52,15 @@ export function isRetryable(error: unknown): boolean {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function finishGame(
+/** `T`: `FinishResponse` en Ranked, `VerificationFinishResponse` en una partida de verificación. */
+export async function finishGame<T = FinishResponse>(
   gameId: string,
   body: FinishRequest,
   { attempts = 5, delayMs = 400 } = {},
-): Promise<FinishResponse> {
+): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await post<FinishResponse>(`/api/game/${gameId}/finish`, body);
+      return await post<T>(`/api/game/${gameId}/finish`, body);
     } catch (error) {
       if (attempt >= attempts || !isRetryable(error)) throw error;
       await wait(delayMs);

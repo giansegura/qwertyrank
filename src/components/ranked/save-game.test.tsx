@@ -1,5 +1,6 @@
-import { fireEvent, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, claimGame } from "./api";
 import { SaveGame } from "./save-game";
@@ -7,6 +8,21 @@ import { SaveGame } from "./save-game";
 vi.mock("./api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api")>()),
   claimGame: vi.fn(),
+}));
+
+const router = { push: vi.fn() };
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => router,
+}));
+
+// La partida de verificación tiene sus propias pruebas: aquí solo importa que se carga en su lugar.
+vi.mock("../verification/verification-game", () => ({
+  VerificationGame: ({ verification, onDone }: { verification: { id: string }; onDone: () => void }) => (
+    <button type="button" data-testid="verification-game" onClick={onDone}>
+      {verification.id}
+    </button>
+  ),
 }));
 
 const SAVED = {
@@ -39,5 +55,33 @@ describe("SaveGame", () => {
     renderWithIntl(<SaveGame gameId="g1" />);
     fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(await screen.findByTestId("save-result")).toBeInTheDocument();
+  });
+
+  it("en review, «Verificar ahora» empieza la verificación en esta misma pantalla; al acabar, a jugar Ranked", async () => {
+    const verification = {
+      id: "v1",
+      language: "en" as const,
+      inputType: "touch" as const,
+      targetWpm: 120,
+      requiredWpm: 102,
+      attemptsLeft: 3,
+      expiresAt: "2026-10-08T10:00:00.000Z",
+    };
+    vi.mocked(claimGame).mockResolvedValue({ ...SAVED, ranking: { kind: "review", ranks: { day: 1, all: 7 }, verification } });
+    const changed = vi.fn();
+    window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+    onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
+    renderWithIntl(<SaveGame gameId="g1" />);
+    fireEvent.click(await screen.findByTestId("verify-now"));
+    // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
+    expect(changed).toHaveBeenCalledOnce();
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    expect(screen.getByTestId("verification-game")).toHaveTextContent("v1");
+    expect(screen.queryByTestId("save-result")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("verification-game"));
+    expect(router.push).toHaveBeenCalledWith("/en");
   });
 });

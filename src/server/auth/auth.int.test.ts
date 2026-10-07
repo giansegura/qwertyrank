@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { bannedIdentities, games, keystrokeLogs, periodBests, sessions, users } from "../db/schema";
 import type { EmailMessage } from "../email/mailer";
@@ -136,6 +137,7 @@ describe("cuentas con Better Auth", () => {
 
   it("borrar la cuenta borra sus pulsaciones y anonimiza sus partidas", async () => {
     const { headers, user } = await signIn(newEmail());
+    await verifyEverywhere(db, user.id);
     const gameId = randomUUID();
     await createSaveGame(db)({
       id: gameId,
@@ -151,6 +153,7 @@ describe("cuentas con Better Auth", () => {
       ipHash: "hash",
       startsAt: new Date(),
       finishedAt: new Date(),
+      words: [],
       batches: [],
     });
 
@@ -204,6 +207,7 @@ describe("cuentas con Better Auth", () => {
 
   it("borrar la cuenta la quita de todos los rankings (los demás suben)", async () => {
     const { headers, user } = await signIn(newEmail());
+    await verifyEverywhere(db, user.id);
     const store = createLeaderboardStore(redis, process.env.REDIS_KEY_PREFIX!);
     const startsAt = new Date();
     const saved = await createSaveGame(db)({
@@ -220,6 +224,7 @@ describe("cuentas con Better Auth", () => {
       ipHash: null,
       startsAt,
       finishedAt: startsAt,
+      words: [],
       batches: [],
     });
     const boards = saved.improved.map((best) => ({

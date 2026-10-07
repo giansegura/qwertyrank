@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
@@ -23,6 +24,7 @@ async function playerWithGame(status: "active" | "banned"): Promise<string> {
     .insert(users)
     .values({ name: "", email: `${randomUUID()}@example.com`, nick: `rb_${randomUUID().slice(0, 8)}`, status })
     .returning({ id: users.id });
+  await verifyEverywhere(db, row.id);
   const startsAt = new Date();
   await saveGame({
     id: randomUUID(),
@@ -38,6 +40,7 @@ async function playerWithGame(status: "active" | "banned"): Promise<string> {
     ipHash: null,
     startsAt,
     finishedAt: startsAt,
+    words: [],
     batches: [],
   });
   return row.id;

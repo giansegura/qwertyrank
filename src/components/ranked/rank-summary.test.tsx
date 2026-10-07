@@ -1,9 +1,20 @@
-import { screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { RankSummary } from "./rank-summary";
 
 const RANKS = { day: 3, week: 10, month: 25, all: 120 };
+const VERIFICATION = {
+  id: "v1",
+  language: "es" as const,
+  inputType: "physical" as const,
+  targetWpm: 61.5,
+  requiredWpm: 52.3,
+  attemptsLeft: 2,
+  // Dentro de 5 h y media: "quedan 6 h".
+  expiresAt: new Date(Date.now() + 5.5 * 3_600_000).toISOString(),
+};
 
 describe("RankSummary", () => {
   it("con cuenta: la posición en cada periodo, si es nueva marca y el enlace al ranking del idioma del test", () => {
@@ -64,5 +75,91 @@ describe("RankSummary", () => {
       <RankSummary ranking={{ kind: "unranked" }} gameId="g1" language="en" inputType="touch" />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("en review: la posición que tendría, lo que necesita, intentos y horas, y el botón de verificar", async () => {
+    const onVerify = vi.fn();
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { week: 1, all: 4 }, verification: VERIFICATION }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+        onVerify={onVerify}
+      />,
+    );
+    const summary = screen.getByTestId("rank-summary");
+    expect(summary).toHaveTextContent("Your score would be #1 this week · #4 all time.");
+    expect(summary).toHaveTextContent("a 30-second game with the text shown as an image. You need 52.3 wpm.");
+    expect(await screen.findByText("2 attempts · 6 h left")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("verify-now"));
+    expect(onVerify).toHaveBeenCalledWith(VERIFICATION);
+  });
+
+  it("en review tras «Guárdalo» (sin partida en la misma pantalla), «Verificar ahora» lleva a /verify", () => {
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { all: 4 }, verification: VERIFICATION }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+      />,
+      "es",
+    );
+    expect(screen.getByTestId("verify-now")).toHaveAttribute("href", "/es/verificar");
+  });
+
+  it("un récord en review avisa a la cabecera de que hay una verificación nueva; una marca publicada, no", () => {
+    const changed = vi.fn();
+    window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+    onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
+    const { unmount } = renderWithIntl(
+      <RankSummary ranking={{ kind: "ranked", ranks: RANKS, improved: [] }} gameId="g1" language="es" inputType="physical" />,
+    );
+    unmount();
+    expect(changed).not.toHaveBeenCalled();
+
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { all: 4 }, verification: VERIFICATION }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+      />,
+    );
+    expect(changed).toHaveBeenCalledOnce();
+  });
+
+  it("en review, en español: «Tu marca entraría…» y las PPM con coma", () => {
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { day: 2, week: 2, month: 2, all: 9 }, verification: VERIFICATION }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+        onVerify={() => {}}
+      />,
+      "es",
+    );
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("Tu marca entraría #2 hoy · #2 esta semana · #2 este mes · #9 de siempre.");
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("Necesitas 52,3 ppm.");
+  });
+
+  it("en review sin intentos: no se puede verificar, sin el botón ni lo que necesitaría", () => {
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { day: 2, all: 9 }, verification: { ...VERIFICATION, attemptsLeft: 0 } }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+        onVerify={() => {}}
+      />,
+      "es",
+    );
+    const summary = screen.getByTestId("rank-summary");
+    expect(summary).toHaveTextContent("Tu marca entraría #2 hoy · #9 de siempre.");
+    expect(summary).toHaveTextContent("No se ha podido verificar. Tu partida no entra en el ranking; puedes intentarlo con otra.");
+    expect(summary).not.toHaveTextContent("Necesitas");
+    expect(screen.queryByTestId("verify-now")).toBeNull();
   });
 });

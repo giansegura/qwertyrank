@@ -13,6 +13,13 @@ export const ACTION_LABEL: Record<string, string> = {
 };
 export const REASON_LABEL: Record<string, string> = { cheating: "Trampas", offensive_nick: "Nick ofensivo" };
 export const REPORT_STATUS_LABEL: Record<string, string> = { open: "Abierta", dismissed: "Descartada", actioned: "Resuelta" };
+export const RECORD_STATE_LABEL: Record<string, string> = {
+  pending: "Pendiente",
+  verified: "Verificado",
+  failed: "Fallido",
+  expired: "Caducado",
+};
+export const MODE_LABEL: Record<string, string> = { ranked: "Ranked", verification: "Verificación" };
 
 export const TABLE = "w-full border-collapse text-left text-sm";
 export const HEAD_ROW = "border-b border-zinc-300 dark:border-zinc-700";

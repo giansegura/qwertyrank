@@ -2,8 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import type { ClaimResponse } from "@/lib/game/types";
+import { useVerificationModule } from "../verification/use-verification-module";
 import { GameApiError, claimGame } from "./api";
 import { RankSummary } from "./rank-summary";
 
@@ -16,8 +17,12 @@ const SAVE_ERRORS: Record<string, SaveError> = { expired: "expired", not_found: 
 /** Pasa a la cuenta la partida anónima de este navegador (spec §3.7) y enseña sus posiciones. */
 export function SaveGame({ gameId }: { gameId: string }) {
   const t = useTranslations("Save");
+  const router = useRouter();
   const [state, setState] = useState<State>({ name: "saving" });
   const [attempt, setAttempt] = useState(0);
+  // "Verificar ahora" (spec 4b §4.1): la partida de verificación, en esta misma pantalla y descargada al
+  // pulsarlo.
+  const verification = useVerificationModule();
 
   useEffect(() => {
     let active = true;
@@ -47,6 +52,10 @@ export function SaveGame({ gameId }: { gameId: string }) {
 
   if (state.name === "saving") return <p role="status">{t("saving")}</p>;
 
+  // Al acabar la verificación, "Jugar Ranked": a la portada.
+  const verifying = verification.view(() => router.push("/"));
+  if (verifying) return verifying;
+
   if (state.name === "saved") {
     return (
       <div data-testid="save-result" className="flex flex-col gap-4">
@@ -56,6 +65,7 @@ export function SaveGame({ gameId }: { gameId: string }) {
           gameId={gameId}
           language={state.claim.language}
           inputType={state.claim.inputType}
+          onVerify={verification.verify}
         />
         {playAgain}
       </div>

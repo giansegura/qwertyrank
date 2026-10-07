@@ -60,7 +60,12 @@
     "challenge": "Checking that you're human…",
     "challengeFailed": "We couldn't check that you're human. Try again.",
     "banned": "Your account can't play ranked games.",
-    "rateLimited": "You've played a lot of games in the last hour. Come back in {minutes} min."
+    "rateLimited": "You've played a lot of games in the last hour. Come back in {minutes} min.",
+    "reviewWouldRank": "Your score would be {ranks}.",
+    "reviewExplain": "To show it on the ranking, verify it: a 30-second game with the text shown as an image. You need {required, number} wpm.",
+    "reviewLeft": "{attempts, plural, one {# attempt} other {# attempts}} · {hours} h left",
+    "verifyNow": "Verify now",
+    "verifyLoading": "Preparing the verification…"
   },
   "Login": {
     "title": "Sign in to QwertyRank",
@@ -171,5 +176,30 @@
     "magicLinkIntro": "Use this link to sign in to QwertyRank. It expires in 10 minutes and works only once.",
     "magicLinkButton": "Sign in to QwertyRank",
     "magicLinkIgnore": "If you didn't ask for this email, you can ignore it."
+  },
+  "Verification": {
+    "canvasLabel": "Text to type, shown as an image",
+    "label": "Record verification",
+    "starting": "Preparing your verification game…",
+    "needs": "You need {required, number} wpm",
+    "verified": "Verified! Your record is now on the ranking.",
+    "score": "{wpm} wpm · {accuracy}%",
+    "short": "You were {wpm, number} wpm short.",
+    "lowAccuracy": "You need at least 90% accuracy.",
+    "otherKeyboard": "You have to use the same keyboard as in your record ({input, select, physical {physical} touch {touch} other {}}).",
+    "attemptsLeft": "{attempts, plural, one {You have # attempt left.} other {You have # attempts left.}}",
+    "retry": "Try again",
+    "exhausted": "It couldn't be verified. Your game won't enter the ranking; you can try with another one.",
+    "noLongerAvailable": "This verification is no longer available.",
+    "play": "Play Ranked",
+    "backToRecords": "Back to your records",
+    "sessionExpired": "Your session has expired.",
+    "notice": "Record pending verification · {hours} h left",
+    "title": "Records to verify",
+    "intro": "Your best games wait here until you verify them: a 30-second game with the text shown as an image, with the same keyboard.",
+    "empty": "You have no records waiting for verification.",
+    "item": "Record: {target, number} wpm · you need {required, number} wpm · {attempts, plural, one {# attempt} other {# attempts}}",
+    "hoursLeft": "{hours} h left",
+    "verify": "Verify"
   }
 }

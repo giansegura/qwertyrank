@@ -1,12 +1,23 @@
 import { act, fireEvent, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { FinishResponse } from "@/lib/game/types";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, finishGame, sendKeys, startGame } from "./api";
 import { solveChallenge } from "./challenge";
-import { RankedTest, SUBMIT_DEADLINE_MS } from "./ranked-test";
+import { SUBMIT_DEADLINE_MS } from "./game-flow";
+import { RankedTest } from "./ranked-test";
 
 vi.mock("./challenge", () => ({ solveChallenge: vi.fn() }));
+
+// La partida de verificación tiene sus propias pruebas: aquí solo importa que se carga en su lugar.
+vi.mock("../verification/verification-game", () => ({
+  VerificationGame: ({ verification, onDone }: { verification: { id: string }; onDone: () => void }) => (
+    <button type="button" data-testid="verification-game" onClick={onDone}>
+      {verification.id}
+    </button>
+  ),
+}));
 
 vi.mock("./api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./api")>()),
@@ -227,6 +238,110 @@ describe("RankedTest", () => {
     });
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #4 today.");
     expect(screen.getByTestId("save-game")).toHaveAttribute("href", "/en/save/g1");
+  });
+});
+
+describe("RankedTest: récord en review", () => {
+  const VERIFICATION = {
+    id: "v1",
+    language: "es" as const,
+    inputType: "physical" as const,
+    targetWpm: 120,
+    requiredWpm: 102,
+    attemptsLeft: 3,
+    expiresAt: "2026-10-08T10:00:00.000Z",
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.mocked(startGame).mockResolvedValue(GAME);
+    vi.mocked(sendKeys).mockResolvedValue(undefined);
+    vi.mocked(finishGame).mockResolvedValue(
+      response({ verdict: "review", ranking: { kind: "review", ranks: { day: 1, all: 7 }, verification: VERIFICATION } }),
+    );
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  it("«Verificar ahora» carga la partida de verificación en la misma pantalla; al acabar, vuelve a Ranked", async () => {
+    const changed = vi.fn();
+    window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+    onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
+    renderWithIntl(<RankedTest language="es" />);
+    await startAndCountDown();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.dynamicImportSettled();
+    });
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1 today · #7 all time.");
+    // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
+    expect(changed).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByTestId("verify-now"));
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    expect(screen.getByTestId("verification-game")).toHaveTextContent("v1");
+    expect(screen.queryByTestId("typing-area")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("verification-game"));
+    expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
+  });
+
+  /** Juega una partida que queda en `review` (con el resumen ya descargado). */
+  async function playToReview() {
+    renderWithIntl(<RankedTest language="es" />);
+    await startAndCountDown();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.dynamicImportSettled();
+    });
+  }
+
+  /** Pulsa «Verificar ahora» y deja que se descargue la partida de verificación. */
+  async function verifyNow() {
+    fireEvent.click(screen.getByTestId("verify-now"));
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+  }
+
+  it("al volver de la verificación, el campo oculto tiene el foco: Espacio empieza otra partida", async () => {
+    await playToReview();
+    await verifyNow();
+    fireEvent.click(screen.getByTestId("verification-game"));
+    const input = screen.getByTestId("typing-input");
+    expect(input).toHaveFocus();
+
+    vi.mocked(startGame).mockClear();
+    fireEvent.keyDown(input, { key: " ", code: "Space" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(startGame).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("countdown")).toBeInTheDocument();
+  });
+
+  it("si no se puede descargar la partida de verificación, vuelve a Ranked y dice que no está disponible", async () => {
+    await playToReview();
+    // Con el resumen ya descargado, falla la descarga de la partida de verificación.
+    const fakeGame = await import("../verification/verification-game");
+    vi.doMock("../verification/verification-game", () => {
+      throw new Error("chunk load failed");
+    });
+    vi.resetModules();
+    try {
+      await verifyNow();
+      expect(screen.queryByTestId("verification-game")).toBeNull();
+      expect(screen.getByText(/isn't available right now/)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Go to practice" })).toBeInTheDocument();
+      expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
+    } finally {
+      vi.doMock("../verification/verification-game", () => fakeGame);
+      vi.resetModules();
+    }
   });
 });
 

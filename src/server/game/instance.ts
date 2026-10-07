@@ -7,6 +7,7 @@ import { serverEnv } from "../env";
 import { getRanking } from "../leaderboard/instance";
 import { createRateLimiter } from "../rate-limit";
 import { getRedis } from "../redis";
+import { createSaveVerificationGame } from "../verification/finish";
 import { createClaimGame } from "./claim";
 import { createSaveGame } from "./persist";
 import { createGameService, type GameService } from "./service";
@@ -27,6 +28,7 @@ export function gameService(): GameService {
   service ??= createGameService({
     store: createGameStore(getRedis(), serverEnv().REDIS_KEY_PREFIX),
     saveGame: createSaveGame(getDb()),
+    saveVerificationGame: createSaveVerificationGame(getDb()),
     loadWords: loadWordList,
     random: secureRandom,
     newId: randomUUID,

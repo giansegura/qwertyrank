@@ -20,6 +20,12 @@ export interface GameTimes {
   graceMs: number;
 }
 
+/** Partida de verificación (spec 4b §3.1): de qué verificación y qué intento es. */
+export interface StartedVerification {
+  id: string;
+  attempt: number;
+}
+
 export interface NewGame {
   id: string;
   owner: string;
@@ -28,6 +34,8 @@ export interface NewGame {
   words: readonly string[];
   env: ClientEnv;
   times: GameTimes;
+  /** Solo en una partida de verificación. */
+  verification?: StartedVerification;
 }
 
 export interface StoredGame {
@@ -42,6 +50,8 @@ export interface StoredGame {
   startsAt: number;
   deadline: number;
   lastSeq: number;
+  /** `null` en una partida Ranked. */
+  verification: StartedVerification | null;
 }
 
 export interface StoredBatch {
@@ -76,7 +86,8 @@ local deadline = startsAt + tonumber(ARGV[7]) + tonumber(ARGV[8])
 redis.call('HSET', KEYS[1],
   'owner', ARGV[2], 'userId', ARGV[10], 'language', ARGV[3], 'words', ARGV[4], 'env', ARGV[5], 'durationMs', ARGV[7],
   'issuedAt', string.format('%.0f', now), 'startsAt', string.format('%.0f', startsAt),
-  'deadline', string.format('%.0f', deadline), 'lastSeq', '0', 'status', 'active')
+  'deadline', string.format('%.0f', deadline), 'lastSeq', '0', 'status', 'active',
+  'mode', ARGV[11], 'verificationId', ARGV[12], 'verificationAttempt', ARGV[13])
 redis.call('EXPIRE', KEYS[1], ARGV[9])
 local previous = redis.call('GET', KEYS[2])
 redis.call('SET', KEYS[2], ARGV[1], 'EX', ARGV[9])
@@ -140,6 +151,10 @@ function parseGame(id: string, flat: string[]): StoredGame {
     startsAt: Number(field("startsAt")),
     deadline: Number(field("deadline")),
     lastSeq: Number(field("lastSeq")),
+    verification:
+      field("mode") === "verification"
+        ? { id: field("verificationId"), attempt: Number(field("verificationAttempt")) }
+        : null,
   };
 }
 
@@ -178,6 +193,9 @@ export function createGameStore(redis: Redis, prefix: string): GameStore {
           String(graceMs),
           String(GAME_TTL_SECONDS),
           game.userId ?? "",
+          game.verification ? "verification" : "ranked",
+          game.verification?.id ?? "",
+          game.verification ? String(game.verification.attempt) : "",
         ],
       )) as [string, string];
       if (previous && previous !== game.id) await redis.eval(ABANDON, [gameKey(previous)], []);
@@ -194,6 +212,7 @@ export function createGameStore(redis: Redis, prefix: string): GameStore {
         startsAt,
         deadline: startsAt + durationMs + graceMs,
         lastSeq: 0,
+        verification: game.verification ?? null,
       };
     },
 

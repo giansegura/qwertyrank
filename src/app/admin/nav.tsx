@@ -7,6 +7,7 @@ export function AdminNav() {
         Moderación
       </Link>
       <Link href="/admin/players">Jugadores</Link>
+      <Link href="/admin/records">Récords</Link>
     </nav>
   );
 }

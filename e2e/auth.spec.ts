@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { closeDb, randomClientIp, signUp, userIdByEmail, verdictsOf } from "./helpers/accounts";
+import { closeDb, randomClientIp, seedVerifiedLevels, signUp, userIdByEmail, verdictsOf } from "./helpers/accounts";
 import { playValidGame } from "./helpers/ranked";
 
 test.describe.configure({ timeout: 90_000 });
@@ -33,6 +33,7 @@ test("registro con enlace por email: nick propuesto, bienvenida y cambio de nick
 
 test("una partida Ranked con sesión se guarda a nombre del jugador", async ({ page }) => {
   const email = await signUp(page, "en");
+  await seedVerifiedLevels(email);
   await playValidGame(page);
   await expect(page.getByTestId("ranked-status")).toHaveText("Valid game");
 

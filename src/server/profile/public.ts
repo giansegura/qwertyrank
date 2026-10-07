@@ -36,7 +36,8 @@ async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
         accuracy: games.accuracy,
       })
       .from(games)
-      .where(and(eq(games.userId, user.id), eq(games.verdict, "valid")))
+      // Las partidas de verificación no se enseñan (spec 4b §5.3).
+      .where(and(eq(games.userId, user.id), eq(games.verdict, "valid"), eq(games.mode, "ranked")))
       .orderBy(desc(games.startsAt))
       .limit(PROFILE_HISTORY_SIZE),
   ]);

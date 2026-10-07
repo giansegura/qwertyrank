@@ -1,5 +1,6 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { RankSummary } from "./rank-summary";
 
@@ -93,6 +94,40 @@ describe("RankSummary", () => {
     expect(await screen.findByText("2 attempts · 6 h left")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("verify-now"));
     expect(onVerify).toHaveBeenCalledWith(VERIFICATION);
+  });
+
+  it("en review tras «Guárdalo» (sin partida en la misma pantalla), «Verificar ahora» lleva a /verify", () => {
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { all: 4 }, verification: VERIFICATION }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+      />,
+      "es",
+    );
+    expect(screen.getByTestId("verify-now")).toHaveAttribute("href", "/es/verificar");
+  });
+
+  it("un récord en review avisa a la cabecera de que hay una verificación nueva; una marca publicada, no", () => {
+    const changed = vi.fn();
+    window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+    onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
+    const { unmount } = renderWithIntl(
+      <RankSummary ranking={{ kind: "ranked", ranks: RANKS, improved: [] }} gameId="g1" language="es" inputType="physical" />,
+    );
+    unmount();
+    expect(changed).not.toHaveBeenCalled();
+
+    renderWithIntl(
+      <RankSummary
+        ranking={{ kind: "review", ranks: { all: 4 }, verification: VERIFICATION }}
+        gameId="g1"
+        language="es"
+        inputType="physical"
+      />,
+    );
+    expect(changed).toHaveBeenCalledOnce();
   });
 
   it("en review, en español: «Tu marca entraría…» y las PPM con coma", () => {

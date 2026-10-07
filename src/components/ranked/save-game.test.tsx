@@ -1,5 +1,6 @@
 import { act, fireEvent, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, claimGame } from "./api";
 import { SaveGame } from "./save-game";
@@ -67,8 +68,13 @@ describe("SaveGame", () => {
       expiresAt: "2026-10-08T10:00:00.000Z",
     };
     vi.mocked(claimGame).mockResolvedValue({ ...SAVED, ranking: { kind: "review", ranks: { day: 1, all: 7 }, verification } });
+    const changed = vi.fn();
+    window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+    onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
     renderWithIntl(<SaveGame gameId="g1" />);
     fireEvent.click(await screen.findByTestId("verify-now"));
+    // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
+    expect(changed).toHaveBeenCalledOnce();
     await act(async () => {
       await vi.dynamicImportSettled();
     });

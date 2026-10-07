@@ -1,12 +1,15 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useEffectEvent, type ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
+import { loginHref } from "@/lib/auth-paths";
 import type { VerificationFinishResponse } from "@/lib/game/types";
 import { displayAccuracy, displayWpm } from "@/lib/scoring/metrics";
 import { OFFICIAL_DURATION_MS } from "@/lib/scoring/durations";
 import { VERIFICATION_MIN_ACCURACY, type PendingVerification } from "@/lib/verification";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { readClientEnv } from "../ranked/client-env";
 import { BLOCK_MESSAGE, REASON_MESSAGE } from "../ranked/game-flow";
 import { RankSummary } from "../ranked/rank-summary";
@@ -17,8 +20,8 @@ import { CanvasWords } from "./canvas-words";
 
 export interface VerificationGameProps {
   verification: PendingVerification;
-  /** Al acabar: volver a Ranked (en la portada, o desde `/verify`). */
-  onDone: () => void;
+  /** Al acabar: volver a Ranked (en la portada, o desde `/verify`). `gone`: la verificación ya no existía (409). */
+  onDone: (gone: boolean) => void;
 }
 
 /**
@@ -38,6 +41,8 @@ export function VerificationGame({ verification, onDone }: VerificationGameProps
   const t = useTranslations("Verification");
   const tr = useTranslations("Ranked");
   const tt = useTranslations("TypingTest");
+  const tn = useTranslations("Nav");
+  const pathname = usePathname();
   const { phase, session, challengeRef, ...game } = useServerGame<VerificationFinishResponse>();
   // Tab no empieza otra partida: cada inicio gasta un intento.
   const typing = useTypingInput({ target: session, onRestart: () => {} });
@@ -56,8 +61,15 @@ export function VerificationGame({ verification, onDone }: VerificationGameProps
     return () => clearTimeout(timer);
   }, []);
 
+  // La verificación ha cambiado (superada, con un intento menos o agotada) o ya no existe: el aviso de la
+  // cabecera vuelve a pedir las pendientes.
+  const gone = phase.name === "not_started" && phase.failure.kind === "no_pending";
+  useEffect(() => {
+    if (phase.name === "result" || gone) window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
+  }, [phase, gone]);
+
   const doneButton = (
-    <button type="button" data-testid="verify-done" onClick={onDone} className="self-start font-medium underline">
+    <button type="button" data-testid="verify-done" onClick={() => onDone(gone)} className="self-start font-medium underline">
       {t("play")}
     </button>
   );
@@ -167,18 +179,26 @@ export function VerificationGame({ verification, onDone }: VerificationGameProps
     const { failure } = phase;
     body = (
       <div data-testid="verify-unavailable" className="flex flex-col gap-3">
-        <p className="max-w-md">
-          {failure.kind === "no_pending"
-            ? t("noLongerAvailable")
-            : failure.kind === "blocked"
+        {failure.kind === "no_pending" ? (
+          <p className="max-w-md">{t("noLongerAvailable")}</p>
+        ) : failure.kind === "unauthorized" ? (
+          // La sesión ha caducado: a entrar y de vuelta a esta página.
+          <p className="max-w-md">
+            {t("sessionExpired")}{" "}
+            <Link href={loginHref(pathname)} className="font-medium underline">
+              {tn("signIn")}
+            </Link>
+          </p>
+        ) : (
+          <p className="max-w-md">
+            {failure.kind === "blocked"
               ? tr(BLOCK_MESSAGE[failure.reason], { minutes: failure.minutes })
               : tr("unavailable")}{" "}
-          {failure.kind !== "no_pending" && (
             <Link href="/practice" className="font-medium underline">
               {tr("practiceLink")}
             </Link>
-          )}
-        </p>
+          </p>
+        )}
         {doneButton}
       </div>
     );

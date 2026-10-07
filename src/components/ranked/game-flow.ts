@@ -44,6 +44,7 @@ export const BLOCK_MESSAGE: Record<BlockReason, "challengeFailed" | "banned" | "
 export type StartFailure =
   | { kind: "blocked"; reason: BlockReason; minutes: number }
   | { kind: "no_pending" }
+  | { kind: "unauthorized" }
   | { kind: "unavailable" };
 
 /** Por qué no ha empezado la partida (spec 4a §2.1; spec 4b §4.2; spec §8.4). */
@@ -57,6 +58,8 @@ export function startFailure(error: unknown): StartFailure {
     return { kind: "blocked", reason: "rate_limited", minutes: Math.max(1, Math.ceil((error.retryAfter ?? 60) / 60)) };
   }
   if (error.code === "no_pending_verification") return { kind: "no_pending" };
+  // Una verificación sin sesión: ha caducado (p. ej. en `/verify`, abierta desde ayer).
+  if (error.code === "unauthorized") return { kind: "unauthorized" };
   return { kind: "unavailable" };
 }
 

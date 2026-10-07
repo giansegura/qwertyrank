@@ -191,6 +191,14 @@
     "retry": "Tentar novamente",
     "exhausted": "Não foi possível verificar. Sua partida não entra no ranking; você pode tentar com outra.",
     "noLongerAvailable": "Esta verificação não está mais disponível.",
-    "play": "Jogar Ranked"
+    "play": "Jogar Ranked",
+    "sessionExpired": "Sua sessão expirou.",
+    "notice": "Recorde pendente de verificação · faltam {hours} h",
+    "title": "Recordes para verificar",
+    "intro": "Suas melhores partidas esperam aqui até você verificá-las: uma partida de 30 s com o texto em uma imagem, com o mesmo teclado.",
+    "empty": "Você não tem recordes pendentes de verificação.",
+    "item": "Recorde: {target, number} ppm · você precisa de {required, number} ppm · {attempts, plural, one {# tentativa} other {# tentativas}}",
+    "hoursLeft": "faltam {hours} h",
+    "verify": "Verificar"
   }
 }

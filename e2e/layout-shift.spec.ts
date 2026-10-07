@@ -66,3 +66,51 @@ test("el ranking no se mueve cuando llegan tu posición y la cuenta atrás (CLS)
   await page.waitForTimeout(500);
   expect(await layoutShift(page)).toBeLessThan(0.001);
 });
+
+/** Sesión simulada: lo que importa es el aviso bajo el menú, no quién es el jugador. */
+async function fakeSession(page: Page) {
+  await page.route("**/api/auth/get-session", (route) =>
+    route.fulfill({ json: { session: { id: "s" }, user: { nick: "gian_42" } } }),
+  );
+}
+
+test("el aviso de récord pendiente no mueve la cabecera ni la página (CLS)", async ({ page }, testInfo) => {
+  if (testInfo.project.name === "mobile") await page.setViewportSize({ width: 360, height: 640 });
+  await trackLayoutShifts(page);
+  await fakeSession(page);
+  await page.route("**/api/verification", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    const expiresAt = new Date(Date.now() + 5 * 3_600_000).toISOString();
+    await route.fulfill({
+      json: {
+        pending: [
+          { id: "v1", language: "en", inputType: "physical", targetWpm: 100, requiredWpm: 85, attemptsLeft: 3, expiresAt },
+        ],
+      },
+    });
+  });
+
+  await page.goto("/en/practice");
+  await expect(page.getByTestId("verify-notice")).toContainText("Record pending verification");
+  await page.waitForTimeout(500);
+  expect(await layoutShift(page)).toBeLessThan(0.001);
+  expect((await page.locator("header").boundingBox())!.height).toBeLessThanOrEqual(60);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(page.viewportSize()!.width);
+});
+
+test("si GET /api/verification falla, ni aviso ni salto en la cabecera", async ({ page }) => {
+  await trackLayoutShifts(page);
+  await fakeSession(page);
+  let asked = false;
+  await page.route("**/api/verification", async (route) => {
+    asked = true;
+    await route.fulfill({ status: 503, json: { error: "unavailable" } });
+  });
+
+  await page.goto("/en/practice");
+  await expect(page.getByTestId("user-menu")).toHaveAttribute("aria-label", "Your account: gian_42");
+  await expect.poll(() => asked).toBe(true);
+  await page.waitForTimeout(500);
+  await expect(page.getByTestId("verify-notice")).toHaveCount(0);
+  expect(await layoutShift(page)).toBeLessThan(0.001);
+});

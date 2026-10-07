@@ -191,6 +191,14 @@
     "retry": "Try again",
     "exhausted": "It couldn't be verified. Your game won't enter the ranking; you can try with another one.",
     "noLongerAvailable": "This verification is no longer available.",
-    "play": "Play Ranked"
+    "play": "Play Ranked",
+    "sessionExpired": "Your session has expired.",
+    "notice": "Record pending verification · {hours} h left",
+    "title": "Records to verify",
+    "intro": "Your best games wait here until you verify them: a 30-second game with the text shown as an image, with the same keyboard.",
+    "empty": "You have no records waiting for verification.",
+    "item": "Record: {target, number} wpm · you need {required, number} wpm · {attempts, plural, one {# attempt} other {# attempts}}",
+    "hoursLeft": "{hours} h left",
+    "verify": "Verify"
   }
 }

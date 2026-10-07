@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { FinishResponse } from "@/lib/game/types";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, finishGame, sendKeys, startGame } from "./api";
 import { solveChallenge } from "./challenge";
@@ -265,6 +266,9 @@ describe("RankedTest: récord en review", () => {
   });
 
   it("«Verificar ahora» carga la partida de verificación en la misma pantalla; al acabar, vuelve a Ranked", async () => {
+    const changed = vi.fn();
+    window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+    onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
     await act(async () => {
@@ -272,6 +276,8 @@ describe("RankedTest: récord en review", () => {
       await vi.dynamicImportSettled();
     });
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1 today · #7 all time.");
+    // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
+    expect(changed).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByTestId("verify-now"));
     await act(async () => {

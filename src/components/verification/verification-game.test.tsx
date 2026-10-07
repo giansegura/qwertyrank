@@ -1,6 +1,7 @@
 import { act, fireEvent, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { VerificationFinishResponse } from "@/lib/game/types";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { GameApiError, finishGame, sendKeys, startGame } from "../ranked/api";
 import { solveChallenge } from "../ranked/challenge";
@@ -12,6 +13,11 @@ vi.mock("../ranked/api", async (importOriginal) => ({
   startGame: vi.fn(),
   sendKeys: vi.fn(),
   finishGame: vi.fn(),
+}));
+// La página en la que se juega: a ella vuelve el enlace a entrar si la sesión ha caducado.
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  usePathname: () => "/en/verify",
 }));
 // jsdom no dibuja: el canvas tiene sus propias pruebas.
 vi.mock("./canvas-words", () => ({ CanvasWords: () => <canvas data-testid="verify-canvas" /> }));
@@ -54,6 +60,14 @@ async function mount(onDone = vi.fn()) {
     await vi.advanceTimersByTimeAsync(0);
   });
   return onDone;
+}
+
+/** Cuenta las veces que la partida avisa a la cabecera de que sus verificaciones han cambiado. */
+function listenVerificationChanged() {
+  const changed = vi.fn();
+  window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
+  onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
+  return changed;
 }
 
 /** Cuenta atrás y 30 s de partida hasta el resultado. */
@@ -118,19 +132,25 @@ describe("VerificationGame", () => {
         verification: { kind: "verified", ranking: { kind: "ranked", ranks: { day: 3, all: 40 }, improved: ["day"] } },
       }),
     );
+    const changed = listenVerificationChanged();
     const onDone = await mount();
+    expect(changed).not.toHaveBeenCalled();
     await playToTheEnd();
     expect(finishGame).toHaveBeenCalledWith("g1", { lastSeq: 0 });
     expect(screen.getByTestId("verify-result")).toHaveTextContent("Verified! Your record is now on the ranking.");
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("#3 today · #40 all time");
+    // El aviso de la cabecera vuelve a pedir las pendientes: esta ya no lo está.
+    expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-done"));
-    expect(onDone).toHaveBeenCalled();
+    expect(onDone).toHaveBeenCalledWith(false);
   });
 
   it("no superada: cuánto le faltó y cuántos intentos quedan, y deja reintentar", async () => {
+    const changed = listenVerificationChanged();
     await mount();
     await playToTheEnd();
     expect(screen.getByTestId("verify-result")).toHaveTextContent("You were 5 wpm short. You have 2 attempts left.");
+    expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-retry"));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
@@ -242,10 +262,24 @@ describe("VerificationGame", () => {
     expect(finishGame).not.toHaveBeenCalled();
   });
 
-  it("si ya no está pendiente (409), lo dice", async () => {
+  it("si ya no está pendiente (409), lo dice, avisa a la cabecera y «Jugar Ranked» sabe que ya no existe", async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(409, "no_pending_verification"));
-    await mount();
+    const changed = listenVerificationChanged();
+    const onDone = await mount();
     expect(screen.getByTestId("verify-unavailable")).toHaveTextContent("This verification is no longer available.");
+    expect(changed).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByTestId("verify-done"));
+    expect(onDone).toHaveBeenCalledWith(true);
+  });
+
+  it("si la sesión ha caducado (401), lo dice y enlaza a entrar y volver aquí", async () => {
+    vi.mocked(startGame).mockRejectedValue(new GameApiError(401, "unauthorized"));
+    await mount();
+    const unavailable = screen.getByTestId("verify-unavailable");
+    expect(unavailable).toHaveTextContent("Your session has expired.");
+    expect(unavailable).not.toHaveTextContent("Ranked isn't available");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/en/sign-in?next=%2Fen%2Fverify");
+    expect(screen.queryByRole("link", { name: "Go to practice" })).toBeNull();
   });
 
   it("los errores de la puerta se tratan como en Ranked", async () => {

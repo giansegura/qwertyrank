@@ -1,3 +1,4 @@
+import { gzipSync } from "node:zlib";
 import { loadEnvConfig } from "@next/env";
 import { expect, type Page } from "@playwright/test";
 import { Redis } from "@upstash/redis";
@@ -102,6 +103,68 @@ export async function seedRankedPlayer(nick: string): Promise<string> {
     insert into period_bests (user_id, language, input_type, period_type, period_key, game_id, wpm, accuracy, score, achieved_at)
     values (${user.id}, 'en', 'physical', 'all', 'all', ${gameId}, 250, 99, ${Number.MAX_SAFE_INTEGER}, ${now})`;
   return user.id;
+}
+
+/** Eventos de teclear `text` letra a letra, una cada 150 ms, como los guarda el servidor. */
+function typingEvents(text: string) {
+  return [...text].flatMap((char, i) => {
+    const code = char === " " ? "Space" : `Key${char.toUpperCase()}`;
+    return [
+      { t: i * 150, type: "down", key: char, code, trusted: true },
+      { t: i * 150 + 1, type: "input", deleted: 0, inserted: char, trusted: true },
+      { t: i * 150 + 60, type: "up", key: char, code, trusted: true },
+    ];
+  });
+}
+
+/** Cómo es el registro de pulsaciones de una partida sembrada: el de la 4b, el anterior, uno roto o ninguno. */
+export type SeededLog = "words" | "batches" | "broken" | "none";
+
+/**
+ * Una partida de `userId` esperando verificación (como la deja `finish`, spec 4b §2.2), en inglés y
+ * teclado físico, con el registro de pulsaciones que se pida. Devuelve la partida y la verificación.
+ */
+export async function seedPendingVerification(
+  userId: string,
+  { wpm = 80, log = "words" as SeededLog } = {},
+): Promise<{ gameId: string; verificationId: string }> {
+  const gameId = crypto.randomUUID();
+  const now = new Date();
+  await db()`
+    insert into games (id, user_id, anon_id, language, input_type, wpm, raw_wpm, accuracy, verdict, starts_at, finished_at)
+    values (${gameId}, ${userId}, ${crypto.randomUUID()}, 'en', 'physical', ${wpm}, ${wpm}, 98, 'review', ${now}, ${now})`;
+  const batches = [{ seq: 1, arrivedAt: now.getTime(), events: typingEvents("hxla mundo ") }];
+  const events = {
+    words: gzipSync(JSON.stringify({ words: ["hola", "mundo", "azul"], batches })),
+    batches: gzipSync(JSON.stringify(batches)),
+    broken: Buffer.from("no es gzip"),
+    none: null,
+  }[log];
+  if (events) await db()`insert into keystroke_logs (game_id, events) values (${gameId}, ${events})`;
+  const [row] = await db()<{ id: string }[]>`
+    insert into record_verifications (user_id, language, input_type, game_id, expires_at)
+    values (${userId}, 'en', 'physical', ${gameId}, now() + interval '24 hours') returning id`;
+  await db()`update games set verification_id = ${row.id} where id = ${gameId}`;
+  return { gameId, verificationId: row.id };
+}
+
+/**
+ * Borra la cuenta y la saca de Redis (como al borrarla desde ajustes): las marcas de una prueba no deben
+ * quitarle a la siguiente ejecución el top 10 de hoy.
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+  const match = `${process.env.REDIS_KEY_PREFIX ?? "qr:"}lb:*`;
+  let cursor = "0";
+  do {
+    const [next, keys] = await redis.scan(cursor, { match, count: 500 });
+    if (keys.length > 0) {
+      const pipeline = redis.pipeline();
+      for (const key of keys) pipeline.zrem(key, userId);
+      await pipeline.exec();
+    }
+    cursor = String(next);
+  } while (cursor !== "0");
+  await db()`delete from users where id = ${userId}`;
 }
 
 export async function closeDb(): Promise<void> {

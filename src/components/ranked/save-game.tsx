@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { ClaimResponse } from "@/lib/game/types";
-import type { PendingVerification } from "@/lib/verification";
+import { useVerificationModule } from "../verification/use-verification-module";
 import { GameApiError, claimGame } from "./api";
 import { RankSummary } from "./rank-summary";
 
@@ -14,19 +14,15 @@ type State = { name: "saving" } | { name: "saved"; claim: ClaimResponse } | { na
 
 const SAVE_ERRORS: Record<string, SaveError> = { expired: "expired", not_found: "notFound" };
 
-type VerificationGameComponent = typeof import("../verification/verification-game").VerificationGame;
-
 /** Pasa a la cuenta la partida anónima de este navegador (spec §3.7) y enseña sus posiciones. */
 export function SaveGame({ gameId }: { gameId: string }) {
   const t = useTranslations("Save");
-  const tr = useTranslations("Ranked");
   const router = useRouter();
   const [state, setState] = useState<State>({ name: "saving" });
   const [attempt, setAttempt] = useState(0);
   // "Verificar ahora" (spec 4b §4.1): la partida de verificación, en esta misma pantalla y descargada al
-  // pulsarlo; `unavailable` si la descarga falla.
-  const [verifying, setVerifying] = useState<PendingVerification | "unavailable" | null>(null);
-  const [VerificationGame, setVerificationGame] = useState<VerificationGameComponent | null>(null);
+  // pulsarlo.
+  const verification = useVerificationModule();
 
   useEffect(() => {
     let active = true;
@@ -48,16 +44,6 @@ export function SaveGame({ gameId }: { gameId: string }) {
     setAttempt((value) => value + 1);
   }
 
-  function verify(verification: PendingVerification) {
-    setVerifying(verification);
-    if (!VerificationGame) {
-      import("../verification/verification-game").then(
-        (module) => setVerificationGame(() => module.VerificationGame),
-        () => setVerifying("unavailable"),
-      );
-    }
-  }
-
   const playAgain = (
     <Link href="/" className="self-start font-medium underline">
       {t("play")}
@@ -66,27 +52,9 @@ export function SaveGame({ gameId }: { gameId: string }) {
 
   if (state.name === "saving") return <p role="status">{t("saving")}</p>;
 
-  if (verifying === "unavailable") {
-    return (
-      <p role="alert" className="max-w-md">
-        {tr("unavailable")}{" "}
-        <Link href="/practice" className="font-medium underline">
-          {tr("practiceLink")}
-        </Link>
-      </p>
-    );
-  }
-
-  if (verifying) {
-    // Al acabar, "Jugar Ranked": a la portada.
-    return VerificationGame ? (
-      <VerificationGame verification={verifying} onDone={() => router.push("/")} />
-    ) : (
-      <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400">
-        {tr("verifyLoading")}
-      </p>
-    );
-  }
+  // Al acabar la verificación, "Jugar Ranked": a la portada.
+  const verifying = verification.view(() => router.push("/"));
+  if (verifying) return verifying;
 
   if (state.name === "saved") {
     return (
@@ -97,7 +65,7 @@ export function SaveGame({ gameId }: { gameId: string }) {
           gameId={gameId}
           language={state.claim.language}
           inputType={state.claim.inputType}
-          onVerify={verify}
+          onVerify={verification.verify}
         />
         {playAgain}
       </div>

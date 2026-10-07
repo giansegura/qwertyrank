@@ -75,6 +75,12 @@ export const routing = defineRouting({
       pt: "/salvar/[gameId]",
     },
     "/u/[nick]": "/u/[nick]",
+    // Récords pendientes de verificar (spec 4b §4.3).
+    "/verify": {
+      en: "/verify",
+      es: "/verificar",
+      pt: "/verificar",
+    },
   },
 });
 

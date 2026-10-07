@@ -1,12 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import type { InputType } from "@/lib/game/types";
 import { VISIBLE_PERIODS, type VisiblePeriod } from "@/lib/leaderboard/periods";
 import { leaderboardHref } from "@/lib/leaderboard/slugs";
 import type { GameRanking, PeriodRanks } from "@/lib/leaderboard/types";
 import { hoursLeft, type PendingVerification } from "@/lib/verification";
+import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import type { TestLanguage } from "@/lib/words/languages";
 import { useNow } from "../use-now";
 
@@ -16,7 +18,7 @@ export interface RankSummaryProps {
   /** Idioma del test: el ranking es el de ese idioma (spec §3.2), aunque la página esté en otro. */
   language: TestLanguage;
   inputType: InputType;
-  /** "Verificar ahora" en la misma pantalla (spec 4b §4.1). */
+  /** "Verificar ahora" en la misma pantalla (spec 4b §4.1). Sin él (tras «Guárdalo»), lleva a `/verify`. */
   onVerify?: (verification: PendingVerification) => void;
 }
 
@@ -47,6 +49,12 @@ function ReviewLeft({ verification }: { verification: PendingVerification }) {
 export function RankSummary({ ranking, gameId, language, inputType, onVerify }: RankSummaryProps) {
   const t = useTranslations("Ranked");
   const tv = useTranslations("Verification");
+
+  // Un récord en `review` (tras la partida o tras «Guárdalo») abre o renueva una verificación: el aviso de
+  // la cabecera vuelve a pedir las pendientes. Aquí y no en RankedTest: este módulo no pesa en la portada.
+  useEffect(() => {
+    if (ranking.kind === "review") window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
+  }, [ranking]);
 
   const saveIt = (
     <>
@@ -93,10 +101,14 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
           <>
             <p className="text-sm">{t("reviewExplain", { required: verification.requiredWpm })}</p>
             <ReviewLeft verification={verification} />
-            {onVerify && (
+            {onVerify ? (
               <button type="button" data-testid="verify-now" onClick={() => onVerify(verification)} className={verifyClass}>
                 {t("verifyNow")}
               </button>
+            ) : (
+              <Link data-testid="verify-now" href="/verify" className={verifyClass}>
+                {t("verifyNow")}
+              </Link>
             )}
           </>
         ) : (

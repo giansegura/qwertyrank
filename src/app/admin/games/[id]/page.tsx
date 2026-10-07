@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { replayInputs, rhythm } from "@/lib/replay/timeline";
+import { buildFrames, compactFrames, replayInputs, rhythm } from "@/lib/replay/timeline";
 import { OFFICIAL_DURATION_MS } from "@/lib/scoring/durations";
 import { getDb } from "@/server/db/client";
 import { requireAdmin } from "@/server/moderation/admin";
@@ -28,6 +28,8 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
 
   const events = game.log.kind === "ok" ? game.log.events : [];
   const steps = replayInputs(events);
+  // Los fotogramas se calculan aquí: el motor de puntuación no viaja al navegador del panel.
+  const frames = compactFrames(buildFrames(game.log.kind === "ok" ? game.log.words : null, steps));
   const beat = rhythm(events, game.inputType);
   const durationMs = Math.max(OFFICIAL_DURATION_MS, ...steps.map((step) => step.t));
   const facts: [string, string][] = [
@@ -82,7 +84,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
                 Partida anterior a la verificación de récords: se reproduce sin el texto, solo lo tecleado.
               </p>
             )}
-            <Replay words={game.log.words} steps={steps} />
+            <Replay words={game.log.words} frames={frames} />
           </>
         )}
       </section>

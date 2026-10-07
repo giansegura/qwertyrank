@@ -1,22 +1,65 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Word } from "@/components/typing-test/word";
-import { buildFrames, frameAt, type InputStep } from "@/lib/replay/timeline";
+import { memo, useEffect, useRef, useState } from "react";
+import { typedAt, type FrameDelta } from "@/lib/replay/playback";
 
 const SPEEDS = [1, 2, 4] as const;
 type Speed = (typeof SPEEDS)[number];
 
 const BUTTON = "rounded-md border border-zinc-300 px-3 py-1.5 font-medium dark:border-zinc-700";
 
+/*
+ * Las letras se pintan aquí y no con `Word` de la prueba: si el panel importara código de la portada,
+ * Next lo movería a trozos compartidos y crecería el JS de la portada (≤ 30 KB). Mismos estados y colores.
+ */
+type WordState = "done" | "active" | "pending";
+type LetterStatus = "pending" | "correct" | "incorrect" | "extra" | "missed";
+
+const LETTER_CLASS: Record<LetterStatus, string> = {
+  pending: "text-zinc-400 dark:text-zinc-500",
+  correct: "text-zinc-900 dark:text-zinc-100",
+  incorrect: "text-red-600 dark:text-red-400",
+  extra: "text-red-800 opacity-70 dark:text-red-300",
+  missed: "text-zinc-400 dark:text-zinc-500",
+};
+
+function letterStatus(expected: string | undefined, actual: string | undefined, state: WordState): LetterStatus {
+  if (actual === undefined) return state === "done" ? "missed" : "pending";
+  if (expected === undefined) return "extra";
+  return actual === expected ? "correct" : "incorrect";
+}
+
+const ReplayWord = memo(function ReplayWord({ index, target, typed, state }: { index: number; target: string; typed: string; state: WordState }) {
+  const letters = [];
+  for (let i = 0; i < Math.max(target.length, typed.length); i++) {
+    const status = letterStatus(target[i], typed[i], state);
+    letters.push(
+      <span key={i} data-letter="" data-status={status} className={LETTER_CLASS[status]}>
+        {status === "extra" ? typed[i] : target[i]}
+      </span>,
+    );
+  }
+  const wrong = state === "done" && typed !== target;
+  return (
+    <div
+      data-testid="word"
+      data-index={index}
+      data-word={target}
+      data-state={state}
+      className={`mr-[1ch] h-10 leading-10 ${wrong ? "underline decoration-red-500" : ""}`}
+    >
+      {letters}
+    </div>
+  );
+});
+
 /**
  * Reproducción de una partida (spec 4b §6.2): las letras aparecen con sus tiempos reales (`t`), los
- * errores en rojo (como en `Word`). Play/pausa y velocidad ×1, ×2 y ×4. Sin `words` (registros
- * anteriores a la 4b), solo lo tecleado.
+ * errores en rojo. Play/pausa y velocidad ×1, ×2 y ×4. Los fotogramas vienen ya calculados del servidor
+ * (`compactFrames`). Sin `words` (registros anteriores a la 4b), solo lo tecleado.
  */
-export function Replay({ words, steps }: { words: string[] | null; steps: InputStep[] }) {
-  const frames = buildFrames(words, steps);
-  const end = frames[frames.length - 1].t;
+export function Replay({ words, frames }: { words: string[] | null; frames: FrameDelta[] }) {
+  const end = frames.at(-1)?.t ?? 0;
   const [elapsed, setElapsed] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
@@ -47,8 +90,9 @@ export function Replay({ words, steps }: { words: string[] | null; steps: InputS
     setPlaying(!playing);
   }
 
-  const current = frameAt(frames, elapsed);
-  const shown = words ?? current.typed;
+  const typed = typedAt(frames, elapsed);
+  const current = typed.length - 1;
+  const shown = words ?? typed;
 
   return (
     <div className="flex flex-col gap-3">
@@ -74,12 +118,12 @@ export function Replay({ words, steps }: { words: string[] | null; steps: InputS
       </div>
       <div data-testid="replay-words" className="flex flex-wrap font-mono text-lg">
         {shown.map((word, index) => (
-          <Word
+          <ReplayWord
             key={index}
             index={index}
-            target={words ? word : (current.typed[index] ?? "")}
-            typed={current.typed[index] ?? ""}
-            state={index < current.current ? "done" : index === current.current ? "active" : "pending"}
+            target={words ? word : (typed[index] ?? "")}
+            typed={typed[index] ?? ""}
+            state={index < current ? "done" : index === current ? "active" : "pending"}
           />
         ))}
       </div>

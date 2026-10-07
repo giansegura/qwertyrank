@@ -1,4 +1,5 @@
 import { applyInput, createEngine } from "../scoring/engine";
+import type { FrameDelta } from "./playback";
 
 /**
  * Reproducción de una partida en el panel (spec 4b §6.2), a partir de su registro de pulsaciones.
@@ -74,16 +75,18 @@ export function buildFrames(words: readonly string[] | null, steps: readonly Inp
   return frames;
 }
 
-/** El fotograma de un instante: el último con `t` ≤ `elapsed` (búsqueda binaria). */
-export function frameAt(frames: readonly ReplayFrame[], elapsed: number): ReplayFrame {
-  let low = 0;
-  let high = frames.length - 1;
-  while (low < high) {
-    const middle = Math.ceil((low + high) / 2);
-    if (frames[middle].t <= elapsed) low = middle;
-    else high = middle - 1;
-  }
-  return frames[low];
+/**
+ * Los fotogramas para el navegador, en compacto (`typedAt` los reconstruye): cada uno lleva solo lo escrito
+ * desde la palabra activa del anterior, porque las de antes ya no cambian. Así una partida de miles de
+ * pulsaciones no manda miles de copias del texto.
+ */
+export function compactFrames(frames: readonly ReplayFrame[]): FrameDelta[] {
+  let from = 0;
+  return frames.map((frame) => {
+    const delta = { t: frame.t, from, tail: frame.typed.slice(from) };
+    from = frame.current;
+    return delta;
+  });
 }
 
 export interface RhythmPoint {

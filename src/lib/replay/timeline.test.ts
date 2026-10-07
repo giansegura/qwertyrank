@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { typed } from "@/test/typing-events";
-import { buildFrames, frameAt, replayInputs, rhythm } from "./timeline";
+import { typedAt } from "./playback";
+import { buildFrames, compactFrames, replayInputs, rhythm } from "./timeline";
 
 describe("pulsaciones para reproducir", () => {
   it("solo los `input` bien formados, en orden; un `t` negativo cuenta como 0 y uno tardío se queda", () => {
@@ -28,7 +29,7 @@ describe("fotogramas", () => {
     const frames = buildFrames(["hola", "sol"], replayInputs(typed("hxla s", { every: 100 })));
     expect(frames[0]).toEqual({ t: 0, typed: [""], current: 0 });
     expect(frames.at(-1)).toMatchObject({ typed: ["hxla", "s"], current: 1 });
-    expect(frameAt(frames, 150)).toMatchObject({ typed: ["hx"] });
+    expect(typedAt(compactFrames(frames), 150)).toEqual(["hx"]);
   });
 
   it("sin palabras (registro anterior a la 4b), solo lo tecleado, con borrados y espacios", () => {
@@ -43,11 +44,22 @@ describe("fotogramas", () => {
     expect(buildFrames(null, steps).at(-1)).toEqual({ t: 500, typed: ["casa", "y"], current: 1 });
   });
 
-  it("el fotograma de un instante es el último que ya ha pasado", () => {
-    const frames = buildFrames(null, replayInputs(typed("abc", { every: 100 })));
-    expect(frameAt(frames, 0).typed).toEqual([""]);
-    expect(frameAt(frames, 101).typed).toEqual(["ab"]);
-    expect(frameAt(frames, 99_999).typed).toEqual(["abc"]);
+  it("lo escrito en un instante es lo del último fotograma que ya ha pasado", () => {
+    const frames = compactFrames(buildFrames(null, replayInputs(typed("abc", { every: 100 }))));
+    expect(typedAt(frames, 0)).toEqual([""]);
+    expect(typedAt(frames, 101)).toEqual(["ab"]);
+    expect(typedAt(frames, 99_999)).toEqual(["abc"]);
+  });
+
+  it("en compacto, cada fotograma lleva solo las palabras que cambian y se reconstruye igual", () => {
+    const steps = [...replayInputs(typed("hxla s", { every: 100 })), { t: 700, deleted: 1, inserted: "sol m" }];
+    const frames = buildFrames(["hola", "sol", "mar"], steps);
+    const compact = compactFrames(frames);
+    expect(compact[0]).toEqual({ t: 0, from: 0, tail: [""] });
+    expect(compact.at(-1)).toEqual({ t: 700, from: 1, tail: ["sol", "m"] });
+    frames.forEach((frame, index) => {
+      expect(typedAt(compact.slice(0, index + 1), Number.POSITIVE_INFINITY)).toEqual(frame.typed);
+    });
   });
 });
 

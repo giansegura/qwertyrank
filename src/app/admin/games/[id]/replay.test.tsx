@@ -1,11 +1,14 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { replayInputs } from "@/lib/replay/timeline";
+import { buildFrames, compactFrames, replayInputs, type InputStep } from "@/lib/replay/timeline";
 import { typed } from "@/test/typing-events";
 import { Replay } from "./replay";
 
 /** "hxla " con una letra cada 200 ms: la x llega a los 201 ms; la última, a los 801 ms. */
 const STEPS = replayInputs(typed("hxla ", { every: 200 }));
+
+/** Los fotogramas como se los pasa la página, calculados en el servidor. */
+const framesOf = (words: string[] | null, steps: InputStep[] = STEPS) => compactFrames(buildFrames(words, steps));
 
 const statuses = (index: number) =>
   [...screen.getAllByTestId("word")[index].querySelectorAll("[data-letter]")].map((letter) => letter.getAttribute("data-status"));
@@ -25,7 +28,7 @@ afterEach(() => {
 
 describe("Replay", () => {
   it("las letras aparecen con sus tiempos y los errores en rojo; al acabar, se para", async () => {
-    render(<Replay words={["hola", "sol"]} steps={STEPS} />);
+    render(<Replay words={["hola", "sol"]} frames={framesOf(["hola", "sol"])} />);
     expect(statuses(0)).toEqual(["pending", "pending", "pending", "pending"]);
     expect(screen.getByTestId("replay-time")).toHaveTextContent("0.0 s / 0.8 s");
 
@@ -40,7 +43,7 @@ describe("Replay", () => {
   });
 
   it("a ×4 va cuatro veces más rápido, y la pausa la para", async () => {
-    render(<Replay words={["hola", "sol"]} steps={STEPS} />);
+    render(<Replay words={["hola", "sol"]} frames={framesOf(["hola", "sol"])} />);
     fireEvent.click(screen.getByTestId("replay-speed-4"));
     fireEvent.click(screen.getByTestId("replay-play"));
     await advance(125);
@@ -51,13 +54,13 @@ describe("Replay", () => {
   });
 
   it("sin palabras (registro anterior a la 4b) enseña lo tecleado; sin pulsaciones, no se rompe", async () => {
-    const { unmount } = render(<Replay words={null} steps={STEPS} />);
+    const { unmount } = render(<Replay words={null} frames={framesOf(null)} />);
     fireEvent.click(screen.getByTestId("replay-play"));
     await advance(1_000);
     expect(screen.getAllByTestId("word")[0]).toHaveAttribute("data-word", "hxla");
     unmount();
 
-    render(<Replay words={null} steps={[]} />);
+    render(<Replay words={null} frames={framesOf(null, [])} />);
     fireEvent.click(screen.getByTestId("replay-play"));
     await advance(100);
     expect(screen.getByTestId("replay-time")).toHaveTextContent("0.0 s / 0.0 s");

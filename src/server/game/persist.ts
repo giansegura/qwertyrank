@@ -1,12 +1,16 @@
 import "server-only";
-import { gzipSync } from "node:zlib";
 import type { InputType, RejectReason, Verdict } from "@/lib/game/types";
+import type { PeriodRanks } from "@/lib/leaderboard/types";
+import type { GameMode, PendingVerification } from "@/lib/verification";
 import type { TestLanguage } from "@/lib/words/languages";
 import type { Db, DbExecutor } from "../db/client";
 import { games, keystrokeLogs } from "../db/schema";
 import type { ReceivedBatch } from "../anticheat/rules";
 import { recordBests, type ImprovedBest } from "../leaderboard/bests";
 import { RANKED_MIN_ACCURACY } from "../leaderboard/score";
+import { openPendingVerification } from "../verification/pending";
+import { decideReview } from "../verification/review";
+import { encodeKeystrokeLog } from "./keystroke-log";
 
 export interface GameRecord {
   id: string;
@@ -22,12 +26,22 @@ export interface GameRecord {
   ipHash: string | null;
   startsAt: Date;
   finishedAt: Date;
+  /** El texto de la partida: se guarda con las pulsaciones para poder reproducirla (spec 4b §6.3). */
+  words: readonly string[];
   batches: ReceivedBatch[];
+}
+
+/** La partida entraría en un top 10 sin verificar (spec 4b §2): sus posiciones y su verificación. */
+export interface ReviewedGame {
+  ranks: PeriodRanks;
+  verification: PendingVerification;
 }
 
 export interface SavedGame {
   /** Periodos en que la partida mejora la marca del jugador (vacío si no cuenta para el ranking). */
   improved: ImprovedBest[];
+  /** Si ha quedado en `review`: entonces no escribe marcas (`improved` vacío). */
+  review: ReviewedGame | null;
 }
 
 export type SaveGame = (record: GameRecord) => Promise<SavedGame>;
@@ -52,15 +66,39 @@ export async function recordGameBests(
   });
 }
 
-/** Guarda la partida, sus pulsaciones y, si cuenta para el ranking, sus marcas: todo en una transacción (spec §5.5). */
-export function createSaveGame(db: Db): SaveGame {
-  return async ({ batches, ...game }) =>
+/**
+ * Inserta la partida y su registro de pulsaciones, con las palabras. `extra` cambia lo que no sale del
+ * anti-trampas: el veredicto `review` y el modo y la verificación de una partida de verificación.
+ */
+export async function insertGame(
+  tx: DbExecutor,
+  { words, batches, ...game }: GameRecord,
+  extra: { verdict?: Verdict; mode?: GameMode; verificationId?: string } = {},
+): Promise<void> {
+  await tx.insert(games).values({ ...game, ...extra });
+  await tx.insert(keystrokeLogs).values({ gameId: game.id, events: encodeKeystrokeLog({ words, batches }) });
+}
+
+/**
+ * Guarda la partida Ranked, sus pulsaciones y sus marcas en una transacción (spec §5.5). Si entraría
+ * en un top 10 sin verificar, queda en `review`: sin marcas y con su verificación (spec 4b §2.2).
+ */
+export function createSaveGame(db: Db, { now = () => new Date() }: { now?: () => Date } = {}): SaveGame {
+  return async (record) =>
     db.transaction(async (tx) => {
-      await tx.insert(games).values(game);
-      await tx.insert(keystrokeLogs).values({
-        gameId: game.id,
-        events: gzipSync(JSON.stringify(batches)),
+      const review = await decideReview(tx, record, now());
+      if (!review) {
+        await insertGame(tx, record);
+        return { improved: await recordGameBests(tx, record), review: null };
+      }
+      await insertGame(tx, record, { verdict: "review" });
+      const verification = await openPendingVerification(tx, {
+        userId: record.userId!,
+        language: record.language,
+        inputType: record.inputType,
+        gameId: record.id,
+        wpm: record.wpm,
       });
-      return { improved: await recordGameBests(tx, game) };
+      return { improved: [], review: { ranks: review.ranks, verification } };
     });
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { accounts, moderationActions, reports, users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
@@ -15,6 +16,7 @@ afterAll(async () => {
 async function newUser(nick = `q_${randomUUID().slice(0, 8)}`, role: "user" | "admin" = "user") {
   const email = `${randomUUID()}@example.com`;
   const [row] = await db.insert(users).values({ name: "", email, nick, role }).returning({ id: users.id });
+  await verifyEverywhere(db, row.id);
   return { id: row.id, nick, email };
 }
 
@@ -70,6 +72,7 @@ describe("consultas del panel", () => {
       ipHash: null,
       startsAt,
       finishedAt: startsAt,
+      words: [],
       batches: [],
     });
     await db.insert(reports).values({ reporterId: reporter.id, targetUserId: player.id, reason: "cheating" });

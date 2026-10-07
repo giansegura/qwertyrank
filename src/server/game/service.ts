@@ -98,6 +98,7 @@ export function createGameService(deps: GameServiceDeps): GameService {
           ipHash,
           startsAt: new Date(game.startsAt),
           finishedAt: new Date(finishedAt),
+          words: game.words,
           batches,
         });
       } catch (error) {
@@ -105,23 +106,26 @@ export function createGameService(deps: GameServiceDeps): GameService {
         throw error;
       }
 
-      // Ya guardada: si el ranking falla, `rankGame` responde `unavailable` y la partida se da igual.
-      const ranking = await deps.rankGame({
-        userId: game.userId,
-        language: game.language,
-        inputType,
-        verdict,
-        wpm: result.wpm,
-        accuracy: result.accuracy,
-        startsAt: new Date(game.startsAt),
-        improved: saved.improved,
-      });
+      // En `review` no se toca Redis: sus posiciones ya salen de PostgreSQL (spec 4b §2.2). Si no, ya
+      // guardada: si el ranking falla, `rankGame` responde `unavailable` y la partida se da igual.
+      const ranking: GameRanking = saved.review
+        ? { kind: "review", ...saved.review }
+        : await deps.rankGame({
+            userId: game.userId,
+            language: game.language,
+            inputType,
+            verdict,
+            wpm: result.wpm,
+            accuracy: result.accuracy,
+            startsAt: new Date(game.startsAt),
+            improved: saved.improved,
+          });
 
       const response: FinishResponse = {
         ...result,
         gameId,
         inputType,
-        verdict,
+        verdict: saved.review ? "review" : verdict,
         reason: reason ? PUBLIC_REASON[reason] : null,
         ranking,
       };

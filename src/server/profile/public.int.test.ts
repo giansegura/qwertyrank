@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
-import { createSaveGame, type GameRecord } from "../game/persist";
+import { createSaveGame, insertGame, type GameRecord } from "../game/persist";
 import { getOwnProfile, getPublicProfile } from "./public";
 
 const db = createDb(process.env.DATABASE_URL!);
@@ -18,6 +19,7 @@ async function newUser(status: "active" | "shadowbanned" = "active") {
     .insert(users)
     .values({ name: "", email: `${randomUUID()}@example.com`, nick, country: "PT", status })
     .returning({ id: users.id });
+  await verifyEverywhere(db, row.id);
   return { id: row.id, nick };
 }
 
@@ -37,6 +39,7 @@ function game(userId: string, overrides: Partial<GameRecord> = {}): GameRecord {
     ipHash: null,
     startsAt,
     finishedAt: startsAt,
+    words: [],
     batches: [],
     ...overrides,
   };
@@ -66,5 +69,13 @@ describe("perfil público", () => {
     await saveGame(game(id));
     expect(await getPublicProfile(db, nick)).toBeNull();
     expect(await getOwnProfile(db, id)).toMatchObject({ nick, records: [expect.objectContaining({ language: "pt" })] });
+  });
+
+  it("las partidas de verificación no salen en el historial", async () => {
+    const user = await newUser();
+    await saveGame(game(user.id));
+    await insertGame(db, game(user.id), { mode: "verification" });
+    const profile = await getPublicProfile(db, user.nick);
+    expect(profile!.history).toHaveLength(1);
   });
 });

@@ -1,13 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
+import type { FinishResponse } from "@/lib/game/types";
 import type { TypingEvent } from "@/lib/scoring/types";
 import { typed } from "@/test/typing-events";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
-import { games, users } from "../db/schema";
+import { games, keystrokeLogs, periodBests, users } from "../db/schema";
 import { createRanking } from "../leaderboard/ranking";
-import { createLeaderboardStore } from "../leaderboard/store";
+import { createLeaderboardStore, currentBoard } from "../leaderboard/store";
 import { createRedis } from "../redis";
+import { decodeKeystrokeLog } from "./keystroke-log";
 import { createSaveGame } from "./persist";
 import { createGameService } from "./service";
 import { createGameStore } from "./store";
@@ -15,7 +18,8 @@ import { createGameStore } from "./store";
 const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
 const rankingPrefix = `${process.env.REDIS_KEY_PREFIX}service-${randomUUID().slice(0, 8)}:`;
-const ranking = createRanking({ db, store: createLeaderboardStore(redis, rankingPrefix), onTopChanged: () => {} });
+const leaderboard = createLeaderboardStore(redis, rankingPrefix);
+const ranking = createRanking({ db, store: leaderboard, onTopChanged: () => {} });
 
 // Tiempos cortos para recorrer partidas completas en el test: sin cuenta atrás, 1,5 s de partida.
 const service = createGameService({
@@ -42,9 +46,12 @@ async function storedReason(gameId: string) {
   return row?.reason;
 }
 
-async function play(events: TypingEvent[], { waitBeforeSend = 400, waitBeforeFinish = 0, userId = null as string | null } = {}) {
+async function play(
+  events: TypingEvent[],
+  { waitBeforeSend = 400, waitBeforeFinish = 0, userId = null as string | null, language = "es" as "es" | "pt" } = {},
+) {
   const owner = randomUUID();
-  const { gameId, words } = await service.start({ owner, userId, language: "es", env: ENV });
+  const { gameId, words } = await service.start({ owner, userId, language, env: ENV });
   await sleep(waitBeforeSend);
   expect(await service.appendKeys({ owner, gameId, seq: 1, events })).toBe("ok");
   await sleep(waitBeforeFinish);
@@ -68,6 +75,8 @@ describe("GameService (Redis + PostgreSQL)", () => {
 
     const [row] = await db.select().from(games).where(eq(games.id, gameId));
     expect(row).toMatchObject({ verdict: "valid", wpm: outcome.response.wpm });
+    const [log] = await db.select().from(keystrokeLogs).where(eq(keystrokeLogs.gameId, gameId));
+    expect(decodeKeystrokeLog(log.events)?.words).toEqual(words);
   });
 
   it("repetir el final devuelve el mismo resultado sin volver a guardarlo", async () => {
@@ -112,10 +121,36 @@ describe("GameService (Redis + PostgreSQL)", () => {
       .insert(users)
       .values({ name: "", email: `${randomUUID()}@example.com`, nick: `t_${randomUUID().slice(0, 8)}` })
       .returning({ id: users.id });
+    await verifyEverywhere(db, user.id);
     const { owner, gameId, outcome } = await play(typed("hola ", { every: 50, hold: 30 }), { userId: user.id });
     expect(outcome).toMatchObject({ kind: "ok", response: { verdict: "valid" } });
     expect(outcome).toMatchObject({ kind: "ok", response: { ranking: { kind: "ranked", ranks: { day: 1 } } } });
     const [row] = await db.select({ userId: games.userId, anonId: games.anonId }).from(games).where(eq(games.id, gameId));
     expect(row).toEqual({ userId: user.id, anonId: owner });
+  });
+
+  it("con cuenta, sin nivel verificado y en un top 10: queda en review, con posiciones de PostgreSQL y sin Redis", async () => {
+    const [user] = await db
+      .insert(users)
+      .values({ name: "", email: `${randomUUID()}@example.com`, nick: `t_${randomUUID().slice(0, 8)}` })
+      .returning({ id: users.id });
+    // 7 palabras en 1,5 s = 280 PPM en portugués y teclado físico: ninguna otra prueba publica marcas
+    // tan rápidas en ese ranking, así que entra en el top 10 de hoy.
+    const events = typed("hola ".repeat(7), { every: 40, hold: 30 });
+    const { gameId, outcome } = await play(events, { userId: user.id, language: "pt", waitBeforeSend: 1_200 });
+    if (outcome.kind !== "ok") throw new Error(outcome.kind);
+    expect(outcome.response).toMatchObject({
+      wpm: 280,
+      verdict: "review",
+      ranking: {
+        kind: "review",
+        verification: { language: "pt", inputType: "physical", targetWpm: 280, requiredWpm: 238, attemptsLeft: 3 },
+      },
+    });
+    const { ranking } = outcome.response as FinishResponse;
+    if (ranking.kind !== "review") throw new Error(ranking.kind);
+    expect(ranking.ranks.day).toBeLessThanOrEqual(10);
+    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, gameId))).toEqual([]);
+    expect(await leaderboard.position(currentBoard("pt", "physical", "day"), user.id)).toBeNull();
   });
 });

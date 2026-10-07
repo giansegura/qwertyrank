@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { periodKey } from "@/lib/leaderboard/periods";
+import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { accounts, bannedIdentities, moderationActions, reports, users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
@@ -53,6 +54,7 @@ async function newUser(role: "user" | "admin" = "user") {
     .insert(users)
     .values({ name: "", email, nick: `s_${randomUUID().slice(0, 8)}`, role })
     .returning({ id: users.id, nick: users.nick });
+  await verifyEverywhere(db, row.id);
   return { ...row, email };
 }
 
@@ -72,6 +74,7 @@ async function playAt(userId: string, startsAt: Date) {
     ipHash: null,
     startsAt,
     finishedAt: startsAt,
+    words: [],
     batches: [],
   });
   await store.add(await liveBests(db, new Date(), userId));

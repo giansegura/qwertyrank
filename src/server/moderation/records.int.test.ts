@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
+import { gzipSync } from "node:zlib";
 import { eq, sql } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { afterAll, describe, expect, it } from "vitest";
 import { seedPendingVerification } from "@/test/pending-verification";
 import { createDb } from "../db/client";
-import { recordVerifications, users } from "../db/schema";
-import { recordQueues } from "./records";
+import { games, keystrokeLogs, recordVerifications, users } from "../db/schema";
+import { insertGame } from "../game/persist";
+import { gameDetail, recordQueues } from "./records";
 
 const db = createDb(process.env.DATABASE_URL!);
 
@@ -73,3 +75,72 @@ describe("cola de récords del panel", () => {
   });
 });
 
+
+describe("partida para el panel", () => {
+  const EVENT = { t: 0, type: "input", deleted: 0, inserted: "h", trusted: true } as const;
+
+  async function bareGame(userId: string | null) {
+    const id = randomUUID();
+    const now = new Date();
+    await db.insert(games).values({
+      id,
+      userId,
+      language: "es",
+      inputType: "touch",
+      wpm: 40,
+      rawWpm: 42,
+      accuracy: 91,
+      verdict: "rejected",
+      rejectReason: "fabricated_timing",
+      startsAt: now,
+      finishedAt: now,
+    });
+    return id;
+  }
+
+  it("con el registro nuevo trae las palabras y los eventos, y el jugador", async () => {
+    const user = await newUser();
+    const id = randomUUID();
+    const now = new Date();
+    await insertGame(
+      db,
+      {
+        id,
+        userId: user.id,
+        anonId: randomUUID(),
+        language: "en",
+        inputType: "physical",
+        wpm: 80,
+        rawWpm: 81,
+        accuracy: 97,
+        verdict: "valid",
+        rejectReason: null,
+        ipHash: null,
+        startsAt: now,
+        finishedAt: now,
+        words: ["hola"],
+        batches: [{ seq: 1, arrivedAt: 1, events: [EVENT] }],
+      },
+      { mode: "verification" },
+    );
+    expect(await gameDetail(db, id)).toMatchObject({
+      nick: user.nick,
+      mode: "verification",
+      verdict: "valid",
+      log: { kind: "ok", words: ["hola"], events: [EVENT] },
+    });
+  });
+
+  it("un registro antiguo (sin palabras), uno ilegible y uno borrado no rompen nada", async () => {
+    const old = await bareGame((await newUser()).id);
+    await db.insert(keystrokeLogs).values({ gameId: old, events: gzipSync(JSON.stringify([{ seq: 1, arrivedAt: 1, events: [EVENT] }])) });
+    const broken = await bareGame(null);
+    await db.insert(keystrokeLogs).values({ gameId: broken, events: Buffer.from("no es gzip") });
+    const deleted = await bareGame(null);
+
+    expect((await gameDetail(db, old))?.log).toEqual({ kind: "ok", words: null, events: [EVENT] });
+    expect(await gameDetail(db, broken)).toMatchObject({ nick: null, rejectReason: "fabricated_timing", log: { kind: "unreadable" } });
+    expect((await gameDetail(db, deleted))?.log).toEqual({ kind: "missing" });
+    expect(await gameDetail(db, randomUUID())).toBeNull();
+  });
+});

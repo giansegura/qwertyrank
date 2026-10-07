@@ -149,8 +149,9 @@ export async function seedPendingVerification(
 }
 
 /**
- * Borra la cuenta y la saca de Redis (como al borrarla desde ajustes): las marcas de una prueba no deben
- * quitarle a la siguiente ejecución el top 10 de hoy.
+ * Borra la cuenta con sus partidas y la saca de Redis: las marcas de una prueba no deben quitarle a la
+ * siguiente ejecución el top 10 de hoy. Al contrario que al borrarla desde ajustes, también se van sus
+ * partidas y, en cascada, sus registros de pulsaciones y sus verificaciones: así no se acumulan.
  */
 export async function deleteAccount(userId: string): Promise<void> {
   const match = `${process.env.REDIS_KEY_PREFIX ?? "qr:"}lb:*`;
@@ -164,7 +165,39 @@ export async function deleteAccount(userId: string): Promise<void> {
     }
     cursor = String(next);
   } while (cursor !== "0");
+  await db()`delete from games where user_id = ${userId}`;
   await db()`delete from users where id = ${userId}`;
+}
+
+/** Un jugador sin cuenta de verdad (sin email que abrir), solo en la base de datos. */
+export async function seedPlayer(nick: string): Promise<string> {
+  const [user] = await db()<{ id: string }[]>`
+    insert into users (name, email, nick) values ('', ${`${nick}@example.com`}, ${nick}) returning id`;
+  return user.id;
+}
+
+/** Le da a un jugador un nivel verificado (spec 4b §5.1) sin jugar su verificación. */
+export async function seedVerifiedLevel(
+  userId: string,
+  { language, inputType, wpm }: { language: "en" | "es" | "pt"; inputType: "physical" | "touch"; wpm: number },
+): Promise<void> {
+  await db()`
+    insert into verified_levels (user_id, language, input_type, wpm)
+    values (${userId}, ${language}, ${inputType}, ${wpm})`;
+}
+
+/**
+ * Una partida rechazada de `userId`, en inglés y teclado físico, con el registro de pulsaciones `log` tal
+ * cual: sin validar, como uno que mandó un tramposo. Devuelve su id.
+ */
+export async function seedRejectedGame(userId: string, log: unknown): Promise<string> {
+  const gameId = crypto.randomUUID();
+  const now = new Date();
+  await db()`
+    insert into games (id, user_id, anon_id, language, input_type, wpm, raw_wpm, accuracy, verdict, reject_reason, starts_at, finished_at)
+    values (${gameId}, ${userId}, ${crypto.randomUUID()}, 'en', 'physical', 0, 0, 0, 'rejected', 'fabricated_timing', ${now}, ${now})`;
+  await db()`insert into keystroke_logs (game_id, events) values (${gameId}, ${gzipSync(JSON.stringify(log))})`;
+  return gameId;
 }
 
 export async function closeDb(): Promise<void> {

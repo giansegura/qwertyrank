@@ -19,6 +19,7 @@ export const RECORD_STATE_LABEL: Record<string, string> = {
   failed: "Fallido",
   expired: "Caducado",
 };
+export const MODE_LABEL: Record<string, string> = { ranked: "Ranked", verification: "Verificación" };
 
 export const TABLE = "w-full border-collapse text-left text-sm";
 export const HEAD_ROW = "border-b border-zinc-300 dark:border-zinc-700";

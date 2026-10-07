@@ -86,9 +86,16 @@ describe("consultas del panel", () => {
       role: "user",
       providers: ["google"],
       records: [expect.objectContaining({ language: "en", inputType: "physical", wpm: 90 })],
-      games: [expect.objectContaining({ verdict: "valid", rejectReason: null })],
+      games: [expect.objectContaining({ verdict: "valid", rejectReason: null, mode: "ranked" })],
       reports: [expect.objectContaining({ reason: "cheating", status: "open", reporterNick: reporter.nick })],
       actions: [expect.objectContaining({ action: "shadowban", reason: "x", adminNick: admin.nick })],
+    });
+    // Sus niveles verificados (los de `verifyEverywhere`).
+    expect((await playerDetail(db, player.id))!.verifiedLevels).toContainEqual({
+      language: "en",
+      inputType: "physical",
+      wpm: 1_000,
+      verifiedAt: expect.any(Date),
     });
     expect(await playerDetail(db, randomUUID())).toBeNull();
   });

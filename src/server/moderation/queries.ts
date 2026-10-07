@@ -2,7 +2,7 @@ import "server-only";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "../db/client";
-import { accounts, games, moderationActions, periodBests, reports, users } from "../db/schema";
+import { accounts, games, moderationActions, periodBests, reports, users, verifiedLevels } from "../db/schema";
 import type { PlayerStatus } from "./sanctions";
 
 export interface ReportedPlayer {
@@ -83,7 +83,10 @@ export interface PlayerDetail extends PlayerRow {
     accuracy: number;
     verdict: string;
     rejectReason: string | null;
+    mode: string;
   }[];
+  /** Nivel verificado por idioma y teclado (spec 4b §6.4). */
+  verifiedLevels: { language: string; inputType: string; wpm: number; verifiedAt: Date }[];
   reports: { id: string; reason: string; status: string; createdAt: Date; reporterNick: string | null }[];
   actions: {
     id: string;
@@ -113,7 +116,7 @@ export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | n
 
   const reporters = alias(users, "reporters");
   const admins = alias(users, "admins");
-  const [providers, records, recentGames, received, actions] = await Promise.all([
+  const [providers, records, recentGames, received, actions, levels] = await Promise.all([
     db.select({ providerId: accounts.providerId }).from(accounts).where(eq(accounts.userId, id)),
     db
       .select({
@@ -135,6 +138,7 @@ export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | n
         accuracy: games.accuracy,
         verdict: games.verdict,
         rejectReason: games.rejectReason,
+        mode: games.mode,
       })
       .from(games)
       .where(eq(games.userId, id))
@@ -167,6 +171,16 @@ export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | n
       .where(eq(moderationActions.targetUserId, id))
       .orderBy(desc(moderationActions.createdAt))
       .limit(50),
+    db
+      .select({
+        language: verifiedLevels.language,
+        inputType: verifiedLevels.inputType,
+        wpm: verifiedLevels.wpm,
+        verifiedAt: verifiedLevels.verifiedAt,
+      })
+      .from(verifiedLevels)
+      .where(eq(verifiedLevels.userId, id))
+      .orderBy(desc(verifiedLevels.wpm)),
   ]);
 
   return {
@@ -176,6 +190,7 @@ export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | n
     games: recentGames,
     reports: received,
     actions,
+    verifiedLevels: levels,
   };
 }
 

@@ -52,8 +52,8 @@ function response(overrides: Partial<VerificationFinishResponse> = {}): Verifica
 }
 
 /** Monta la partida y deja que empiece sola (y que pase lo que tarde el servidor). */
-async function mount(onDone = vi.fn()) {
-  renderWithIntl(<VerificationGame verification={VERIFICATION} onDone={onDone} />);
+async function mount(onDone = vi.fn(), doneLabel?: string) {
+  renderWithIntl(<VerificationGame verification={VERIFICATION} onDone={onDone} doneLabel={doneLabel} />);
   await act(async () => {
     await vi.advanceTimersByTimeAsync(0);
     await vi.dynamicImportSettled();
@@ -142,7 +142,7 @@ describe("VerificationGame", () => {
     // El aviso de la cabecera vuelve a pedir las pendientes: esta ya no lo está.
     expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-done"));
-    expect(onDone).toHaveBeenCalledWith(false);
+    expect(onDone).toHaveBeenCalledWith(true);
   });
 
   it("no superada: cuánto le faltó y cuántos intentos quedan, y deja reintentar", async () => {
@@ -181,13 +181,39 @@ describe("VerificationGame", () => {
     expect(screen.getByTestId("verify-result")).toHaveTextContent("You have to use the same keyboard as in your record (physical).");
   });
 
-  it("sin intentos: no se ha podido verificar, sin reintentar", async () => {
+  it("sin intentos: no se ha podido verificar, sin reintentar; «Jugar Ranked» lleva a jugar", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ verification: { kind: "failed", requiredWpm: 85, attemptsLeft: 0 } }));
-    await mount();
+    const onDone = await mount();
     await playToTheEnd();
     expect(screen.getByTestId("verify-result")).toHaveTextContent("It couldn't be verified. Your game won't enter the ranking");
     expect(screen.queryByTestId("verify-retry")).toBeNull();
-    expect(screen.getByTestId("verify-done")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("verify-done"));
+    expect(onDone).toHaveBeenCalledWith(true);
+  });
+
+  it("con `doneLabel` (en /verify, con otras pendientes), sin superarla el botón dice eso y vuelve a la lista", async () => {
+    vi.mocked(finishGame).mockResolvedValue(response({ verification: { kind: "failed", requiredWpm: 85, attemptsLeft: 0 } }));
+    const onDone = await mount(vi.fn(), "Back to your records");
+    await playToTheEnd();
+    const done = screen.getByTestId("verify-done");
+    expect(done).toHaveTextContent("Back to your records");
+    fireEvent.click(done);
+    expect(onDone).toHaveBeenCalledWith(false);
+  });
+
+  it("con `doneLabel`, superada sigue llevando a jugar Ranked", async () => {
+    vi.mocked(finishGame).mockResolvedValue(
+      response({
+        wpm: 110,
+        verification: { kind: "verified", ranking: { kind: "ranked", ranks: { day: 3, all: 40 }, improved: ["day"] } },
+      }),
+    );
+    const onDone = await mount(vi.fn(), "Back to your records");
+    await playToTheEnd();
+    const done = screen.getByTestId("verify-done");
+    expect(done).toHaveTextContent("Play Ranked");
+    fireEvent.click(done);
+    expect(onDone).toHaveBeenCalledWith(true);
   });
 
   it("si la verificación ya no existe (requiredWpm 0), no habla de PPM que faltan: no se ha podido verificar", async () => {
@@ -265,13 +291,15 @@ describe("VerificationGame", () => {
     expect(finishGame).not.toHaveBeenCalled();
   });
 
-  it("si ya no está pendiente (409), lo dice, avisa a la cabecera y «Jugar Ranked» sabe que ya no existe", async () => {
+  it("si ya no está pendiente (409), lo dice, avisa a la cabecera y «Jugar Ranked» lleva a jugar (también en /verify)", async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(409, "no_pending_verification"));
     const changed = listenVerificationChanged();
-    const onDone = await mount();
+    const onDone = await mount(vi.fn(), "Back to your records");
     expect(screen.getByTestId("verify-unavailable")).toHaveTextContent("This verification is no longer available.");
     expect(changed).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByTestId("verify-done"));
+    const done = screen.getByTestId("verify-done");
+    expect(done).toHaveTextContent("Play Ranked");
+    fireEvent.click(done);
     expect(onDone).toHaveBeenCalledWith(true);
   });
 

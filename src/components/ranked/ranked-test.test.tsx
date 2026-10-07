@@ -308,6 +308,22 @@ describe("RankedTest: récord en review", () => {
     });
   }
 
+  it("al volver de la verificación, el campo oculto tiene el foco: Espacio empieza otra partida", async () => {
+    await playToReview();
+    await verifyNow();
+    fireEvent.click(screen.getByTestId("verification-game"));
+    const input = screen.getByTestId("typing-input");
+    expect(input).toHaveFocus();
+
+    vi.mocked(startGame).mockClear();
+    fireEvent.keyDown(input, { key: " ", code: "Space" });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(startGame).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("countdown")).toBeInTheDocument();
+  });
+
   it("si no se puede descargar la partida de verificación, vuelve a Ranked y dice que no está disponible", async () => {
     await playToReview();
     // Con el resumen ya descargado, falla la descarga de la partida de verificación.

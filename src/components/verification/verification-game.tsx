@@ -20,8 +20,13 @@ import { CanvasWords } from "./canvas-words";
 
 export interface VerificationGameProps {
   verification: PendingVerification;
-  /** Al acabar: volver a Ranked (en la portada, o desde `/verify`). `gone`: la verificación ya no existía (409). */
-  onDone: (gone: boolean) => void;
+  /**
+   * Texto del botón de acabar si la verificación no se ha superado y aún existe: en `/verify`, con otras
+   * pendientes, «Volver a tus récords». Sin él, o superada, o si ya no existía (409), «Jugar Ranked».
+   */
+  doneLabel?: string;
+  /** Al acabar. `play`: el botón decía «Jugar Ranked»; si no, el de `doneLabel`. */
+  onDone: (play: boolean) => void;
 }
 
 /**
@@ -37,7 +42,7 @@ function wpmShort(requiredWpm: number, wpm: number): number {
  * atrás, 30 s, resultado), con el texto en un `canvas`. Empieza sola: el jugador ya ha pulsado
  * "Verificar". Cada inicio gasta un intento, así que Tab no empieza otra.
  */
-export function VerificationGame({ verification, onDone }: VerificationGameProps) {
+export function VerificationGame({ verification, doneLabel, onDone }: VerificationGameProps) {
   const t = useTranslations("Verification");
   const tr = useTranslations("Ranked");
   const tt = useTranslations("TypingTest");
@@ -71,9 +76,11 @@ export function VerificationGame({ verification, onDone }: VerificationGameProps
     }
   }, [phase, gone]);
 
+  const verified = phase.name === "result" && phase.response.verification.kind === "verified";
+  const play = !doneLabel || verified || gone;
   const doneButton = (
-    <button type="button" data-testid="verify-done" onClick={() => onDone(gone)} className="self-start font-medium underline">
-      {t("play")}
+    <button type="button" data-testid="verify-done" onClick={() => onDone(play)} className="self-start font-medium underline">
+      {play ? t("play") : doneLabel}
     </button>
   );
   const retryButton = (

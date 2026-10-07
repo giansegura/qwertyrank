@@ -36,7 +36,8 @@ export function forgetViewer(): void {
 /**
  * Récords del jugador pendientes de verificar (`GET /api/verification`, spec 4b §4.3), para el aviso de
  * la cabecera. Ante cualquier fallo (sin sesión porque se cerró en otra pestaña, servidor caído, red),
- * ninguno: el aviso no sale. Aquí y no en un módulo propio: cada módulo de la portada suma bytes.
+ * ninguno: el aviso no sale. Aquí y no en un módulo propio: cada módulo de la portada suma bytes. Por lo
+ * mismo, cada pendiente no se valida aquí sino en el aviso, que se descarga aparte.
  */
 export async function fetchPendingVerifications(): Promise<PendingVerification[]> {
   try {

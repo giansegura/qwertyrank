@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { Link } from "@/i18n/navigation";
 import type { FinishResponse } from "@/lib/game/types";
 import { OFFICIAL_DURATION_MS } from "@/lib/scoring/durations";
@@ -41,10 +42,14 @@ export function RankedTest({ language }: { language: TestLanguage }) {
     });
   }
 
-  /** Al acabar la verificación, de vuelta al principio de Ranked (o a `failure`, si no se pudo descargar). */
+  /**
+   * Al acabar la verificación, de vuelta al principio de Ranked (o a `failure`, si no se pudo descargar). El
+   * campo oculto se crea de nuevo: se pinta ya para darle el foco, y Espacio o Intro empiezan otra partida.
+   */
   function endVerification(failure?: StartFailure) {
     game.leave(failure);
-    setVerifying(null);
+    flushSync(() => setVerifying(null));
+    typing.reset();
   }
 
   const waiting = phase.name === "idle" || phase.name === "not_started";

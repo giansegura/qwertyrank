@@ -47,10 +47,10 @@ export function useVerificationModule() {
   const [chosen, setChosen] = useState<PendingVerification | "unavailable" | null>(null);
 
   /**
-   * Lo que se enseña en lugar de la pantalla mientras se verifica, o `null`. `onDone`, al acabar la partida
-   * (`gone`: la verificación ya no existía).
+   * Lo que se enseña en lugar de la pantalla mientras se verifica, o `null`. `onDone` y `doneLabel`, los de
+   * la partida (`VerificationGameProps`).
    */
-  function view(onDone: (gone: boolean) => void): ReactNode {
+  function view(onDone: VerificationGameProps["onDone"], doneLabel?: string): ReactNode {
     if (chosen === "unavailable") {
       return (
         <p role="alert" className="max-w-md">
@@ -62,7 +62,14 @@ export function useVerificationModule() {
       );
     }
     if (!chosen) return null;
-    return <LazyVerificationGame verification={chosen} onDone={onDone} onUnavailable={() => setChosen("unavailable")} />;
+    return (
+      <LazyVerificationGame
+        verification={chosen}
+        doneLabel={doneLabel}
+        onDone={onDone}
+        onUnavailable={() => setChosen("unavailable")}
+      />
+    );
   }
 
   return {

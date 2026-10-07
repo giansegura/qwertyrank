@@ -73,6 +73,12 @@ describe("UserMenu", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/verification", { cache: "no-store" });
   });
 
+  it("lo que no es una pendiente con su plazo no cuenta: el aviso sale por las que sí", async () => {
+    fakeServer([{ nick: "gian_42" }], async () => json({ pending: [null, 3, { id: "v2" }, PENDING] }));
+    renderWithIntl(<UserMenu />);
+    expect(await screen.findByTestId("verify-notice")).toHaveTextContent("Record pending verification · 6 h left");
+  });
+
   it("al cambiar las verificaciones (un récord en review, una verificada) vuelve a pedirlas, sin pedir otra vez la sesión", async () => {
     let pending: (typeof PENDING)[] = [];
     const fetchMock = fakeServer([{ nick: "gian_42" }], async () => json({ pending }));
@@ -126,6 +132,7 @@ describe("UserMenu", () => {
     ["la red falla", async (): Promise<Response> => Promise.reject(new TypeError("fetch failed"))],
     ["la respuesta no es la esperada", async () => json({ pendientes: 3 })],
     ["las pendientes no traen su plazo", async () => json({ pending: [{ id: "v1" }] })],
+    ["una pendiente es null", async () => json({ pending: [null] })],
   ])("si %s, ni aviso ni error", async (_, verification) => {
     const fetchMock = fakeServer([{ nick: "gian_42" }], verification);
     renderWithIntl(<UserMenu />);

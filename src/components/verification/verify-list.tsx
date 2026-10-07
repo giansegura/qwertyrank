@@ -17,13 +17,17 @@ export function VerifyList({ pending }: { pending: PendingVerification[] }) {
   const now = useNow();
   const verification = useVerificationModule();
 
-  const verifying = verification.view((gone) => {
-    // Ya no estaba disponible (409): "Jugar Ranked" lleva a jugar (spec 4b §4.2).
-    if (gone) return router.push("/");
-    verification.close();
-    // La lista vuelve a pedirse al servidor: puede haber cambiado (verificada, sin intentos).
-    router.refresh();
-  });
+  // Al acabar, «Jugar Ranked» lleva a la portada: tras verificarla, si ya no estaba disponible (409, spec 4b
+  // §4.2) o si no quedan otras. Con otras pendientes, sin superarla, «Volver a tus récords» vuelve a la
+  // lista, pedida otra vez al servidor: puede haber cambiado (sin intentos, caducada).
+  const verifying = verification.view(
+    (play) => {
+      if (play) return router.push("/");
+      verification.close();
+      router.refresh();
+    },
+    pending.length > 1 ? t("backToRecords") : undefined,
+  );
   if (verifying) return verifying;
 
   if (pending.length === 0) {

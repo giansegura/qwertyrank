@@ -13,7 +13,13 @@ export function PendingNotice({ pending }: { pending: PendingVerification[] }) {
   const t = useTranslations("Verification");
   const now = useNow();
   if (now === null) return null;
-  const hours = Math.min(...pending.map((verification) => hoursLeft(verification.expiresAt, now)));
+  // La respuesta de `GET /api/verification` se valida aquí y no en la portada, donde cada byte cuenta: lo
+  // que no traiga su plazo (p. ej. `null`) no cuenta, y nunca rompe la cabecera.
+  const hours = Math.min(
+    ...pending.flatMap((verification: PendingVerification | null) =>
+      typeof verification?.expiresAt === "string" ? [hoursLeft(verification.expiresAt, now)] : [],
+    ),
+  );
   // Sin pendientes (`Infinity`) o con un plazo que no se entiende (`NaN`): sin aviso.
   if (!Number.isFinite(hours)) return null;
   return (

@@ -192,6 +192,7 @@
     "exhausted": "Não foi possível verificar. Sua partida não entra no ranking; você pode tentar com outra.",
     "noLongerAvailable": "Esta verificação não está mais disponível.",
     "play": "Jogar Ranked",
+    "backToRecords": "Voltar aos seus recordes",
     "sessionExpired": "Sua sessão expirou.",
     "notice": "Recorde pendente de verificação · faltam {hours} h",
     "title": "Recordes para verificar",

@@ -8,17 +8,26 @@ vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => router,
 }));
-// La partida tiene sus propias pruebas: aquí solo importa que se carga con la verificación elegida y
-// cómo acaba (`gone`: la verificación ya no existía, 409).
+// La partida tiene sus propias pruebas: aquí solo importa que se carga con la verificación elegida, el
+// texto que le pide para volver a la lista y cómo acaba (`play`: a jugar Ranked; si no, a la lista).
 const fakeGame = () => ({
-  VerificationGame: ({ verification, onDone }: { verification: { id: string }; onDone: (gone: boolean) => void }) => (
+  VerificationGame: ({
+    verification,
+    onDone,
+    doneLabel,
+  }: {
+    verification: { id: string };
+    onDone: (play: boolean) => void;
+    doneLabel?: string;
+  }) => (
     <>
       <button type="button" data-testid="verification-game" onClick={() => onDone(false)}>
         {verification.id}
       </button>
-      <button type="button" data-testid="verification-gone" onClick={() => onDone(true)}>
-        gone
+      <button type="button" data-testid="verification-play" onClick={() => onDone(true)}>
+        play
       </button>
+      <span data-testid="verification-done-label">{doneLabel ?? ""}</span>
     </>
   ),
 });
@@ -35,10 +44,11 @@ const PENDING = [
     expiresAt: new Date(Date.now() + 2.5 * 3_600_000).toISOString(),
   },
 ];
+const OTHER = { ...PENDING[0], id: "v2", language: "en" as const, inputType: "physical" as const };
 
 /** Elige la primera verificación y espera a que se descargue su partida. */
 async function startFirst() {
-  fireEvent.click(screen.getByTestId("verify-start"));
+  fireEvent.click(screen.getAllByTestId("verify-start")[0]);
   await act(async () => {
     await vi.dynamicImportSettled();
   });
@@ -57,21 +67,31 @@ describe("VerifyList", () => {
     expect(await screen.findByText(/· 3 h left/)).toBeInTheDocument();
   });
 
-  it("al elegir uno empieza su partida de verificación; al acabar, vuelve a pedir la lista", async () => {
-    renderWithIntl(<VerifyList pending={PENDING} />);
+  it("con otras pendientes, al elegir una empieza su partida; sin superarla, «Volver a tus récords» vuelve a pedir la lista", async () => {
+    renderWithIntl(<VerifyList pending={[...PENDING, OTHER]} />, "es");
     await startFirst();
     expect(screen.getByTestId("verification-game")).toHaveTextContent("v1");
     expect(screen.queryByTestId("verify-list")).toBeNull();
+    expect(screen.getByTestId("verification-done-label")).toHaveTextContent("Volver a tus récords");
     fireEvent.click(screen.getByTestId("verification-game"));
     expect(router.refresh).toHaveBeenCalled();
     expect(router.push).not.toHaveBeenCalled();
     expect(screen.getByTestId("verify-list")).toBeInTheDocument();
   });
 
-  it("si la verificación ya no estaba disponible (409), «Jugar Ranked» lleva a la portada", async () => {
+  it("sin otras pendientes, la partida no ofrece volver a la lista: al acabar, «Jugar Ranked» lleva a la portada", async () => {
     renderWithIntl(<VerifyList pending={PENDING} />, "es");
     await startFirst();
-    fireEvent.click(screen.getByTestId("verification-gone"));
+    expect(screen.getByTestId("verification-done-label")).toHaveTextContent(/^$/);
+    fireEvent.click(screen.getByTestId("verification-play"));
+    expect(router.push).toHaveBeenCalledWith("/es");
+    expect(router.refresh).not.toHaveBeenCalled();
+  });
+
+  it("verificada, o si ya no estaba disponible (409), «Jugar Ranked» lleva a la portada aunque queden otras", async () => {
+    renderWithIntl(<VerifyList pending={[...PENDING, OTHER]} />, "es");
+    await startFirst();
+    fireEvent.click(screen.getByTestId("verification-play"));
     expect(router.push).toHaveBeenCalledWith("/es");
   });
 

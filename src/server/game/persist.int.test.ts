@@ -3,6 +3,7 @@ import { gunzipSync } from "node:zlib";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { freshDay } from "@/test/fresh-day";
+import { untilASessionWaitsForALock } from "@/test/lock-wait";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { games, keystrokeLogs, periodBests, recordVerifications, users } from "../db/schema";
@@ -60,18 +61,6 @@ const verificationOf = async (gameId: string) => {
   const [verification] = await db.select().from(recordVerifications).where(eq(recordVerifications.id, row.verificationId!));
   return { verdict: row.verdict, verification };
 };
-
-/** Espera a que alguna sesión de la base de datos de pruebas esté bloqueada esperando un cerrojo. */
-async function untilASessionWaitsForALock() {
-  for (let tries = 0; tries < 250; tries++) {
-    const waiting = await db.execute(
-      sql`select 1 from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'`,
-    );
-    if (waiting.length > 0) return;
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
-  throw new Error("ninguna sesión llegó a esperar un cerrojo");
-}
 
 describe("saveGame (PostgreSQL)", () => {
   it("guarda la partida y su registro de pulsaciones comprimido, con las palabras", async () => {
@@ -246,7 +235,7 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     try {
       await openedByA;
       const b = saveOn(day, slow);
-      await untilASessionWaitsForALock();
+      await untilASessionWaitsForALock(db);
       release();
       await a;
       expect((await b).review?.verification).toMatchObject({ targetWpm: 100 });

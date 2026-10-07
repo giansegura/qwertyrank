@@ -4,7 +4,7 @@ import type { InputType, Verdict } from "@/lib/game/types";
 import { VERIFICATION_ATTEMPTS, VERIFICATION_MIN_ACCURACY, requiredWpm } from "@/lib/verification";
 import type { TestLanguage } from "@/lib/words/languages";
 import type { Db } from "../db/client";
-import { games, recordVerifications, verifiedLevels } from "../db/schema";
+import { games, recordVerifications, users, verifiedLevels } from "../db/schema";
 import { insertGame, type GameRecord } from "../game/persist";
 import type { StartedVerification } from "../game/store";
 import { recordBests, type ImprovedBest } from "../leaderboard/bests";
@@ -55,6 +55,9 @@ export function afterFailure(attempt: number, attemptsSpent: number): { close: b
   return { close, attemptsLeft: close ? 0 : Math.max(0, VERIFICATION_ATTEMPTS - attemptsSpent) };
 }
 
+/** La cuenta se ha borrado a mitad de intento: no hay nada que verificar. */
+const accountGone = (): VerificationResult => ({ kind: "failed", requiredWpm: 0, attemptsLeft: 0 });
+
 /**
  * Guarda una partida de verificación y la juzga, todo en una transacción (spec 4b §3.3): si falla algo,
  * `finish` se puede repetir. Se juzga contra el objetivo vigente al terminar, con la verificación
@@ -64,43 +67,51 @@ export function afterFailure(attempt: number, attemptsSpent: number): { close: b
 export function createSaveVerificationGame(db: Db): SaveVerificationGame {
   return (record, started) =>
     db.transaction(async (tx): Promise<VerificationResult> => {
+      // Primero el jugador (FOR KEY SHARE, el cerrojo que toma la clave ajena al insertar la partida) y
+      // después la verificación: el orden del borrado de la cuenta, que bloquea al usuario y después borra
+      // en cascada sus verificaciones. En el orden contrario, los dos se esperarían (deadlock). Si el
+      // jugador ya no existe, ha borrado la cuenta a mitad de intento y su verificación ha caído en
+      // cascada: no hay nada que verificar, y la partida no se guarda (su usuario ya no existe).
+      const [player] = record.userId
+        ? await tx.select({ id: users.id }).from(users).where(eq(users.id, record.userId)).for("key share")
+        : [];
+      if (!player) return accountGone();
+
+      // Después, la verificación sola. Con un JOIN a su partida, si mientras espera el cerrojo otra partida
+      // pasa a ser el objetivo, PostgreSQL vuelve a comprobar la fila contra la partida de antes y no
+      // devuelve nada.
       const [current] = await tx
         .select({
           status: recordVerifications.status,
           attempts: recordVerifications.attempts,
           inputType: recordVerifications.inputType,
-          gameId: games.id,
+          gameId: recordVerifications.gameId,
           userId: recordVerifications.userId,
-          language: games.language,
-          wpm: games.wpm,
-          accuracy: games.accuracy,
-          startsAt: games.startsAt,
         })
         .from(recordVerifications)
-        .innerJoin(games, eq(games.id, recordVerifications.gameId))
         .where(eq(recordVerifications.id, started.id))
-        .for("update", { of: recordVerifications });
-      // Ya no existe: el jugador ha borrado la cuenta a mitad de intento y la verificación ha caído en
-      // cascada. No hay nada que verificar, y la partida no se guarda: su usuario ya no existe.
-      if (!current) return { kind: "failed", requiredWpm: 0, attemptsLeft: 0 };
+        .for("update");
+      if (!current) return accountGone();
+      // Y su objetivo de ahora, ya con la verificación bloqueada.
+      const [targetGame] = await tx
+        .select({ language: games.language, wpm: games.wpm, accuracy: games.accuracy, startsAt: games.startsAt })
+        .from(games)
+        .where(eq(games.id, current.gameId));
 
       await insertGame(tx, record, { mode: "verification", verificationId: started.id });
 
       const target: PublishedGame = {
         gameId: current.gameId,
         userId: current.userId,
-        language: current.language,
         inputType: current.inputType,
-        wpm: current.wpm,
-        accuracy: current.accuracy,
-        startsAt: current.startsAt,
+        ...targetGame,
         improved: [],
       };
-      const required = requiredWpm(current.wpm);
+      const required = requiredWpm(target.wpm);
       if (current.status === "verified") return { kind: "verified", target, published: [] };
       if (current.status === "failed") return { kind: "failed", requiredWpm: required, attemptsLeft: 0 };
 
-      if (!passesVerification(record, { inputType: current.inputType, targetWpm: current.wpm })) {
+      if (!passesVerification(record, { inputType: current.inputType, targetWpm: target.wpm })) {
         const { close, attemptsLeft } = afterFailure(started.attempt, current.attempts);
         if (close) {
           await tx
@@ -141,7 +152,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
       // 3. El nivel verificado sube al del récord (nunca baja).
       await tx
         .insert(verifiedLevels)
-        .values({ userId: current.userId, language: current.language, inputType: current.inputType, wpm: current.wpm })
+        .values({ userId: current.userId, language: target.language, inputType: current.inputType, wpm: target.wpm })
         .onConflictDoUpdate({
           target: [verifiedLevels.userId, verifiedLevels.language, verifiedLevels.inputType],
           set: { wpm: sql`excluded.wpm`, verifiedAt: sql`now()` },

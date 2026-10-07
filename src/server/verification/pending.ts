@@ -45,8 +45,8 @@ const PENDING_FIELDS = {
  * - Una pendiente sin intentos también, con `resolved_at = now()`: su último intento se abandonó (una
  *   partida nueva cierra la de verificación) y renovarla dejaría al jugador sin poder verificar nunca.
  * - Si no hay pendiente, se crea con 0 intentos y 24 h de plazo.
- * - Si la hay, apunta a la partida con más PPM de las dos y el plazo vuelve a ser de 24 h; los intentos
- *   gastados se mantienen.
+ * - Si la hay, apunta a la partida con más PPM de las dos (también si las dos se guardan a la vez) y
+ *   el plazo vuelve a ser de 24 h; los intentos gastados se mantienen.
  */
 export async function openPendingVerification(
   tx: DbExecutor,
@@ -84,15 +84,22 @@ export async function openPendingVerification(
     .onConflictDoUpdate({
       target: [recordVerifications.userId, recordVerifications.language, recordVerifications.inputType],
       targetWhere: sql`${recordVerifications.status} = 'pending'`,
-      set: {
-        // A igualdad de PPM se queda la anterior.
-        gameId: sql`case when (select ${games.wpm} from ${games} where ${games.id} = ${recordVerifications.gameId}) >= ${input.wpm}
-          then ${recordVerifications.gameId} else excluded.game_id end`,
-        expiresAt: sql`excluded.expires_at`,
-      },
+      set: { expiresAt: sql`excluded.expires_at` },
     })
-    .returning({ id: recordVerifications.id, gameId: recordVerifications.gameId });
+    .returning({ id: recordVerifications.id });
 
+  // El objetivo cambia en otra sentencia. Si el upsert ha esperado a la pendiente que abría otra
+  // transacción, su instantánea no ve la partida de esa otra; una sentencia nueva sí (READ COMMITTED),
+  // y la fila ya es nuestra. A igualdad de PPM se queda la anterior.
+  await tx
+    .update(recordVerifications)
+    .set({ gameId: input.gameId })
+    .where(
+      and(
+        eq(recordVerifications.id, row.id),
+        sql`(select ${games.wpm} from ${games} where ${games.id} = ${recordVerifications.gameId}) < ${input.wpm}`,
+      ),
+    );
   await tx.update(games).set({ verificationId: row.id }).where(eq(games.id, input.gameId));
   const [pending] = await tx
     .select(PENDING_FIELDS)

@@ -6,8 +6,9 @@ import { freshDay } from "@/test/fresh-day";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { games, keystrokeLogs, periodBests, recordVerifications, users } from "../db/schema";
+import { openPendingVerification } from "../verification/pending";
 import { decodeKeystrokeLog } from "./keystroke-log";
-import { createSaveGame, type GameRecord } from "./persist";
+import { createSaveGame, insertGame, type GameRecord } from "./persist";
 
 const db = createDb(process.env.DATABASE_URL!);
 const saveGame = createSaveGame(db);
@@ -59,6 +60,18 @@ const verificationOf = async (gameId: string) => {
   const [verification] = await db.select().from(recordVerifications).where(eq(recordVerifications.id, row.verificationId!));
   return { verdict: row.verdict, verification };
 };
+
+/** Espera a que alguna sesión de la base de datos de pruebas esté bloqueada esperando un cerrojo. */
+async function untilASessionWaitsForALock() {
+  for (let tries = 0; tries < 250; tries++) {
+    const waiting = await db.execute(
+      sql`select 1 from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'`,
+    );
+    if (waiting.length > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("ninguna sesión llegó a esperar un cerrojo");
+}
 
 describe("saveGame (PostgreSQL)", () => {
   it("guarda la partida y su registro de pulsaciones comprimido, con las palabras", async () => {
@@ -211,5 +224,37 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     const closed = await verificationOf(first.id);
     expect(closed.verification).toMatchObject({ status: "failed", resolvedAt: opened.verification.createdAt });
     expect(closed.verification.expiresAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("dos partidas en review guardadas a la vez: el objetivo es la más rápida", async () => {
+    const day = freshDay();
+    const userId = await newUser({ verified: false });
+    const fast = record({ userId, wpm: 100, startsAt: day, finishedAt: day });
+    const slow = record({ userId, wpm: 50 });
+
+    // A abre la verificación de la rápida y no confirma hasta que B está esperando por esa pendiente.
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let opened = () => {};
+    const openedByA = new Promise<void>((resolve) => (opened = resolve));
+    const a = db.transaction(async (tx) => {
+      await insertGame(tx, fast, { verdict: "review" });
+      await openPendingVerification(tx, { userId, language: "pt", inputType: "touch", gameId: fast.id, wpm: fast.wpm });
+      opened();
+      await gate;
+    });
+    try {
+      await openedByA;
+      const b = saveOn(day, slow);
+      await untilASessionWaitsForALock();
+      release();
+      await a;
+      expect((await b).review?.verification).toMatchObject({ targetWpm: 100 });
+    } finally {
+      release();
+    }
+    for (const game of [fast, slow]) {
+      expect((await verificationOf(game.id)).verification).toMatchObject({ gameId: fast.id, status: "pending" });
+    }
   });
 });

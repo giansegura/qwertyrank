@@ -1,0 +1,130 @@
+# CI (spec 5a §7): lint, tipos, unitarios, integración, E2E y presupuesto de la portada, en cada PR y en main.
+# Los tres jobs son obligatorios para integrar en main (protección de rama, docs/launch.md).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Un push nuevo a la misma PR cancela la ejecución anterior.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Los mismos servicios y puertos que docker-compose.yml: .env.test sirve tal cual.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: qwertyrank
+          POSTGRES_PASSWORD: qwertyrank
+          POSTGRES_DB: qwertyrank
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U qwertyrank -d qwertyrank"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+      redis:
+        image: redis:7-alpine
+      redis-http:
+        image: hiett/serverless-redis-http:0.0.10
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: local_dev_token
+          SRH_CONNECTION_STRING: redis://redis:6379
+        ports:
+          - 8079:80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:int
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: qwertyrank
+          POSTGRES_PASSWORD: qwertyrank
+          POSTGRES_DB: qwertyrank
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U qwertyrank -d qwertyrank"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+      redis:
+        image: redis:7-alpine
+      redis-http:
+        image: hiett/serverless-redis-http:0.0.10
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: local_dev_token
+          SRH_CONNECTION_STRING: redis://redis:6379
+        ports:
+          - 8079:80
+    # Lo que en local da .env.local. Los secretos son de relleno, solo valen aquí; las claves de Turnstile
+    # (de prueba) las pone playwright.config.ts.
+    env:
+      DATABASE_URL: postgres://qwertyrank:qwertyrank@localhost:54329/qwertyrank
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: local_dev_token
+      REDIS_KEY_PREFIX: "qr:"
+      ANON_COOKIE_SECRET: ci-only-anon-cookie-secret-0123456789
+      IP_HASH_SECRET: ci-only-ip-hash-secret-0123456789abcd
+      BETTER_AUTH_SECRET: ci-only-better-auth-secret-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # Migra, compila con las claves de prueba de Turnstile, arranca y juega los E2E en escritorio y móvil.
+      - run: pnpm test:e2e
+      # Sobre el build de los E2E: el JS propio de la portada no pasa de 30 KB (spec §7.5).
+      - run: pnpm budget
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7

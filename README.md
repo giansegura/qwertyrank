@@ -60,7 +60,24 @@ pnpm dev                      # http://localhost:3000
 | `pnpm lint` / `pnpm typecheck` | ESLint y TypeScript | — |
 | `pnpm budget` | JS propio de la portada (y de `/practice`) en gzip, por encima de `/_not-found`; falla si la portada pasa de 30,0 KB | `pnpm build` antes, y `python3` |
 
+La CI (`.github/workflows/ci.yml`) lo ejecuta todo en cada PR y en `main`, en tres jobs: `checks` (lint, tipos y unitarios), `integration` (con PostgreSQL, Redis y SRH como servicios) y `e2e` (E2E y `pnpm budget` sobre su build). Los tres deben pasar para integrar en `main`.
+
 ## Base de datos
 
 - El esquema está en `src/server/db/schema.ts`.
 - Si lo cambias, genera la migración con `pnpm db:generate --name <nombre>` y aplícala con `pnpm db:migrate`.
+- **En Vercel las migraciones se aplican en el build** (`vercel.json`: `pnpm db:migrate && pnpm build`), cada vista previa en su propia rama de Neon. Mientras se construye el despliegue nuevo, el anterior sigue sirviendo con la base ya migrada: una migración debe funcionar también con el código anterior. Primero se añade y, en otro despliegue, se quita lo que sobre.
+
+## Despliegue y operación
+
+La guía para abrir la beta (cuentas, variables y comprobaciones) está en [`docs/launch.md`](docs/launch.md).
+
+- **Entornos:** producción en `qwertyrank.com` y una vista previa por PR, con su rama de Neon. En las vistas previas, `BETTER_AUTH_URL` sale de la URL de su rama y `REDIS_KEY_PREFIX` es `pr-<número de la PR>:`.
+- **Tarea diaria** (`GET /api/cron/daily`, Vercel Cron a las 04:00 UTC, con `CRON_SECRET`):
+  - borra las pulsaciones de más de 30 días, salvo las de las mejores marcas vigentes, y antes guarda de cada una un extracto de ritmo anónimo en `rhythm_samples`, para calibrar el riesgo;
+  - quita `anon_id` e `ip_hash` a las partidas anónimas de más de 30 días.
+
+  En local: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily`.
+- **Sentry**, solo en el servidor (`src/instrumentation.ts`). Sin `SENTRY_DSN` no se inicia. Solo conserva el método de la petición: ni URL con su query, ni cuerpo, ni cabeceras, ni cookies.
+- **Analítica:** Vercel Web Analytics y Speed Insights, solo en producción y sin JS propio en la portada.
+- **Beta:** nada se indexa mientras `INDEXABLE` (`src/lib/site.ts`) sea `false`.

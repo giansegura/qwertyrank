@@ -10,14 +10,15 @@ describe("URLs imposibles", () => {
     expect(isJunkPath("/pt/u/gian_42/")).toBe(false);
   });
 
-  it("rankings en forma interna con segmentos que no existen", () => {
-    expect(isJunkPath("/es/leaderboard/nada/today")).toBe(true);
-    expect(isJunkPath("/en/leaderboard/physical/ayer")).toBe(true);
-    expect(isJunkPath("/en/leaderboard/physical/today")).toBe(false);
+  it("rankings en forma interna con un teclado que no existe", () => {
+    expect(isJunkPath("/es/leaderboard/nada")).toBe(true);
+    expect(isJunkPath("/en/leaderboard/fisico/")).toBe(true);
+    expect(isJunkPath("/en/leaderboard/physical")).toBe(false);
+    expect(isJunkPath("/pt/leaderboard/touch/")).toBe(false);
   });
 
-  it("el resto de URLs no se toca", () => {
-    for (const path of ["/en", "/es/ranking/fisico/hoy", "/en/practice", "/xx/u/a", "/en/u"]) {
+  it("el resto de URLs no se toca, también las antiguas con periodo (no existe su ruta: 404 normal)", () => {
+    for (const path of ["/en", "/es/ranking/fisico", "/en/leaderboard/physical/today", "/en/practice", "/xx/u/a", "/en/u"]) {
       expect(isJunkPath(path)).toBe(false);
     }
   });

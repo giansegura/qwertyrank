@@ -121,14 +121,10 @@
   },
   "Leaderboard": {
     "title": "Ranking · {language, select, en {inglés} es {español} pt {portugués} other {}}",
-    "metaTitle": "Ranking de mecanografía en {language, select, en {inglés} es {español} pt {portugués} other {}} · {input, select, physical {teclado físico} touch {teclado táctil} other {}} · {period, select, day {hoy} week {esta semana} month {este mes} all {siempre} other {}}",
+    "metaTitle": "Ranking de mecanografía en {language, select, en {inglés} es {español} pt {portugués} other {}} · {input, select, physical {teclado físico} touch {teclado táctil} other {}}",
     "rule": "Cuenta la mejor partida de cada jugador, con al menos un 90 % de precisión.",
     "inputLabel": "Teclado",
-    "periodLabel": "Periodo",
     "input": "{input, select, physical {Teclado físico} touch {Teclado táctil} other {}}",
-    "period": "{period, select, day {Hoy} week {Semana} month {Mes} all {Siempre} other {}}",
-    "resetsIn": "Se reinicia en {unit, select, days {{days} d {hours} h} hours {{hours} h {minutes} min} other {{minutes} min}}",
-    "resetting": "Reiniciando…",
     "empty": "Todavía no hay nadie en este ranking. ¡Sé el primero!",
     "play": "Jugar Ranked",
     "column": {

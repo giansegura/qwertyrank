@@ -67,7 +67,7 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
         <p className="font-medium">{t("rank", { rank: ranking.rank })}</p>
         {ranking.improved && <p className="font-medium text-emerald-700 dark:text-emerald-400">{t("newBest")}</p>}
         <Link
-          href={leaderboardHref(inputType, "all")}
+          href={leaderboardHref(inputType)}
           locale={language}
           prefetch={false}
           className="text-sm underline"

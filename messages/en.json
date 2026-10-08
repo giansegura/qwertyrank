@@ -121,14 +121,10 @@
   },
   "Leaderboard": {
     "title": "Ranking · {language, select, en {English} es {Spanish} pt {Portuguese} other {}}",
-    "metaTitle": "{language, select, en {English} es {Spanish} pt {Portuguese} other {}} typing ranking · {input, select, physical {physical keyboard} touch {touch keyboard} other {}} · {period, select, day {today} week {this week} month {this month} all {all time} other {}}",
+    "metaTitle": "{language, select, en {English} es {Spanish} pt {Portuguese} other {}} typing ranking · {input, select, physical {physical keyboard} touch {touch keyboard} other {}}",
     "rule": "Each player's best game counts, with at least 90% accuracy.",
     "inputLabel": "Keyboard",
-    "periodLabel": "Period",
     "input": "{input, select, physical {Physical keyboard} touch {Touch keyboard} other {}}",
-    "period": "{period, select, day {Today} week {This week} month {This month} all {All time} other {}}",
-    "resetsIn": "Resets in {unit, select, days {{days}d {hours}h} hours {{hours}h {minutes}m} other {{minutes}m}}",
-    "resetting": "Resetting…",
     "empty": "Nobody is on this ranking yet. Be the first!",
     "play": "Play Ranked",
     "column": {

@@ -28,46 +28,17 @@ export const routing = defineRouting({
       es: "/ranking",
       pt: "/ranking",
     },
-    // Una ruta fija por ranking visible (spec §7.1); la página es leaderboard/[input]/[period].
-    "/leaderboard/physical/today": {
-      en: "/leaderboard/physical/today",
-      es: "/ranking/fisico/hoy",
-      pt: "/ranking/fisico/hoje",
+    // Una ruta fija por ranking (spec §7.1); la página es leaderboard/[input], y el idioma del ranking es
+    // el de la página.
+    "/leaderboard/physical": {
+      en: "/leaderboard/physical",
+      es: "/ranking/fisico",
+      pt: "/ranking/fisico",
     },
-    "/leaderboard/physical/week": {
-      en: "/leaderboard/physical/week",
-      es: "/ranking/fisico/semana",
-      pt: "/ranking/fisico/semana",
-    },
-    "/leaderboard/physical/month": {
-      en: "/leaderboard/physical/month",
-      es: "/ranking/fisico/mes",
-      pt: "/ranking/fisico/mes",
-    },
-    "/leaderboard/physical/all-time": {
-      en: "/leaderboard/physical/all-time",
-      es: "/ranking/fisico/siempre",
-      pt: "/ranking/fisico/sempre",
-    },
-    "/leaderboard/touch/today": {
-      en: "/leaderboard/touch/today",
-      es: "/ranking/tactil/hoy",
-      pt: "/ranking/tatil/hoje",
-    },
-    "/leaderboard/touch/week": {
-      en: "/leaderboard/touch/week",
-      es: "/ranking/tactil/semana",
-      pt: "/ranking/tatil/semana",
-    },
-    "/leaderboard/touch/month": {
-      en: "/leaderboard/touch/month",
-      es: "/ranking/tactil/mes",
-      pt: "/ranking/tatil/mes",
-    },
-    "/leaderboard/touch/all-time": {
-      en: "/leaderboard/touch/all-time",
-      es: "/ranking/tactil/siempre",
-      pt: "/ranking/tatil/sempre",
+    "/leaderboard/touch": {
+      en: "/leaderboard/touch",
+      es: "/ranking/tactil",
+      pt: "/ranking/tatil",
     },
     "/save/[gameId]": {
       en: "/save/[gameId]",

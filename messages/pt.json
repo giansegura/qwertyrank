@@ -121,14 +121,10 @@
   },
   "Leaderboard": {
     "title": "Ranking · {language, select, en {inglês} es {espanhol} pt {português} other {}}",
-    "metaTitle": "Ranking de digitação em {language, select, en {inglês} es {espanhol} pt {português} other {}} · {input, select, physical {teclado físico} touch {teclado touch} other {}} · {period, select, day {hoje} week {esta semana} month {este mês} all {sempre} other {}}",
+    "metaTitle": "Ranking de digitação em {language, select, en {inglês} es {espanhol} pt {português} other {}} · {input, select, physical {teclado físico} touch {teclado touch} other {}}",
     "rule": "Conta a melhor partida de cada jogador, com pelo menos 90% de precisão.",
     "inputLabel": "Teclado",
-    "periodLabel": "Período",
     "input": "{input, select, physical {Teclado físico} touch {Teclado touch} other {}}",
-    "period": "{period, select, day {Hoje} week {Semana} month {Mês} all {Sempre} other {}}",
-    "resetsIn": "Reinicia em {unit, select, days {{days} d {hours} h} hours {{hours} h {minutes} min} other {{minutes} min}}",
-    "resetting": "Reiniciando…",
     "empty": "Ainda não há ninguém neste ranking. Seja o primeiro!",
     "play": "Jogar Ranked",
     "column": {

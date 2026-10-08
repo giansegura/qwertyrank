@@ -23,23 +23,23 @@ function respond(viewer: { nick: string } | null, position?: unknown) {
 describe("MyPosition", () => {
   it("con marca, enseña la posición y la marca", async () => {
     const fetchMock = respond({ nick: "gian_42" }, { rank: 7, wpm: 88.4, accuracy: 97.6 });
-    renderWithIntl(<MyPosition language="es" input="touch" period="week" />);
+    renderWithIntl(<MyPosition language="es" input="touch" />);
     expect(await screen.findByText("Your position: #7 · 88 wpm · 97%")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/leaderboard/me?lang=es&input=touch&period=week",
+      "/api/leaderboard/me?lang=es&input=touch",
       expect.objectContaining({ cache: "no-store" }),
     );
   });
 
   it("sin marca en ese ranking, lo dice", async () => {
     respond({ nick: "gian_42" }, { rank: null });
-    renderWithIntl(<MyPosition language="en" input="physical" period="day" />);
+    renderWithIntl(<MyPosition language="en" input="physical" />);
     expect(await screen.findByText("You're not on this ranking yet.")).toBeInTheDocument();
   });
 
   it("sin sesión, invita a entrar sin preguntar por la posición", async () => {
     const fetchMock = respond(null);
-    renderWithIntl(<MyPosition language="en" input="physical" period="day" />);
+    renderWithIntl(<MyPosition language="en" input="physical" />);
     expect(await screen.findByRole("link", { name: "Sign in to appear in the ranking" })).toHaveAttribute(
       "href",
       expect.stringMatching(/^\/en\/sign-in/),

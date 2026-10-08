@@ -23,7 +23,7 @@ describe("RankSummary", () => {
     const summary = screen.getByTestId("rank-summary");
     expect(summary).toHaveTextContent("#3 on the leaderboard");
     expect(summary).toHaveTextContent("New personal best!");
-    expect(screen.getByRole("link", { name: "View ranking" })).toHaveAttribute("href", "/es/ranking/fisico/siempre");
+    expect(screen.getByRole("link", { name: "View ranking" })).toHaveAttribute("href", "/es/ranking/fisico");
   });
 
   it("con cuenta y sin mejorar su marca: su posición, sin «nueva marca»", () => {

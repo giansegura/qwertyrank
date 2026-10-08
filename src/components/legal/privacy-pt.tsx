@@ -34,11 +34,11 @@ export function PrivacyPt() {
           que você jogou sem ter entrado.
         </li>
         <li>
-          <strong>Endereço IP:</strong> nunca o guardamos como está, apenas um resumo cifrado que muda a cada dia, para
+          <strong>Endereço IP:</strong> nunca o guardamos como está, apenas um resumo (hash) que muda a cada dia, para
           limitar abusos.
         </li>
         <li>
-          <strong>Contas banidas:</strong> se uma conta for banida por trapaça, guardamos uma impressão cifrada do seu
+          <strong>Contas banidas:</strong> se uma conta for banida por trapaça, guardamos uma impressão digital (hash) do seu
           email e da sua conta Google para que ela não possa se registrar de novo.
         </li>
       </ul>
@@ -64,8 +64,8 @@ export function PrivacyPt() {
         </li>
         <li>
           Antes de apagar as teclas guardamos um extrato anônimo do seu ritmo (tempos entre teclas, sem texto, sem teclas
-          e sem nada que identifique você) para melhorar a detecção de trapaças. Como não identifica você, deixa de ser
-          um dado pessoal e é guardado sem prazo.
+          e sem identificadores, ou seja, pseudonimizado) para melhorar a detecção de trapaças. É guardado sem prazo com
+          base no nosso interesse legítimo em calibrar o antitrapaça.
         </li>
         <li>
           Partidas sem conta: após 30 dias, o identificador anônimo e o resumo do IP são apagados; ficam apenas os

@@ -14,5 +14,8 @@ export async function GET(request: NextRequest) {
     return jsonError("unauthorized", 401);
   }
   const report = await runDailyRetention(getDb());
+  // Vercel no guarda el cuerpo de la respuesta: el informe va a los logs, y si queda trabajo, a Sentry.
+  console.info("daily retention", report);
+  if (!report.done) console.error("daily retention did not finish; work remains for tomorrow", report);
   return NextResponse.json(report, { headers: { "cache-control": "no-store" } });
 }

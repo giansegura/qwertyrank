@@ -34,11 +34,11 @@ export function PrivacyEn() {
           to your account.
         </li>
         <li>
-          <strong>IP address:</strong> we never store it as is, only an encrypted digest that changes every day, to
+          <strong>IP address:</strong> we never store it as is, only a hashed digest that changes every day, to
           limit abuse.
         </li>
         <li>
-          <strong>Banned accounts:</strong> if an account is banned for cheating, we keep an encrypted fingerprint of
+          <strong>Banned accounts:</strong> if an account is banned for cheating, we keep a hashed fingerprint of
           its email and Google account so it cannot sign up again.
         </li>
       </ul>
@@ -64,8 +64,8 @@ export function PrivacyEn() {
         </li>
         <li>
           Before deleting keystrokes we keep an anonymous extract of their rhythm (time between keys, with no text, no
-          keys and nothing that identifies you) to improve cheat detection. As it does not identify you, it is no longer
-          personal data and is kept indefinitely.
+          keys and no identifiers, so it is pseudonymised) to improve cheat detection. It is kept with no time limit on the
+          basis of our legitimate interest in calibrating anti-cheat.
         </li>
         <li>
           Games played without an account: after 30 days their anonymous ID and IP digest are deleted; only the figures

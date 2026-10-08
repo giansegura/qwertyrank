@@ -6,6 +6,11 @@ import type { Instrumentation } from "next";
 /** Tiempo máximo para enviar los errores pendientes antes de que la función de Vercel se congele. */
 const FLUSH_MS = 2_000;
 
+/** Quita los valores de los parámetros de un error de consulta de Drizzle y deja el texto de la consulta. */
+function scrubParams(text: string): string {
+  return text.replace(/\nparams: [\s\S]*$/, "\nparams: [redacted]");
+}
+
 /**
  * Opciones de Sentry, solo en el servidor (spec 5a §6.1), o `null` sin `SENTRY_DSN`: entonces no se inicia
  * (en local y en los tests no se envía nada).
@@ -25,6 +30,8 @@ export function sentryOptions(env: { SENTRY_DSN?: string; VERCEL_ENV?: string })
       // Sin cuerpos de petición: nunca se guardan en memoria (llevan correos, nombres, etc.).
       Sentry.httpIntegration({ maxIncomingRequestBodySize: "none" }),
     ],
+    // Los console.error ya llegan como evento (con sus argumentos filtrados en `beforeSend`): sin migas de consola.
+    beforeBreadcrumb: (breadcrumb) => (breadcrumb.category === "console" ? null : breadcrumb),
     beforeSend(event) {
       // De la petición solo el método: ni URL, query string (códigos y tokens del enlace mágico), cuerpo,
       // cabeceras ni cookies. Sentry los guarda aunque `sendDefaultPii` sea `false`.
@@ -32,6 +39,13 @@ export function sentryOptions(env: { SENTRY_DSN?: string; VERCEL_ENV?: string })
       // `captureRequestError` pone la ruta con su query string.
       const nextjs = event.contexts?.nextjs;
       if (typeof nextjs?.request_path === "string") nextjs.request_path = nextjs.request_path.split("?")[0];
+      // Drizzle mete los parámetros de la consulta (correos, nicks, ids, hashes) en el mensaje: "…\nparams: <valores>".
+      for (const exception of event.exception?.values ?? []) {
+        if (exception.value) exception.value = scrubParams(exception.value);
+      }
+      if (event.message) event.message = scrubParams(event.message);
+      // CaptureConsole copia aquí los argumentos de console.error, errores de consulta incluidos.
+      delete event.extra?.arguments;
       // En Vercel la función puede congelarse en cuanto responde: cada evento se envía antes de que acabe.
       waitUntil(Sentry.flush(FLUSH_MS));
       return event;

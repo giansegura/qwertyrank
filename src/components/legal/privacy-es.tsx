@@ -34,11 +34,11 @@ export function PrivacyEs() {
           partida que jugaste sin haber entrado.
         </li>
         <li>
-          <strong>Dirección IP:</strong> nunca la guardamos tal cual, solo un resumen cifrado que cambia cada día, para
+          <strong>Dirección IP:</strong> nunca la guardamos tal cual, solo un resumen (hash) que cambia cada día, para
           limitar abusos.
         </li>
         <li>
-          <strong>Cuentas baneadas:</strong> si una cuenta se banea por trampas, guardamos una huella cifrada de su
+          <strong>Cuentas baneadas:</strong> si una cuenta se banea por trampas, guardamos una huella (hash) de su
           email y de su cuenta de Google para que no pueda volver a registrarse.
         </li>
       </ul>
@@ -64,8 +64,8 @@ export function PrivacyEs() {
         </li>
         <li>
           Antes de borrar las pulsaciones guardamos un extracto anónimo de su ritmo (tiempos entre teclas, sin texto,
-          sin teclas y sin nada que te identifique) para mejorar la detección de trampas. Como no te identifica, ya no es
-          un dato personal y se conserva sin plazo.
+          sin teclas y sin identificadores, es decir, seudonimizado) para mejorar la detección de trampas. Se conserva sin
+          plazo por nuestro interés legítimo en calibrar el antitrampas.
         </li>
         <li>
           Partidas sin cuenta: a los 30 días se borran su identificador anónimo y el resumen de la IP; solo quedan las

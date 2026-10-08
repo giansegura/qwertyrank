@@ -25,7 +25,8 @@ En Cloudflare → *Email* → *Email Routing*:
 ## 3. Vercel
 
 1. Crea la cuenta (plan Hobby) e importa el repositorio de GitHub. El framework se detecta solo. `vercel.json` ya
-   define el build (`pnpm db:migrate && pnpm build`) y la tarea diaria.
+   define el build (`pnpm db:migrate && pnpm build`), la tarea diaria y la región de las funciones (`fra1`, Fráncfort,
+   junto a Neon y Upstash).
 2. *Settings* → *General* → *Node.js Version*: 24.x, la de `.nvmrc`.
 3. *Settings* → *Domains*:
    - añade `qwertyrank.com`;
@@ -110,7 +111,8 @@ En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main
    falta `pnpm redis:rebuild`, porque no hay rankings que rehacer.
 2. Abre `https://qwertyrank.com`: debe cargar la portada.
 3. Vercel → *Settings* → *Cron Jobs*: aparece `/api/cron/daily` a las 04:00 UTC. Pulsa **Run** y mira en los logs
-   que responde 200 con `{"extracted":…,"deletedLogs":…,"anonymizedGames":…,"done":true}`.
+   de la función (Vercel no muestra el cuerpo de la respuesta) la línea `daily retention` con
+   `{ extracted: …, deletedLogs: …, anonymizedGames: …, done: true }`.
 4. Crea tu cuenta en la web. Después nómbrate admin desde tu máquina:
 
    ```bash

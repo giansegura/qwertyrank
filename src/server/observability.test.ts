@@ -3,6 +3,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import * as Sentry from "@sentry/nextjs";
+import { DrizzleQueryError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { initSentry, reportRequestError, sentryOptions } from "./observability";
 
@@ -29,6 +30,10 @@ describe("sentryOptions", () => {
       tracesSampleRate: 0,
       sendDefaultPii: false,
     });
+    // Sin migas de consola, pero sí las demás.
+    expect(options?.beforeBreadcrumb?.({ category: "console", message: "x" }, undefined)).toBeNull();
+    const http = { category: "http", message: "x" };
+    expect(options?.beforeBreadcrumb?.(http, undefined)).toBe(http);
     expect(options?.integrations).toEqual([
       expect.objectContaining({ name: "CaptureConsole" }),
       expect.objectContaining({ name: "Http" }),
@@ -98,6 +103,29 @@ describe("Sentry contra un servidor local", () => {
     expect(event?.request).toEqual({ method: "GET" });
     expect(JSON.stringify(event)).not.toContain(SESSION);
     expect(JSON.stringify(event)).not.toContain(IP);
+  });
+
+  it("los parámetros de una consulta fallida no llegan a Sentry, ni por console.error ni por onRequestError", async () => {
+    const EMAIL = `${randomUUID()}@example.com`;
+    const failure = () =>
+      new DrizzleQueryError('update "user" set "name" = $1 where "email" = $2', [`n-${EMAIL}`, EMAIL], new Error("connection refused"));
+    console.error("profile update failed", failure());
+    await reportRequestError(failure(), REQUEST, {
+      routerKind: "App Router",
+      routePath: "/api/cron/daily",
+      routeType: "route",
+      renderSource: "react-server-components",
+      revalidateReason: undefined,
+    });
+    await Sentry.flush(2_000);
+    const mine = events.filter((sent) => JSON.stringify(sent).includes("Failed query"));
+    expect(mine.length).toBeGreaterThanOrEqual(2);
+    for (const event of mine) {
+      const serialized = JSON.stringify(event);
+      expect(serialized).not.toContain(EMAIL);
+      expect(serialized).toContain("Failed query");
+      expect(serialized).toContain("params: [redacted]");
+    }
   });
 
   it("ni el cuerpo ni la query string de una petición real llegan a Sentry", async () => {

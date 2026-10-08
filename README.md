@@ -78,6 +78,6 @@ La guía para abrir la beta (cuentas, variables y comprobaciones) está en [`doc
   - quita `anon_id` e `ip_hash` a las partidas anónimas de más de 30 días.
 
   En local: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily`.
-- **Sentry**, solo en el servidor (`src/instrumentation.ts`). Sin `SENTRY_DSN` no se inicia. Solo conserva el método de la petición: ni URL con su query, ni cuerpo, ni cabeceras, ni cookies.
+- **Sentry**, solo en el servidor (`src/instrumentation.ts`). Sin `SENTRY_DSN` no se inicia. Solo conserva el método de la petición: ni URL con su query, ni cuerpo, ni cabeceras, ni cookies. Tampoco los parámetros de las consultas fallidas, los argumentos de `console.error` ni las migas de consola.
 - **Analítica:** Vercel Web Analytics y Speed Insights, solo en producción y sin JS propio en la portada.
 - **Beta:** nada se indexa mientras `INDEXABLE` (`src/lib/site.ts`) sea `false`.

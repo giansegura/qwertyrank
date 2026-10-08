@@ -36,8 +36,8 @@ test("la beta y los comentarios abren un correo; el pie se ve sin hacer scroll",
   await page.goto("/es");
   const footer = page.getByTestId("site-footer");
   await expect(footer).toBeInViewport();
-  await expect(footer.getByRole("link", { name: "beta" })).toHaveAttribute("href", "mailto:feedback@qwertyrank.com");
-  await expect(footer.getByRole("link", { name: "Envíanos tus comentarios" })).toHaveAttribute(
+  await expect(footer.getByRole("link", { name: "Beta: envíanos tus comentarios", exact: true })).toHaveAttribute("href", "mailto:feedback@qwertyrank.com");
+  await expect(footer.getByRole("link", { name: "Envíanos tus comentarios", exact: true })).toHaveAttribute(
     "href",
     "mailto:feedback@qwertyrank.com",
   );

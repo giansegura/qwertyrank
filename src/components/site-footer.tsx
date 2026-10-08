@@ -10,6 +10,7 @@ const FEEDBACK = `mailto:${FEEDBACK_EMAIL}`;
  */
 export function SiteFooter() {
   const t = useTranslations("Footer");
+  const nav = useTranslations("Nav");
 
   return (
     <footer
@@ -18,6 +19,7 @@ export function SiteFooter() {
     >
       <a
         href={FEEDBACK}
+        aria-label={nav("betaLabel")}
         className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-900 uppercase dark:bg-amber-900/40 dark:text-amber-200"
       >
         {t("beta")}

@@ -63,13 +63,14 @@ export function PrivacyEs() {
           revisarla.
         </li>
         <li>
-          Antes de borrar las pulsaciones guardamos un extracto anónimo de su ritmo (tiempos entre teclas, sin texto,
-          sin teclas y sin identificadores, es decir, seudonimizado) para mejorar la detección de trampas. Se conserva sin
-          plazo por nuestro interés legítimo en calibrar el antitrampas.
+          Antes de borrar las pulsaciones guardamos un extracto de su ritmo (tiempos entre teclas, sin texto, sin teclas y
+          sin identificadores, con la velocidad y la precisión redondeadas), es decir, seudonimizado, para mejorar la
+          detección de trampas. Se conserva sin plazo por nuestro interés legítimo en calibrar el antitrampas.
         </li>
         <li>
-          Partidas sin cuenta: a los 30 días se borran su identificador anónimo y el resumen de la IP; solo quedan las
-          cifras, para estadísticas.
+          Partidas: a los 30 días se borran el identificador anónimo y el resumen de la IP de todas las partidas, con cuenta
+          o sin ella. De las partidas sin cuenta solo quedan las cifras, para estadísticas; las de tu cuenta siguen en ella
+          hasta que la borres.
         </li>
         <li>
           Tu cuenta: hasta que la borres. Al borrarla eliminamos tu email, tu nick, tu país, tus sesiones, tus passkeys,

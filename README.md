@@ -40,7 +40,7 @@ pnpm dev                      # http://localhost:3000
 - **Límites:** 100 partidas Ranked por hora por cuenta (o navegador) y 150 por IP; 10 denuncias al día por jugador.
 - **Admins:** `pnpm admin:grant tu@email.com` da el rol (y `pnpm admin:revoke` lo quita). El panel está en `/admin`; para quien no es admin, no existe (404).
 - **Reconstruir Redis:** `pnpm redis:rebuild` dice lo que haría; `pnpm redis:rebuild --yes` lo hace.
-- **Contra producción:** `vercel env pull .env.vercel-prod --environment=production` y después `pnpm redis:rebuild --env .env.vercel-prod [--yes]` (o `pnpm admin:grant tu@email.com --env .env.vercel-prod`). Con `--env` el script lee solo ese archivo y muestra los hosts de PostgreSQL y Redis antes de actuar. Borra `.env.vercel-prod` al terminar. No uses nunca `.env.production.local` en local: `next build`, `next start` y los E2E lo cargarían y actuarían contra producción.
+- **Contra producción:** `vercel env pull .env.vercel-prod --environment=production` y después `pnpm redis:rebuild --env .env.vercel-prod [--yes]` (o `pnpm admin:grant tu@email.com --env .env.vercel-prod`). Con `--env` el script lee solo ese archivo y muestra los hosts de PostgreSQL y Redis antes de actuar. Borra `.env.vercel-prod` al terminar. Con un archivo de una vista previa (`--environment=preview`), añade a mano `REDIS_KEY_PREFIX` con el de esa vista (`pr-<n>:`): sin él, o con `qr:`, el script se niega a actuar. No uses nunca `.env.production.local` en local: `next build`, `next start` y los E2E lo cargarían y actuarían contra producción.
 
 ## Verificación de récords
 

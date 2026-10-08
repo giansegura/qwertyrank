@@ -19,6 +19,13 @@ describe("entorno de los scripts", () => {
     expect(() => parseScriptEnv({ ...FULL, [name]: "  " }, "f")).toThrow(name);
   });
 
+  it("en una vista previa exige un prefijo propio", () => {
+    const preview = { ...FULL, VERCEL_ENV: "preview" };
+    expect(() => parseScriptEnv(preview, "el archivo")).toThrow(/REDIS_KEY_PREFIX.*el archivo/);
+    expect(() => parseScriptEnv({ ...preview, REDIS_KEY_PREFIX: "qr:" }, "f")).toThrow(/REDIS_KEY_PREFIX.*producción/);
+    expect(parseScriptEnv({ ...preview, REDIS_KEY_PREFIX: "pr-12:" }, "f").redisKeyPrefix).toBe("pr-12:");
+  });
+
   it("muestra solo los hosts, sin credenciales", () => {
     const text = describeTargets(parseScriptEnv(FULL, "f"));
     expect(text).toContain("db.example.com:5432");

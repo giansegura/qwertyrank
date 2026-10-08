@@ -4,6 +4,7 @@ import {
   bigint,
   check,
   customType,
+  date,
   doublePrecision,
   index,
   integer,
@@ -17,7 +18,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { REPORT_REASONS } from "../../lib/reports";
 import { GAME_MODES, VERIFICATION_STATUSES } from "../../lib/verification";
-import { users } from "./auth-schema";
+import { USER_STATUSES, users } from "./auth-schema";
 
 export * from "./auth-schema";
 
@@ -99,6 +100,30 @@ export const bests = pgTable(
     index("bests_board_idx").on(table.language, table.inputType, table.score.desc()),
   ],
 );
+
+/**
+ * Extracto de ritmo de una partida cuyas pulsaciones se borran a los 30 días (spec 5a §3.3), para
+ * calibrar la puntuación de riesgo (4c). Es anónimo: ni jugador, ni partida, ni IP, ni texto, ni teclas.
+ */
+export const rhythmSamples = pgTable("rhythm_samples", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  language: text("language", { enum: ["en", "es", "pt"] }).notNull(),
+  inputType: text("input_type", { enum: ["physical", "touch"] }).notNull(),
+  mode: text("mode", { enum: GAME_MODES }).notNull(),
+  verdict: text("verdict", { enum: ["valid", "review", "rejected"] }).notNull(),
+  rejectReason: text("reject_reason"),
+  wpm: doublePrecision("wpm").notNull(),
+  accuracy: doublePrecision("accuracy").notNull(),
+  /** Lunes (UTC) de la semana de la partida: no el día. */
+  playedWeek: date("played_week").notNull(),
+  /** Estado del jugador al hacer el extracto (`anonymous` si la partida no tenía): la etiqueta para calibrar. */
+  playerStatus: text("player_status", { enum: [...USER_STATUSES, "anonymous"] }).notNull(),
+  /** Milisegundos entre cambios de texto consecutivos. */
+  intervalsMs: integer("intervals_ms").array().notNull(),
+  /** Milisegundos que dura cada pulsación (de `down` a su `up`). */
+  holdsMs: integer("holds_ms").array().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const REPORT_STATUSES = ["open", "dismissed", "actioned"] as const;
 export const MODERATION_ACTIONS = ["shadowban", "ban", "restore", "reset_nick", "grant_admin", "revoke_admin"] as const;

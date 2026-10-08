@@ -43,6 +43,13 @@
       "when": 1791448517906,
       "tag": "0005_single_rankings",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791464412727,
+      "tag": "0006_rhythm_samples",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { LoginForm } from "@/components/auth/login-form";
+import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { firstParam, safeNext } from "@/lib/auth-paths";
 import { serverEnv } from "@/server/env";
@@ -33,6 +34,20 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
         googleEnabled={Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)}
         callbackError={firstParam(query.error) ?? null}
       />
+      <p data-testid="login-consent" className="max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
+        {t.rich("consent", {
+          terms: (chunks) => (
+            <Link href="/terms" className="underline">
+              {chunks}
+            </Link>
+          ),
+          privacy: (chunks) => (
+            <Link href="/privacy" className="underline">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
     </>
   );
 }

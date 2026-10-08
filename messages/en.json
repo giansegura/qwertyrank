@@ -8,7 +8,9 @@
     "practice": "Practice",
     "signIn": "Sign in",
     "account": "Your account: {nick}",
-    "leaderboard": "Ranking"
+    "leaderboard": "Ranking",
+    "beta": "beta",
+    "betaLabel": "Beta: send us your feedback"
   },
   "LocaleSwitcher": {
     "label": "Language",
@@ -81,7 +83,8 @@
     "errorBlocked": "This account can't be created.",
     "errorFailed": "Something went wrong. Try again in a moment.",
     "errorLinkInvalid": "That link has expired or was already used. Ask for a new one.",
-    "errorPasskey": "We couldn't sign you in with a passkey. Add one from your account settings first."
+    "errorPasskey": "We couldn't sign you in with a passkey. Add one from your account settings first.",
+    "consent": "By creating an account you accept the <terms>Terms</terms> and the <privacy>Privacy policy</privacy>."
   },
   "Settings": {
     "title": "Your account",
@@ -197,5 +200,15 @@
     "item": "Record: {target, number} wpm · you need {required, number} wpm · {attempts, plural, one {# attempt} other {# attempts}}",
     "hoursLeft": "{hours} h left",
     "verify": "Verify"
+  },
+  "Footer": {
+    "beta": "beta",
+    "feedback": "Send us your feedback",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "Legal": {
+    "privacyTitle": "Privacy policy · QwertyRank",
+    "termsTitle": "Terms of use · QwertyRank"
   }
 }

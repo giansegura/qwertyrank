@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { routing } from "@/i18n/routing";
 import { INDEXABLE } from "@/lib/site";
@@ -43,6 +44,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
         <NextIntlClientProvider>
           <SiteHeader />
           <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-10">{children}</main>
+          <SiteFooter />
         </NextIntlClientProvider>
       </body>
     </html>

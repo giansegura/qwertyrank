@@ -4,7 +4,7 @@ import "server-only";
 export interface Rhythm {
   /** Milisegundos entre cambios de texto consecutivos (eventos `input`). Existen con teclado físico y táctil. */
   intervalsMs: number[];
-  /** Milisegundos de cada pulsación, de `down` a su `up` con el mismo `code`. Con teclado táctil suele faltar. */
+  /** Milisegundos de cada pulsación, de `down` a su `up` con el mismo `code` (los de `code` vacío no cuentan). Con teclado táctil suele faltar. */
   holdsMs: number[];
 }
 
@@ -30,7 +30,7 @@ const at = (event: TimedEvent) => Math.max(0, Math.round(event.t));
 /**
  * El ritmo de unos eventos ya guardados, en orden de llegada. Son de un registro sin validar: se saltan
  * los que no tienen `type` o un `t` numérico, un `up` sin su `down`, y las repeticiones automáticas de una
- * tecla mantenida (cuenta el primer `down`). Nunca da tiempos negativos.
+ * tecla mantenida (cuenta el primer `down`), y los `down`/`up` con `code` vacío (no se pueden emparejar). Nunca da tiempos negativos.
  */
 export function rhythmOf(events: readonly unknown[]): Rhythm {
   const intervalsMs: number[] = [];
@@ -44,7 +44,7 @@ export function rhythmOf(events: readonly unknown[]): Rhythm {
     if (event.type === "input") {
       if (lastInput !== null) intervalsMs.push(capped(t - lastInput));
       lastInput = t;
-    } else if (typeof event.code === "string") {
+    } else if (typeof event.code === "string" && event.code !== "") {
       if (event.type === "down" && !pressed.has(event.code)) pressed.set(event.code, t);
       if (event.type === "up") {
         const down = pressed.get(event.code);

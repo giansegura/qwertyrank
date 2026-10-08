@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { routing } from "@/i18n/routing";
+import { INDEXABLE } from "@/lib/site";
 import "../globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -24,7 +25,12 @@ export async function generateMetadata({ params }: Omit<LayoutProps, "children">
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: "Metadata" });
-  return { title: t("title"), description: t("description") };
+  return {
+    title: t("title"),
+    description: t("description"),
+    // Durante la beta no se indexa (spec 5a §5).
+    robots: INDEXABLE ? undefined : { index: false, follow: false },
+  };
 }
 
 export default async function LocaleLayout({ children, params }: LayoutProps) {

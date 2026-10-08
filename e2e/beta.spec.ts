@@ -52,3 +52,8 @@ test("al entrar, el aviso enlaza a los términos y a la política de privacidad"
   await expect(consent.getByRole("link", { name: "Términos" })).toHaveAttribute("href", "/es/terminos");
   await expect(consent.getByRole("link", { name: "Política de privacidad" })).toHaveAttribute("href", "/es/privacidad");
 });
+
+test("fuera de producción no se cargan los scripts de analítica de Vercel", async ({ page }) => {
+  await page.goto("/es");
+  await expect(page.locator('script[src^="/_vercel/"]')).toHaveCount(0);
+});

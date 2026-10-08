@@ -21,7 +21,9 @@
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.7",
+    "@sentry/nextjs": "10.75.3",
     "@upstash/redis": "1.39.0",
+    "@vercel/functions": "3.9.9",
     "better-auth": "1.7.7",
     "disposable-email-domains-js": "1.26.0",
     "drizzle-orm": "0.45.3",

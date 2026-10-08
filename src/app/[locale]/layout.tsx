@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { VercelInsights } from "@/components/vercel-insights";
 import { routing } from "@/i18n/routing";
 import { INDEXABLE } from "@/lib/site";
 import "../globals.css";
@@ -45,6 +46,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
           <SiteHeader />
           <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-10">{children}</main>
           <SiteFooter />
+          <VercelInsights enabled={process.env.VERCEL_ENV === "production"} />
         </NextIntlClientProvider>
       </body>
     </html>

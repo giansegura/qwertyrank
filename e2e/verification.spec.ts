@@ -64,9 +64,9 @@ test("el aviso de récord pendiente lleva a /verify, que empieza su partida de v
 });
 
 /**
- * Una partida Ranked que entra en el top 10 de hoy: 60 palabras a una tecla cada ~55 ms en 30 s (unas
- * 140 PPM), más que cualquier otra partida de los E2E con cuenta (6 palabras, ~14 PPM; las de esta
- * prueba se borran al acabar). Espera al resultado, en `review`.
+ * Una partida Ranked que entra en el top 10: 60 palabras a una tecla cada ~55 ms en 30 s (unas 140 PPM),
+ * más que cualquier otra partida de los E2E con cuenta (6 palabras, ~14 PPM; las de esta prueba se borran
+ * al acabar, y las de ejecuciones anteriores, al empezar: `global-setup.ts`). Espera al resultado, en `review`.
  */
 async function playRecord(page: Page): Promise<void> {
   const words = await startRanked(page, "en", 60);
@@ -136,7 +136,7 @@ test("tecleando despacio no se verifica: quedan intentos y la marca no aparece e
 
   expect(await verdictsOf(userId)).toContain("review");
   for (const input of ["physical", "touch"]) {
-    await page.goto(`/en/leaderboard/${input}/today`);
+    await page.goto(`/en/leaderboard/${input}`);
     await expect(page.locator(`[data-testid="leaderboard-row"][data-nick="${nick}"]`)).toHaveCount(0);
   }
 });

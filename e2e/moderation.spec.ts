@@ -41,7 +41,7 @@ test("una denuncia llega a la cola y el admin banea desde la ficha", async ({ pa
   await setRole(email, "admin");
 
   const row = page.locator(`[data-testid="leaderboard-row"][data-nick="${target}"]`);
-  await page.goto("/en/leaderboard/physical/all-time");
+  await page.goto("/en/leaderboard/physical");
   await expect(row).toBeVisible();
 
   await page.goto(`/en/u/${target}`);
@@ -58,7 +58,7 @@ test("una denuncia llega a la cola y el admin banea desde la ficha", async ({ pa
   await page.getByTestId("admin-set-banned").click();
   await expect(page.getByTestId("admin-notice")).toHaveText("Jugador baneado.");
 
-  await page.goto("/en/leaderboard/physical/all-time");
+  await page.goto("/en/leaderboard/physical");
   await expect(row).toHaveCount(0);
   expect((await page.request.get(`/en/u/${target}`)).status()).toBe(404);
 });
@@ -79,7 +79,7 @@ test("en shadow-ban ve su propio perfil; los demás reciben 404", async ({ page,
 });
 
 test("las URLs imposibles responden 404", async ({ request }) => {
-  for (const path of ["/en/u/a", "/en/u/con%20espacio", "/es/leaderboard/nada/today"]) {
+  for (const path of ["/en/u/a", "/en/u/con%20espacio", "/es/leaderboard/nada"]) {
     expect((await request.get(path)).status(), path).toBe(404);
   }
 });

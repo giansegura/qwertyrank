@@ -2,7 +2,7 @@ import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import type { TopEntry } from "@/lib/leaderboard/types";
 import type { Db } from "../db/client";
-import { periodBests, users } from "../db/schema";
+import { bests, users } from "../db/schema";
 import { isBoard } from "./bests";
 import { TOP_SIZE } from "./ranking";
 import type { Board } from "./store";
@@ -17,13 +17,13 @@ export async function getTop(db: Db, board: Board, limit = TOP_SIZE): Promise<To
     .select({
       nick: users.nick,
       country: users.country,
-      wpm: periodBests.wpm,
-      accuracy: periodBests.accuracy,
+      wpm: bests.wpm,
+      accuracy: bests.accuracy,
     })
-    .from(periodBests)
-    .innerJoin(users, eq(users.id, periodBests.userId))
+    .from(bests)
+    .innerJoin(users, eq(users.id, bests.userId))
     .where(and(isBoard(board), eq(users.status, "active")))
-    .orderBy(desc(periodBests.score))
+    .orderBy(desc(bests.score))
     .limit(limit);
   return rows.map((row, index) => ({ rank: index + 1, ...row }));
 }

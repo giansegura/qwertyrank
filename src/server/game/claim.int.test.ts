@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import { periodKey } from "@/lib/leaderboard/periods";
-import { freshDay } from "@/test/fresh-day";
+import { emptyBoards } from "@/test/empty-boards";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
-import { games, periodBests, recordVerifications, users } from "../db/schema";
+import { bests, games, recordVerifications, users } from "../db/schema";
 import { createRanking } from "../leaderboard/ranking";
 import { createLeaderboardStore } from "../leaderboard/store";
 import { createRedis } from "../redis";
@@ -65,26 +64,18 @@ async function owner(gameId: string) {
 }
 
 describe("reclamar una partida anónima (spec §3.7)", () => {
-  it("una partida reciente pasa al usuario y entra en sus marcas", async () => {
+  it("una partida reciente pasa al usuario y es su marca, con la hora en que se jugó", async () => {
     const userId = await newUser();
     const game = await anonymousGame();
     const outcome = await claimGame({ gameId: game.id, anonId: game.anonId, userId });
-    expect(outcome).toMatchObject({ kind: "ok", claim: { language: "es", inputType: "physical", ranking: { kind: "ranked" } } });
+    expect(outcome).toMatchObject({
+      kind: "ok",
+      claim: { language: "es", inputType: "physical", ranking: { kind: "ranked", rank: expect.any(Number), improved: true } },
+    });
     expect(await owner(game.id)).toMatchObject({ userId, claimedAt: expect.any(Date) });
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, game.id))).toHaveLength(5);
-  });
-
-  it("cuenta para los periodos en que se jugó, no para el momento de reclamarla", async () => {
-    const userId = await newUser();
-    const startsAt = new Date("2026-10-04T23:59:30Z");
-    const game = await anonymousGame({ startsAt });
-    await claimGame({ gameId: game.id, anonId: game.anonId, userId });
-    const [day] = await db
-      .select({ key: periodBests.periodKey })
-      .from(periodBests)
-      .where(eq(periodBests.gameId, game.id))
-      .then((rows) => rows.filter((row) => row.key === periodKey("day", startsAt)));
-    expect(day?.key).toBe("2026-10-04");
+    expect(await db.select().from(bests).where(eq(bests.gameId, game.id))).toEqual([
+      expect.objectContaining({ userId, language: "es", inputType: "physical", achievedAt: game.startsAt }),
+    ]);
   });
 
   it("pasados 10 minutos ya no se puede", async () => {
@@ -106,7 +97,7 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
     await claimGame({ gameId: game.id, anonId: game.anonId, userId });
     expect(await claimGame({ gameId: game.id, anonId: game.anonId, userId })).toMatchObject({
       kind: "ok",
-      claim: { ranking: { kind: "ranked", improved: [] } },
+      claim: { ranking: { kind: "ranked", improved: false } },
     });
   });
 
@@ -136,33 +127,32 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
   });
 
   it("si entraría en un top 10 sin verificar, el reclamo la deja en review con su verificación", async () => {
-    const day = freshDay();
-    const claimOn = createClaimGame({ db, rankGame: ranking.rankGame, now: () => day });
+    await emptyBoards(db);
     const userId = await newUser({ verified: false });
-    const game = await anonymousGame({ startsAt: day, wpm: 80 });
+    const game = await anonymousGame({ wpm: 80 });
 
-    const outcome = await claimOn({ gameId: game.id, anonId: game.anonId, userId });
+    const outcome = await claimGame({ gameId: game.id, anonId: game.anonId, userId });
     expect(outcome).toMatchObject({
       kind: "ok",
       claim: {
         language: "es",
         inputType: "physical",
-        ranking: { kind: "review", ranks: { day: 1 }, verification: { targetWpm: 80, requiredWpm: 68, attemptsLeft: 3 } },
+        ranking: { kind: "review", rank: 1, verification: { targetWpm: 80, requiredWpm: 68, attemptsLeft: 3 } },
       },
     });
     const [row] = await db.select().from(games).where(eq(games.id, game.id));
     expect(row).toMatchObject({ userId, verdict: "review", verificationId: expect.any(String) });
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, game.id))).toEqual([]);
+    expect(await db.select().from(bests).where(eq(bests.gameId, game.id))).toEqual([]);
 
     // Repetir el reclamo (p. ej. al recargar la página) enseña la misma verificación…
-    const again = await claimOn({ gameId: game.id, anonId: game.anonId, userId });
-    expect(again).toMatchObject({ kind: "ok", claim: { ranking: { kind: "review", verification: { id: row.verificationId } } } });
+    const again = await claimGame({ gameId: game.id, anonId: game.anonId, userId });
+    expect(again).toMatchObject({ kind: "ok", claim: { ranking: { kind: "review", rank: 1, verification: { id: row.verificationId } } } });
     // …y, si ha caducado, ya no hay nada que verificar.
     await db
       .update(recordVerifications)
       .set({ expiresAt: sql`now() - interval '1 minute'` })
       .where(eq(recordVerifications.id, row.verificationId!));
-    expect(await claimOn({ gameId: game.id, anonId: game.anonId, userId })).toMatchObject({
+    expect(await claimGame({ gameId: game.id, anonId: game.anonId, userId })).toMatchObject({
       kind: "ok",
       claim: { ranking: { kind: "unranked" } },
     });

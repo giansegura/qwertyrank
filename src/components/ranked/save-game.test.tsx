@@ -26,7 +26,7 @@ vi.mock("../verification/verification-game", () => ({
 }));
 
 const SAVED = {
-  ranking: { kind: "ranked" as const, ranks: { day: 2, week: 2, month: 5, all: 40 }, improved: ["day" as const] },
+  ranking: { kind: "ranked" as const, rank: 2, improved: true },
   language: "en" as const,
   inputType: "touch" as const,
 };
@@ -36,11 +36,11 @@ beforeEach(() => {
 });
 
 describe("SaveGame", () => {
-  it("guarda la partida y enseña sus posiciones", async () => {
+  it("guarda la partida y enseña su posición", async () => {
     vi.mocked(claimGame).mockResolvedValue(SAVED);
     renderWithIntl(<SaveGame gameId="g1" />);
     expect(await screen.findByTestId("save-result")).toHaveTextContent("Game saved to your account.");
-    expect(screen.getByTestId("rank-summary")).toHaveTextContent("#2 today");
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("#2 on the leaderboard");
     expect(claimGame).toHaveBeenCalledWith("g1");
   });
 
@@ -67,7 +67,7 @@ describe("SaveGame", () => {
       attemptsLeft: 3,
       expiresAt: "2026-10-08T10:00:00.000Z",
     };
-    vi.mocked(claimGame).mockResolvedValue({ ...SAVED, ranking: { kind: "review", ranks: { day: 1, all: 7 }, verification } });
+    vi.mocked(claimGame).mockResolvedValue({ ...SAVED, ranking: { kind: "review", rank: 7, verification } });
     const changed = vi.fn();
     window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
     onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));

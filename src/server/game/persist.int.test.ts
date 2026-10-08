@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { eq, sql } from "drizzle-orm";
-import { afterAll, describe, expect, it } from "vitest";
-import { freshDay } from "@/test/fresh-day";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { emptyBoards } from "@/test/empty-boards";
 import { untilASessionWaitsForALock } from "@/test/lock-wait";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
-import { games, keystrokeLogs, periodBests, recordVerifications, users } from "../db/schema";
+import { bests, games, keystrokeLogs, recordVerifications, users } from "../db/schema";
 import { openPendingVerification } from "../verification/pending";
 import { decodeKeystrokeLog } from "./keystroke-log";
 import { createSaveGame, insertGame, type GameRecord } from "./persist";
@@ -48,11 +48,6 @@ async function newUser({ verified = true, status = "active" as "active" | "shado
   return user.id;
 }
 
-/** Guarda una partida jugada ese día, con "ahora" en ese mismo día. */
-function saveOn(day: Date, game: GameRecord) {
-  return createSaveGame(db, { now: () => day })({ ...game, startsAt: day, finishedAt: day });
-}
-
 const verificationOf = async (gameId: string) => {
   const [row] = await db
     .select({ verificationId: games.verificationId, verdict: games.verdict })
@@ -90,29 +85,31 @@ describe("saveGame (PostgreSQL)", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("con usuario y al menos un 90 % de precisión, guarda sus marcas en la misma transacción", async () => {
+  it("con usuario y al menos un 90 % de precisión, guarda su marca en la misma transacción", async () => {
     const input = record({ userId: await newUser() });
-    const saved = await saveGame(input);
-    expect(saved.review).toBeNull();
-    expect(saved.improved).toHaveLength(5);
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, input.id))).toHaveLength(5);
+    expect(await saveGame(input)).toEqual({ improved: true, review: null });
+    expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toHaveLength(1);
   });
 
-  it("sin usuario o por debajo del 90 % de precisión, no guarda marcas", async () => {
-    expect((await saveGame(record())).improved).toEqual([]);
-    expect((await saveGame(record({ userId: await newUser(), accuracy: 89.9 }))).improved).toEqual([]);
+  it("sin usuario o por debajo del 90 % de precisión, no guarda marca", async () => {
+    expect((await saveGame(record())).improved).toBe(false);
+    expect((await saveGame(record({ userId: await newUser(), accuracy: 89.9 }))).improved).toBe(false);
   });
 });
 
 describe("saveGame: récords en review (spec 4b §2)", () => {
-  it("sin nivel verificado y entre los 10 primeros: review, sin marcas y con una verificación de 24 h", async () => {
-    const day = freshDay();
-    const input = record({ userId: await newUser({ verified: false }), wpm: 72.4 });
-    const saved = await saveOn(day, input);
+  // Cada test empieza con los rankings vacíos: cualquier partida sin nivel verificado entra en el top 10.
+  beforeEach(async () => {
+    await emptyBoards(db);
+  });
 
-    expect(saved.improved).toEqual([]);
+  it("sin nivel verificado y entre los 10 primeros: review, sin marca y con una verificación de 24 h", async () => {
+    const input = record({ userId: await newUser({ verified: false }), wpm: 72.4 });
+    const saved = await saveGame(input);
+
+    expect(saved.improved).toBe(false);
     expect(saved.review).toEqual({
-      ranks: { day: 1, week: 1, month: 1, all: expect.any(Number) },
+      rank: 1,
       verification: {
         id: expect.any(String),
         language: "pt",
@@ -126,7 +123,7 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     const hours = (Date.parse(saved.review!.verification.expiresAt) - Date.now()) / 3_600_000;
     expect(hours).toBeGreaterThan(23.9);
     expect(hours).toBeLessThan(24.1);
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, input.id))).toEqual([]);
+    expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toEqual([]);
     expect(await verificationOf(input.id)).toMatchObject({
       verdict: "review",
       verification: { id: saved.review!.verification.id, gameId: input.id, status: "pending", attempts: 0 },
@@ -134,59 +131,55 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
   });
 
   it("en shadow-ban, el mismo flujo: la sanción no se nota", async () => {
-    const day = freshDay();
     const input = record({ userId: await newUser({ verified: false, status: "shadowbanned" }) });
-    const saved = await saveOn(day, input);
+    const saved = await saveGame(input);
 
-    expect(saved).toMatchObject({ improved: [], review: { ranks: { day: 1, week: 1, month: 1 } } });
+    expect(saved).toMatchObject({ improved: false, review: { rank: 1 } });
     expect(await verificationOf(input.id)).toMatchObject({
       verdict: "review",
       verification: { id: saved.review!.verification.id, gameId: input.id, status: "pending", attempts: 0 },
     });
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, input.id))).toEqual([]);
+    expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toEqual([]);
   });
 
   it("por debajo de su nivel × 1,10 se publica directamente", async () => {
-    const day = freshDay();
     const input = record({ userId: await newUser() });
-    expect(await saveOn(day, input)).toMatchObject({ review: null });
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, input.id))).toHaveLength(5);
+    expect(await saveGame(input)).toEqual({ improved: true, review: null });
+    expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toHaveLength(1);
   });
 
   it("una segunda partida en review mejor sustituye a la primera y renueva el plazo; los intentos se quedan", async () => {
-    const day = freshDay();
     const userId = await newUser({ verified: false });
     const first = record({ userId, wpm: 60 });
-    const { review } = await saveOn(day, first);
+    const { review } = await saveGame(first);
     await db
       .update(recordVerifications)
       .set({ attempts: 2, expiresAt: sql`now() + interval '1 hour'` })
       .where(eq(recordVerifications.id, review!.verification.id));
 
     const better = record({ userId, wpm: 70 });
-    const second = await saveOn(day, better);
+    const second = await saveGame(better);
     expect(second.review?.verification).toMatchObject({ id: review!.verification.id, targetWpm: 70, attemptsLeft: 1 });
     expect(Date.parse(second.review!.verification.expiresAt) - Date.now()).toBeGreaterThan(23.9 * 3_600_000);
 
     const worse = record({ userId, wpm: 65 });
-    expect((await saveOn(day, worse)).review?.verification).toMatchObject({ id: review!.verification.id, targetWpm: 70 });
+    expect((await saveGame(worse)).review?.verification).toMatchObject({ id: review!.verification.id, targetWpm: 70 });
     for (const game of [first, better, worse]) {
       expect((await verificationOf(game.id)).verification).toMatchObject({ id: review!.verification.id, gameId: better.id });
     }
   });
 
   it("una pendiente caducada se cierra como fallida y la partida nueva abre otra", async () => {
-    const day = freshDay();
     const userId = await newUser({ verified: false });
     const first = record({ userId });
-    const { review } = await saveOn(day, first);
+    const { review } = await saveGame(first);
     const [expired] = await db
       .update(recordVerifications)
       .set({ expiresAt: sql`now() - interval '1 minute'` })
       .where(eq(recordVerifications.id, review!.verification.id))
       .returning();
 
-    const next = await saveOn(day, record({ userId }));
+    const next = await saveGame(record({ userId }));
     expect(next.review?.verification.id).not.toBe(review!.verification.id);
     expect(next.review?.verification.attemptsLeft).toBe(3);
     const [closed] = await db.select().from(recordVerifications).where(eq(recordVerifications.id, expired.id));
@@ -194,14 +187,13 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
   });
 
   it("una pendiente sin intentos se cierra como fallida y la partida nueva abre otra con los 3", async () => {
-    const day = freshDay();
     const userId = await newUser({ verified: false });
     const first = record({ userId });
-    const { review } = await saveOn(day, first);
+    const { review } = await saveGame(first);
     await db.update(recordVerifications).set({ attempts: 3 }).where(eq(recordVerifications.id, review!.verification.id));
 
     const next = record({ userId });
-    const saved = await saveOn(day, next);
+    const saved = await saveGame(next);
     expect(saved.review?.verification.id).not.toBe(review!.verification.id);
     expect(saved.review?.verification.attemptsLeft).toBe(3);
     const opened = await verificationOf(next.id);
@@ -216,9 +208,8 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
   });
 
   it("dos partidas en review guardadas a la vez: el objetivo es la más rápida", async () => {
-    const day = freshDay();
     const userId = await newUser({ verified: false });
-    const fast = record({ userId, wpm: 100, startsAt: day, finishedAt: day });
+    const fast = record({ userId, wpm: 100 });
     const slow = record({ userId, wpm: 50 });
 
     // A abre la verificación de la rápida y no confirma hasta que B está esperando por esa pendiente.
@@ -234,7 +225,7 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     });
     try {
       await openedByA;
-      const b = saveOn(day, slow);
+      const b = saveGame(slow);
       await untilASessionWaitsForALock(db);
       release();
       await a;

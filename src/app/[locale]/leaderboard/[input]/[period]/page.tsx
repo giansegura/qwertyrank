@@ -7,12 +7,9 @@ import { LeaderboardTabs } from "@/components/leaderboard/leaderboard-tabs";
 import { MyPosition } from "@/components/leaderboard/my-position";
 import { PeriodCountdown } from "@/components/leaderboard/period-countdown";
 import { routing } from "@/i18n/routing";
-import type { InputType } from "@/lib/game/types";
-import { periodEnd, type VisiblePeriod } from "@/lib/leaderboard/periods";
+import { periodEnd } from "@/lib/leaderboard/periods";
 import { parseBoardParams } from "@/lib/leaderboard/slugs";
-import type { TestLanguage } from "@/lib/words/languages";
 import { getDb } from "@/server/db/client";
-import { currentBoard } from "@/server/leaderboard/store";
 import { getTop } from "@/server/leaderboard/top";
 
 /** El top se regenera cada 60 s (spec §5.6) y al momento cuando alguien entra en él (`revalidatePath`). */
@@ -21,12 +18,6 @@ export const revalidate = 60;
 /** Ninguna página en el build (necesitaría la base de datos): se generan en la primera visita. */
 export function generateStaticParams() {
   return [];
-}
-
-/** El ranking en curso y cuándo acaba (ms), con la misma hora para los dos; `null` en "siempre". */
-function boardNow(language: TestLanguage, input: InputType, period: VisiblePeriod) {
-  const now = new Date();
-  return { board: currentBoard(language, input, period, now), endsAt: periodEnd(period, now)?.getTime() ?? null };
 }
 
 interface LeaderboardPageProps {
@@ -49,8 +40,9 @@ export default async function LeaderboardPage({ params }: LeaderboardPageProps) 
   const { input, period } = board;
 
   const t = await getTranslations("Leaderboard");
-  const { board: current, endsAt } = boardNow(locale, input, period);
-  const entries = await getTop(getDb(), current);
+  // Transitorio: todas las pestañas de periodo enseñan el ranking único de ese idioma y teclado.
+  const endsAt = periodEnd(period, new Date())?.getTime() ?? null;
+  const entries = await getTop(getDb(), { language: locale, inputType: input });
 
   return (
     <>
@@ -62,7 +54,7 @@ export default async function LeaderboardPage({ params }: LeaderboardPageProps) 
       {/* En móvil, una línea reservada para cada uno: si compartieran fila, al llegar se partiría en dos (CLS). */}
       <div className="flex flex-col gap-1 text-sm sm:min-h-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-4">
         {/* Con el periodo nuevo (la cuenta atrás pide la página al acabar), se vuelve a pedir la posición. */}
-        <MyPosition key={`${input}-${period}-${current.key}`} language={locale} input={input} period={period} />
+        <MyPosition key={`${input}-${period}`} language={locale} input={input} period={period} />
         <PeriodCountdown endsAt={endsAt} />
       </div>
       <LeaderboardTable entries={entries} />

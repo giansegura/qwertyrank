@@ -3,12 +3,13 @@ import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import type { FinishResponse } from "@/lib/game/types";
 import type { TypingEvent } from "@/lib/scoring/types";
+import { emptyBoards } from "@/test/empty-boards";
 import { typed } from "@/test/typing-events";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
-import { games, keystrokeLogs, periodBests, users } from "../db/schema";
+import { bests, games, keystrokeLogs, users } from "../db/schema";
 import { createRanking } from "../leaderboard/ranking";
-import { createLeaderboardStore, currentBoard } from "../leaderboard/store";
+import { createLeaderboardStore } from "../leaderboard/store";
 import { createRedis } from "../redis";
 import { createSaveVerificationGame } from "../verification/finish";
 import { decodeKeystrokeLog } from "./keystroke-log";
@@ -126,18 +127,18 @@ describe("GameService (Redis + PostgreSQL)", () => {
     await verifyEverywhere(db, user.id);
     const { owner, gameId, outcome } = await play(typed("hola ", { every: 50, hold: 30 }), { userId: user.id });
     expect(outcome).toMatchObject({ kind: "ok", response: { verdict: "valid" } });
-    expect(outcome).toMatchObject({ kind: "ok", response: { ranking: { kind: "ranked", ranks: { day: 1 } } } });
+    expect(outcome).toMatchObject({ kind: "ok", response: { ranking: { kind: "ranked", rank: 1, improved: true } } });
     const [row] = await db.select({ userId: games.userId, anonId: games.anonId }).from(games).where(eq(games.id, gameId));
     expect(row).toEqual({ userId: user.id, anonId: owner });
   });
 
-  it("con cuenta, sin nivel verificado y en un top 10: queda en review, con posiciones de PostgreSQL y sin Redis", async () => {
+  it("con cuenta, sin nivel verificado y en un top 10: queda en review, con su posición de PostgreSQL y sin Redis", async () => {
+    await emptyBoards(db);
     const [user] = await db
       .insert(users)
       .values({ name: "", email: `${randomUUID()}@example.com`, nick: `t_${randomUUID().slice(0, 8)}` })
       .returning({ id: users.id });
-    // 7 palabras en 1,5 s = 280 PPM en portugués y teclado físico: ninguna otra prueba publica marcas
-    // tan rápidas en ese ranking, así que entra en el top 10 de hoy.
+    // 7 palabras en 1,5 s = 280 PPM en portugués y teclado físico; con los rankings vacíos, es el primero.
     const events = typed("hola ".repeat(7), { every: 40, hold: 30 });
     const { gameId, outcome } = await play(events, { userId: user.id, language: "pt", waitBeforeSend: 1_200 });
     if (outcome.kind !== "ok") throw new Error(outcome.kind);
@@ -151,8 +152,8 @@ describe("GameService (Redis + PostgreSQL)", () => {
     });
     const { ranking } = outcome.response as FinishResponse;
     if (ranking.kind !== "review") throw new Error(ranking.kind);
-    expect(ranking.ranks.day).toBeLessThanOrEqual(10);
-    expect(await db.select().from(periodBests).where(eq(periodBests.gameId, gameId))).toEqual([]);
-    expect(await leaderboard.position(currentBoard("pt", "physical", "day"), user.id)).toBeNull();
+    expect(ranking.rank).toBe(1);
+    expect(await db.select().from(bests).where(eq(bests.gameId, gameId))).toEqual([]);
+    expect(await leaderboard.position({ language: "pt", inputType: "physical" }, user.id)).toBeNull();
   });
 });

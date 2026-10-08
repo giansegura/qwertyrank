@@ -1,12 +1,11 @@
 import "server-only";
 import type { InputType, RejectReason, Verdict } from "@/lib/game/types";
-import type { PeriodRanks } from "@/lib/leaderboard/types";
 import type { GameMode, PendingVerification } from "@/lib/verification";
 import type { TestLanguage } from "@/lib/words/languages";
 import type { Db, DbExecutor } from "../db/client";
 import { games, keystrokeLogs } from "../db/schema";
 import type { ReceivedBatch } from "../anticheat/rules";
-import { recordBests, type ImprovedBest } from "../leaderboard/bests";
+import { recordBest } from "../leaderboard/bests";
 import { RANKED_MIN_ACCURACY } from "../leaderboard/score";
 import { openPendingVerification } from "../verification/pending";
 import { decideReview } from "../verification/review";
@@ -31,16 +30,16 @@ export interface GameRecord {
   batches: ReceivedBatch[];
 }
 
-/** La partida entraría en un top 10 sin verificar (spec 4b §2): sus posiciones y su verificación. */
+/** La partida entraría en un top 10 sin verificar (spec 4b §2): su posición y su verificación. */
 export interface ReviewedGame {
-  ranks: PeriodRanks;
+  rank: number;
   verification: PendingVerification;
 }
 
 export interface SavedGame {
-  /** Periodos en que la partida mejora la marca del jugador (vacío si no cuenta para el ranking). */
-  improved: ImprovedBest[];
-  /** Si ha quedado en `review`: entonces no escribe marcas (`improved` vacío). */
+  /** Si la partida mejora la marca del jugador (`false` si no cuenta para el ranking). */
+  improved: boolean;
+  /** Si ha quedado en `review`: entonces no escribe marca (`improved` es `false`). */
   review: ReviewedGame | null;
 }
 
@@ -48,14 +47,14 @@ export type SaveGame = (record: GameRecord) => Promise<SavedGame>;
 
 /**
  * Si la partida cuenta para el ranking (válida, de un jugador con cuenta y con al menos un 90 % de
- * precisión, spec §3.3), guarda sus marcas. La usan el final de la partida y el reclamo.
+ * precisión, spec §3.3), guarda su marca. La usan el final de la partida y el reclamo.
  */
-export async function recordGameBests(
+export async function recordGameBest(
   db: DbExecutor,
   game: Pick<GameRecord, "id" | "userId" | "language" | "inputType" | "wpm" | "accuracy" | "verdict" | "startsAt">,
-): Promise<ImprovedBest[]> {
-  if (game.userId === null || game.verdict !== "valid" || game.accuracy < RANKED_MIN_ACCURACY) return [];
-  return recordBests(db, {
+): Promise<boolean> {
+  if (game.userId === null || game.verdict !== "valid" || game.accuracy < RANKED_MIN_ACCURACY) return false;
+  return recordBest(db, {
     userId: game.userId,
     gameId: game.id,
     language: game.language,
@@ -80,16 +79,16 @@ export async function insertGame(
 }
 
 /**
- * Guarda la partida Ranked, sus pulsaciones y sus marcas en una transacción (spec §5.5). Si entraría
- * en un top 10 sin verificar, queda en `review`: sin marcas y con su verificación (spec 4b §2.2).
+ * Guarda la partida Ranked, sus pulsaciones y su marca en una transacción (spec §5.5). Si entraría en
+ * un top 10 sin verificar, queda en `review`: sin marca y con su verificación (spec 4b §2.2).
  */
-export function createSaveGame(db: Db, { now = () => new Date() }: { now?: () => Date } = {}): SaveGame {
+export function createSaveGame(db: Db): SaveGame {
   return async (record) =>
     db.transaction(async (tx) => {
-      const review = await decideReview(tx, record, now());
+      const review = await decideReview(tx, record);
       if (!review) {
         await insertGame(tx, record);
-        return { improved: await recordGameBests(tx, record), review: null };
+        return { improved: await recordGameBest(tx, record), review: null };
       }
       await insertGame(tx, record, { verdict: "review" });
       const verification = await openPendingVerification(tx, {
@@ -99,6 +98,6 @@ export function createSaveGame(db: Db, { now = () => new Date() }: { now?: () =>
         gameId: record.id,
         wpm: record.wpm,
       });
-      return { improved: [], review: { ranks: review.ranks, verification } };
+      return { improved: false, review: { rank: review.rank, verification } };
     });
 }

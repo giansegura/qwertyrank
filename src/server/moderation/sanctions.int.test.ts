@@ -1,13 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { periodKey } from "@/lib/leaderboard/periods";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { accounts, bannedIdentities, moderationActions, reports, users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
-import { liveBests } from "../leaderboard/live";
-import { createLeaderboardStore, currentBoard, type Board, type BoardScore, type LeaderboardStore } from "../leaderboard/store";
+import { activeBests } from "../leaderboard/live";
+import { createLeaderboardStore, type Board, type BoardScore, type LeaderboardStore } from "../leaderboard/store";
 import { checkNick } from "../profile/nick";
 import { createNickAvailability } from "../profile/nick-reservation";
 import { createRedis } from "../redis";
@@ -18,7 +17,7 @@ const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
 const prefix = `${process.env.REDIS_KEY_PREFIX}sanctions-${randomUUID().slice(0, 8)}:`;
 const store = createLeaderboardStore(redis, prefix);
-/** Lo que las sanciones escriben en Redis: un ranking caducado no deja rastro en Redis, pero sí aquí. */
+/** Lo que las sanciones escriben en Redis. */
 const added: BoardScore[] = [];
 const watchedStore: LeaderboardStore = {
   ...store,
@@ -39,8 +38,7 @@ const sanctions = createSanctions({
   },
 });
 const saveGame = createSaveGame(db);
-const TODAY = currentBoard("en", "physical", "day");
-const ALL: Board = { language: "en", inputType: "physical", period: "all", key: "all" };
+const BOARD: Board = { language: "en", inputType: "physical" };
 
 afterAll(async () => {
   const keys = await redis.keys(`${prefix}*`);
@@ -58,14 +56,14 @@ async function newUser(role: "user" | "admin" = "user") {
   return { ...row, email };
 }
 
-/** Una partida válida guardada (con sus marcas) y publicada en Redis, como al terminarla. */
-async function playAt(userId: string, startsAt: Date) {
+/** Una partida válida guardada (con su marca) y publicada en Redis, como al terminarla. */
+async function playAt(userId: string, startsAt: Date, board: Board = BOARD) {
   await saveGame({
     id: randomUUID(),
     userId,
     anonId: randomUUID(),
-    language: "en",
-    inputType: "physical",
+    language: board.language,
+    inputType: board.inputType,
     wpm: 100,
     rawWpm: 100,
     accuracy: 98,
@@ -77,14 +75,14 @@ async function playAt(userId: string, startsAt: Date) {
     words: [],
     batches: [],
   });
-  await store.add(await liveBests(db, new Date(), userId));
+  await store.add(await activeBests(db, userId));
 }
 
 describe("sanciones", () => {
   it("shadow-ban: registra la acción, cierra sus denuncias y le saca de todos los rankings", async () => {
     const [admin, player, reporter] = [await newUser("admin"), await newUser(), await newUser()];
     await playAt(player.id, new Date());
-    expect(await store.position(TODAY, player.id)).not.toBeNull();
+    expect(await store.position(BOARD, player.id)).not.toBeNull();
     await db.insert(reports).values({ reporterId: reporter.id, targetUserId: player.id, reason: "cheating" });
     const before = changes;
 
@@ -97,8 +95,7 @@ describe("sanciones", () => {
       .from(moderationActions)
       .where(eq(moderationActions.targetUserId, player.id));
     expect(actions).toEqual([{ adminId: admin.id, action: "shadowban", reason: "bot evidente" }]);
-    expect(await store.position(TODAY, player.id)).toBeNull();
-    expect(await store.position(ALL, player.id)).toBeNull();
+    expect(await store.position(BOARD, player.id)).toBeNull();
     const [report] = await db.select().from(reports).where(eq(reports.targetUserId, player.id));
     expect(report).toMatchObject({ status: "actioned", resolvedBy: admin.id });
     expect(changes).toBe(before + 1);
@@ -149,27 +146,26 @@ describe("sanciones", () => {
     expect(banned.map((row) => row.hash).sort()).toEqual(
       [identityHash("email", player.email, SECRET), identityHash("google", googleId, SECRET)].sort(),
     );
-    expect(await store.position(TODAY, player.id)).toBeNull();
+    expect(await store.position(BOARD, player.id)).toBeNull();
 
     expect(await sanctions.setStatus(admin.id, player.id, "active", "era un error")).toEqual({ kind: "ok" });
     expect(await db.select().from(bannedIdentities).where(eq(bannedIdentities.userId, player.id))).toEqual([]);
-    expect(await store.position(TODAY, player.id)).not.toBeNull();
+    expect(await store.position(BOARD, player.id)).not.toBeNull();
   });
 
-  it("al restaurar no resucita rankings caducados", async () => {
+  it("al restaurar vuelve a todos sus rankings, también con marcas de hace meses", async () => {
     const [admin, player] = [await newUser("admin"), await newUser()];
-    // Hace 20 días: su ranking de día caducó a los 8; el de semana vive 6 semanas y sigue ahí.
-    const old = new Date(Date.now() - 20 * 86_400_000);
-    await playAt(player.id, old);
+    const touch: Board = { language: "es", inputType: "touch" };
+    await playAt(player.id, new Date(Date.now() - 200 * 86_400_000));
+    await playAt(player.id, new Date(), touch);
     await sanctions.setStatus(admin.id, player.id, "shadowbanned", "revisar");
+    expect(await store.position(touch, player.id)).toBeNull();
     added.length = 0;
     await sanctions.setStatus(admin.id, player.id, "active", "revisado");
-    // Redis borraría al momento un ranking caducado reescrito (EXPIREAT en el pasado): se mira lo que se escribe.
-    const restored = added.map((entry) => entry.board);
-    const oldDay: Board = { language: "en", inputType: "physical", period: "day", key: periodKey("day", old) };
-    expect(restored).not.toContainEqual(oldDay);
-    expect(restored.map((board) => board.period).sort()).toEqual(["all", "month", "week", "year"]);
-    expect(await store.position(ALL, player.id)).not.toBeNull();
+    expect(added.map((entry) => entry.board)).toEqual(expect.arrayContaining([BOARD, touch]));
+    expect(added).toHaveLength(2);
+    expect(await store.position(BOARD, player.id)).not.toBeNull();
+    expect(await store.position(touch, player.id)).not.toBeNull();
   });
 
   it("no se puede actuar sobre uno mismo, sobre otro admin ni sobre quien no existe", async () => {

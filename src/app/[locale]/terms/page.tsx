@@ -7,6 +7,7 @@ import { TermsEn } from "@/components/legal/terms-en";
 import { TermsEs } from "@/components/legal/terms-es";
 import { TermsPt } from "@/components/legal/terms-pt";
 import { routing } from "@/i18n/routing";
+import { pageMetadata } from "@/lib/seo/metadata";
 
 const CONTENT = { en: TermsEn, es: TermsEs, pt: TermsPt };
 
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: LegalPageProps): Promise<Meta
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: "Legal" });
-  return { title: t("termsTitle") };
+  return pageMetadata({ locale, href: "/terms", title: t("termsTitle") });
 }
 
 export default async function TermsPage({ params }: LegalPageProps) {

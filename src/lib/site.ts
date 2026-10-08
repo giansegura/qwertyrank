@@ -1,3 +1,7 @@
+/** Dominio de producción: base de las URLs de canonical, `hreflang`, Open Graph y sitemap (spec 5b §2). */
+export const SITE_URL = "https://qwertyrank.com";
+export const SITE_NAME = "QwertyRank";
+
 /**
  * Durante la beta (spec 5a §5) ninguna página se indexa: metadatos `robots` y cabecera `X-Robots-Tag`.
  * La fase 5 (SEO) lo pasa a `true`.

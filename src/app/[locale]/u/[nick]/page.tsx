@@ -22,7 +22,7 @@ interface ProfilePageProps {
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { nick } = await params;
   // Perfiles sin indexar en la v1 (spec §7.1).
-  return { title: `${nick} · QwertyRank`, robots: { index: false } };
+  return { title: nick, robots: { index: false } };
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {

@@ -2,7 +2,10 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import { INDEXABLE } from "./src/lib/site";
 
-const withNextIntl = createNextIntlPlugin();
+const withNextIntl = createNextIntlPlugin({
+  // Mensajes ICU compilados en el build: el cliente no carga el parser de ICU (spec 5b §7.1).
+  experimental: { messages: { path: "./messages", format: "json", locales: "infer", precompile: true } },
+});
 
 const nextConfig: NextConfig = {
   reactCompiler: true,

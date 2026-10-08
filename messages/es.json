@@ -17,11 +17,19 @@
     "open": "Cambiar idioma"
   },
   "Home": {
-    "title": "¿A qué velocidad escribes?"
+    "title": "¿A qué velocidad escribes?",
+    "topTitle": "Top 10 · teclado físico",
+    "topAll": "Ver el ranking completo",
+    "aboutTitle": "Cómo funciona el test de velocidad de escritura",
+    "about1": "Escribe durante 30 segundos las palabras que aparecen, tal como las ves. Al terminar te damos tus palabras por minuto (PPM): los caracteres que escribiste bien, divididos entre cinco, por minuto. También medimos tu precisión, el porcentaje de pulsaciones correctas.",
+    "about2": "Cada idioma y cada tipo de teclado tienen su propio ranking. Cuenta tu mejor partida, siempre que tenga al menos un 90 % de precisión, y el servidor decide si escribiste con teclado físico o táctil. Para entrar en el ranking necesitas una cuenta: puedes jugar sin ella y guardar la partida si entras en los 10 minutos siguientes.",
+    "about3": "¿Quieres calentar antes? La <practice>práctica de 15 segundos</practice> no tiene ranking y empieza en cuanto escribes."
   },
   "Practice": {
     "title": "Práctica",
-    "intro": "Tests de 15 segundos sin ranking. Empieza a escribir para comenzar y pulsa Tab para reiniciar."
+    "intro": "Tests de 15 segundos sin ranking. Empieza a escribir para comenzar y pulsa Tab para reiniciar.",
+    "metaTitle": "Práctica de mecanografía de 15 segundos",
+    "metaDescription": "Calienta con tests de mecanografía de 15 segundos, sin ranking ni cuenta. Empieza a escribir para comenzar y pulsa Tab para reiniciar."
   },
   "TypingTest": {
     "label": "Test de escritura",
@@ -139,7 +147,8 @@
     "accuracyValue": "{accuracy} %",
     "you": "Tu posición: #{rank} · {wpm} ppm · {accuracy} %",
     "youNone": "Todavía no estás en este ranking.",
-    "youSignIn": "Entra para aparecer en el ranking"
+    "youSignIn": "Entra para aparecer en el ranking",
+    "metaDescription": "Quién escribe más rápido en {language, select, en {inglés} es {español} pt {portugués} other {}} con teclado {input, select, physical {físico} touch {táctil} other {}}. Cuenta la mejor partida de cada jugador, con al menos un 90 % de precisión."
   },
   "Save": {
     "title": "Guarda tu partida",
@@ -208,7 +217,7 @@
     "terms": "Términos"
   },
   "Legal": {
-    "privacyTitle": "Política de privacidad · QwertyRank",
-    "termsTitle": "Términos de uso · QwertyRank"
+    "privacyTitle": "Política de privacidad",
+    "termsTitle": "Términos de uso"
   }
 }

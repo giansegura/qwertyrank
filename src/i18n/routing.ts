@@ -6,6 +6,8 @@ export const routing = defineRouting({
   // Por defecto es una cookie de sesión: la elección manual se perdería al cerrar el
   // navegador, y el spec (§7.2) pide que siempre prevalezca.
   localeCookie: { maxAge: 60 * 60 * 24 * 365 },
+  // Sin cabecera `Link` con alternativas: las pone el HTML de cada página (spec 5b §3.2), con su propio x-default.
+  alternateLinks: false,
   pathnames: {
     "/": "/",
     "/practice": {

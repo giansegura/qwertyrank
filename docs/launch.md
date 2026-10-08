@@ -173,4 +173,5 @@ En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main
 ## Cuando acabe la beta (fase 5)
 
 - `INDEXABLE = true` en `src/lib/site.ts`: quita el `noindex`.
+- Después, envía `https://qwertyrank.com/sitemap.xml` a Google Search Console y a Bing Webmaster Tools.
 - Revisión de la política de privacidad y los términos por un abogado.

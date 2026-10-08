@@ -17,11 +17,19 @@
     "open": "Mudar idioma"
   },
   "Home": {
-    "title": "Qual é a sua velocidade de digitação?"
+    "title": "Qual é a sua velocidade de digitação?",
+    "topTitle": "Top 10 · teclado físico",
+    "topAll": "Ver o ranking completo",
+    "aboutTitle": "Como funciona o teste de velocidade de digitação",
+    "about1": "Digite por 30 segundos as palavras que aparecem, exatamente como você as vê. No final você recebe suas palavras por minuto (PPM): os caracteres digitados corretamente, divididos por cinco, por minuto. Também medimos sua precisão, a porcentagem de teclas corretas.",
+    "about2": "Cada idioma e cada tipo de teclado têm seu próprio ranking. Conta a sua melhor partida, desde que tenha pelo menos 90% de precisão, e o servidor decide se você digitou em um teclado físico ou touch. Para entrar no ranking você precisa de uma conta: pode jogar sem ela e salvar a partida se entrar nos 10 minutos seguintes.",
+    "about3": "Quer aquecer antes? A <practice>prática de 15 segundos</practice> não tem ranking e começa assim que você digita."
   },
   "Practice": {
     "title": "Prática",
-    "intro": "Testes de 15 segundos sem ranking. Comece a digitar para iniciar e pressione Tab para reiniciar."
+    "intro": "Testes de 15 segundos sem ranking. Comece a digitar para iniciar e pressione Tab para reiniciar.",
+    "metaTitle": "Prática de digitação de 15 segundos",
+    "metaDescription": "Aqueça com testes de digitação de 15 segundos, sem ranking e sem conta. Comece a digitar para iniciar e pressione Tab para reiniciar."
   },
   "TypingTest": {
     "label": "Teste de digitação",
@@ -139,7 +147,8 @@
     "accuracyValue": "{accuracy}%",
     "you": "Sua posição: #{rank} · {wpm} ppm · {accuracy}%",
     "youNone": "Você ainda não está neste ranking.",
-    "youSignIn": "Entre para aparecer no ranking"
+    "youSignIn": "Entre para aparecer no ranking",
+    "metaDescription": "Quem digita mais rápido em {language, select, en {inglês} es {espanhol} pt {português} other {}} no teclado {input, select, physical {físico} touch {touch} other {}}. Conta a melhor partida de cada jogador, com pelo menos 90% de precisão."
   },
   "Save": {
     "title": "Salve sua partida",
@@ -208,7 +217,7 @@
     "terms": "Termos"
   },
   "Legal": {
-    "privacyTitle": "Política de privacidade · QwertyRank",
-    "termsTitle": "Termos de uso · QwertyRank"
+    "privacyTitle": "Política de privacidade",
+    "termsTitle": "Termos de uso"
   }
 }

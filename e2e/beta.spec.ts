@@ -33,7 +33,8 @@ for (const { locale, privacy, terms, privacyTitle, termsTitle } of LEGAL) {
 }
 
 test("la beta y los comentarios abren un correo; el pie se ve sin hacer scroll", async ({ page, isMobile }) => {
-  await page.goto("/es");
+  // En una página corta: la portada ya no cabe en una pantalla (top 10 y texto, spec 5b §7).
+  await page.goto("/es/entrar");
   const footer = page.getByTestId("site-footer");
   await expect(footer).toBeInViewport();
   await expect(footer.getByRole("link", { name: "Beta: envíanos tus comentarios", exact: true })).toHaveAttribute("href", "mailto:feedback@qwertyrank.com");

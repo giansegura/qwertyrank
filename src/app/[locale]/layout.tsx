@@ -8,7 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { VercelInsights } from "@/components/vercel-insights";
 import { routing } from "@/i18n/routing";
-import { INDEXABLE } from "@/lib/site";
+import { INDEXABLE, SITE_NAME, SITE_URL } from "@/lib/site";
 import "../globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -28,7 +28,9 @@ export async function generateMetadata({ params }: Omit<LayoutProps, "children">
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: "Metadata" });
   return {
-    title: t("title"),
+    // Las URLs de canonical, `hreflang` y Open Graph son siempre las de producción (spec 5b §2).
+    metadataBase: new URL(SITE_URL),
+    title: { default: t("title"), template: `%s · ${SITE_NAME}` },
     description: t("description"),
     // Durante la beta no se indexa (spec 5a §5).
     robots: INDEXABLE ? undefined : { index: false, follow: false },

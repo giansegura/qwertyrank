@@ -22,7 +22,11 @@ export function getRanking(): Ranking {
     // Cada ranking se ve en la página del idioma de su test (spec §3.2). La clave de su caché es la
     // ruta interna con el idioma delante (/es/leaderboard/physical), no la URL pública.
     onTopChanged: (boards) => {
-      for (const { language, inputType } of boards) revalidatePath(`/${language}${leaderboardHref(inputType)}`);
+      for (const { language, inputType } of boards) {
+        revalidatePath(`/${language}${leaderboardHref(inputType)}`);
+        // La portada enseña el top 10 del teclado físico de su idioma (spec 5b §7).
+        if (inputType === "physical") revalidatePath(`/${language}`);
+      }
     },
   });
   return ranking;

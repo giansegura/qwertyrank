@@ -17,11 +17,19 @@
     "open": "Change language"
   },
   "Home": {
-    "title": "How fast do you type?"
+    "title": "How fast do you type?",
+    "topTitle": "Top 10 · physical keyboard",
+    "topAll": "See the full ranking",
+    "aboutTitle": "How the typing speed test works",
+    "about1": "Type the words on screen for 30 seconds, exactly as you see them. When time is up you get your words per minute (WPM): the characters you typed correctly, divided by five, per minute. We also measure your accuracy, the share of keystrokes that were correct.",
+    "about2": "Each language and keyboard type has its own ranking. Your best game counts as long as its accuracy is at least 90%, and the server works out whether you typed on a physical or a touch keyboard. You need an account to enter the ranking; you can play without one and save your game if you sign in within 10 minutes.",
+    "about3": "Want to warm up first? The <practice>15-second practice</practice> has no ranking and starts as soon as you type."
   },
   "Practice": {
     "title": "Practice",
-    "intro": "15-second tests with no ranking. Start typing to begin and press Tab to restart."
+    "intro": "15-second tests with no ranking. Start typing to begin and press Tab to restart.",
+    "metaTitle": "15-second typing practice",
+    "metaDescription": "Warm up with 15-second typing tests: no ranking and no account. Start typing to begin and press Tab to restart."
   },
   "TypingTest": {
     "label": "Typing test",
@@ -139,7 +147,8 @@
     "accuracyValue": "{accuracy}%",
     "you": "Your position: #{rank} · {wpm} wpm · {accuracy}%",
     "youNone": "You're not on this ranking yet.",
-    "youSignIn": "Sign in to appear in the ranking"
+    "youSignIn": "Sign in to appear in the ranking",
+    "metaDescription": "The fastest {language, select, en {English} es {Spanish} pt {Portuguese} other {}} typists on a {input, select, physical {physical} touch {touch} other {}} keyboard. Each player's best game counts, with at least 90% accuracy."
   },
   "Save": {
     "title": "Save your game",
@@ -208,7 +217,7 @@
     "terms": "Terms"
   },
   "Legal": {
-    "privacyTitle": "Privacy policy · QwertyRank",
-    "termsTitle": "Terms of use · QwertyRank"
+    "privacyTitle": "Privacy policy",
+    "termsTitle": "Terms of use"
   }
 }

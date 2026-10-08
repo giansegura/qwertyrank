@@ -8,7 +8,9 @@
     "practice": "Prática",
     "signIn": "Entrar",
     "account": "Sua conta: {nick}",
-    "leaderboard": "Ranking"
+    "leaderboard": "Ranking",
+    "beta": "beta",
+    "betaLabel": "Beta: envie-nos seus comentários"
   },
   "LocaleSwitcher": {
     "label": "Idioma",
@@ -81,7 +83,8 @@
     "errorBlocked": "Não é possível criar a conta.",
     "errorFailed": "Algo deu errado. Tente novamente em instantes.",
     "errorLinkInvalid": "Esse link expirou ou já foi usado. Peça um novo.",
-    "errorPasskey": "Não foi possível entrar com uma passkey. Primeiro adicione uma nas configurações da sua conta."
+    "errorPasskey": "Não foi possível entrar com uma passkey. Primeiro adicione uma nas configurações da sua conta.",
+    "consent": "Ao criar uma conta, você aceita os <terms>Termos</terms> e a <privacy>Política de privacidade</privacy>."
   },
   "Settings": {
     "title": "Sua conta",
@@ -197,5 +200,15 @@
     "item": "Recorde: {target, number} ppm · você precisa de {required, number} ppm · {attempts, plural, one {# tentativa} other {# tentativas}}",
     "hoursLeft": "faltam {hours} h",
     "verify": "Verificar"
+  },
+  "Footer": {
+    "beta": "beta",
+    "feedback": "Envie-nos seus comentários",
+    "privacy": "Privacidade",
+    "terms": "Termos"
+  },
+  "Legal": {
+    "privacyTitle": "Política de privacidade · QwertyRank",
+    "termsTitle": "Termos de uso · QwertyRank"
   }
 }

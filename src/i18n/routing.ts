@@ -46,6 +46,17 @@ export const routing = defineRouting({
       pt: "/salvar/[gameId]",
     },
     "/u/[nick]": "/u/[nick]",
+    // Páginas legales (spec 5a §4.1).
+    "/privacy": {
+      en: "/privacy",
+      es: "/privacidad",
+      pt: "/privacidade",
+    },
+    "/terms": {
+      en: "/terms",
+      es: "/terminos",
+      pt: "/termos",
+    },
     // Récords pendientes de verificar (spec 4b §4.3).
     "/verify": {
       en: "/verify",

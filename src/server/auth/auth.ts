@@ -34,6 +34,8 @@ export interface AuthDeps {
   /** Clave de los hashes de identidades baneadas (spec 4a §3.3); en producción, `IP_HASH_SECRET`. */
   identitySecret: string;
   baseURL: string;
+  /** Orígenes aceptados además del de `baseURL` (la URL única de una vista previa, spec 5a §2.3). */
+  trustedOrigins?: string[];
   google?: { clientId: string; clientSecret: string };
   /** Han cambiado páginas en caché de un jugador (al borrar su cuenta); en producción, `revalidatePlayerPages`. */
   onPlayerChanged?: () => void;
@@ -82,6 +84,7 @@ export function createAuth(deps: AuthDeps) {
   return betterAuth({
     appName: "QwertyRank",
     baseURL: deps.baseURL,
+    trustedOrigins: deps.trustedOrigins,
     secret: deps.secret,
     database: drizzleAdapter(deps.db, {
       provider: "pg",
@@ -183,6 +186,7 @@ export function getAuth(): Auth {
     secret: env.BETTER_AUTH_SECRET,
     identitySecret: env.IP_HASH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    trustedOrigins: env.AUTH_TRUSTED_ORIGINS,
     onPlayerChanged: revalidatePlayerPages,
     google:
       env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET

@@ -88,8 +88,8 @@ export async function setStatus(email: string, status: "active" | "shadowbanned"
 }
 
 /**
- * Un jugador con la mejor marca de siempre en inglés y teclado físico, sin jugar: el top de un ranking
- * se lee de PostgreSQL, así que basta con su partida y su `period_bests`.
+ * Un jugador con la mejor marca en inglés y teclado físico, sin jugar: el top de un ranking se lee de
+ * PostgreSQL, así que basta con su partida y su fila de `bests`.
  */
 export async function seedRankedPlayer(nick: string): Promise<string> {
   const [user] = await db()<{ id: string }[]>`
@@ -100,8 +100,8 @@ export async function seedRankedPlayer(nick: string): Promise<string> {
     insert into games (id, user_id, anon_id, language, input_type, wpm, raw_wpm, accuracy, verdict, starts_at, finished_at)
     values (${gameId}, ${user.id}, ${crypto.randomUUID()}, 'en', 'physical', 250, 250, 99, 'valid', ${now}, ${now})`;
   await db()`
-    insert into period_bests (user_id, language, input_type, period_type, period_key, game_id, wpm, accuracy, score, achieved_at)
-    values (${user.id}, 'en', 'physical', 'all', 'all', ${gameId}, 250, 99, ${Number.MAX_SAFE_INTEGER}, ${now})`;
+    insert into bests (user_id, language, input_type, game_id, wpm, accuracy, score, achieved_at)
+    values (${user.id}, 'en', 'physical', ${gameId}, 250, 99, ${Number.MAX_SAFE_INTEGER}, ${now})`;
   return user.id;
 }
 
@@ -150,9 +150,9 @@ export async function seedPendingVerification(
 
 /**
  * Borra la cuenta con sus partidas y la saca de Redis: las marcas de una prueba no deben quitarle a la
- * siguiente ejecución el top 10 de hoy. Al contrario que al borrarla desde ajustes, también se van sus
- * partidas y, en cascada, sus registros de pulsaciones y sus verificaciones: así no se acumulan. Antes
- * que las partidas, sus mejores marcas (`period_bests`), que las referencian sin cascada.
+ * siguiente el top 10. Al contrario que al borrarla desde ajustes, también se van sus partidas y, en
+ * cascada, sus registros de pulsaciones y sus verificaciones: así no se acumulan. Antes que las
+ * partidas, sus mejores marcas (`bests`), que las referencian sin cascada.
  */
 export async function deleteAccount(userId: string): Promise<void> {
   const match = `${process.env.REDIS_KEY_PREFIX ?? "qr:"}lb:*`;
@@ -166,7 +166,7 @@ export async function deleteAccount(userId: string): Promise<void> {
     }
     cursor = String(next);
   } while (cursor !== "0");
-  await db()`delete from period_bests where user_id = ${userId}`;
+  await db()`delete from bests where user_id = ${userId}`;
   await db()`delete from games where user_id = ${userId}`;
   await db()`delete from users where id = ${userId}`;
 }
@@ -204,7 +204,7 @@ export async function seedRejectedGame(userId: string, log: unknown): Promise<st
 
 /**
  * Nivel verificado de 1.000 PPM en todos los idiomas y teclados (spec 4b §2.1): sus partidas nunca esperan
- * verificación, aunque entren en el top 10 de hoy de la base de datos de los E2E.
+ * verificación, aunque entren en el top 10 de la base de datos de los E2E.
  */
 export async function seedVerifiedLevels(email: string): Promise<void> {
   await db()`

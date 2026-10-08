@@ -7,8 +7,8 @@ import { games } from "../db/schema";
 import type { RankGameInput } from "../leaderboard/ranking";
 import { encodeScore } from "../leaderboard/score";
 import { findPendingVerification, openPendingVerification } from "../verification/pending";
-import { boardStandings, decideReview, reviewRanks } from "../verification/review";
-import { recordGameBests, type ReviewedGame } from "./persist";
+import { boardStanding, decideReview } from "../verification/review";
+import { recordGameBest, type ReviewedGame } from "./persist";
 
 /** Spec §3.7: una partida anónima se puede reclamar en los 10 minutos siguientes a terminarla. */
 export const CLAIM_WINDOW_MINUTES = 10;
@@ -19,27 +19,23 @@ export interface ClaimDeps {
   db: Db;
   /** No lanza: si Redis falla, devuelve `unavailable` (ver `createRanking`). */
   rankGame: (game: RankGameInput) => Promise<GameRanking>;
-  /** Hora actual: decide qué rankings siguen abiertos. Los tests la fijan. */
-  now?: () => Date;
 }
 
 type ClaimedGame = typeof games.$inferSelect;
 
 export function createClaimGame(deps: ClaimDeps) {
-  const now = deps.now ?? (() => new Date());
-
   /** Repetir el reclamo de una partida en `review`: su verificación, si sigue pendiente (spec 4b §2.4). */
   async function reviewRanking(game: ClaimedGame & { userId: string }): Promise<GameRanking> {
     const verification = game.verificationId ? await findPendingVerification(deps.db, game.verificationId) : null;
     if (!verification) return { kind: "unranked" };
     const score = encodeScore({ wpm: game.wpm, accuracy: game.accuracy, achievedAt: game.startsAt });
-    const standings = await boardStandings(deps.db, game, score, now());
-    return { kind: "review", ranks: reviewRanks(standings.boards), verification };
+    const standing = await boardStanding(deps.db, game, score);
+    return { kind: "review", rank: standing.ahead + 1, verification };
   }
 
   return async ({ gameId, anonId, userId }: { gameId: string; anonId: string; userId: string }): Promise<ClaimOutcome> => {
     // Solo partidas válidas de este navegador, sin dueño y terminadas hace menos de 10 minutos
-    // (con el reloj de PostgreSQL). Al reclamarla, cuenta para los periodos en que se jugó; si
+    // (con el reloj de PostgreSQL). Al reclamarla, cuenta en el ranking de su idioma y teclado; si
     // entraría en un top 10 sin verificar, queda en `review` (spec 4b §2.1).
     const claimed = await deps.db.transaction(async (tx) => {
       const [game] = await tx
@@ -56,8 +52,8 @@ export function createClaimGame(deps: ClaimDeps) {
         )
         .returning();
       if (!game) return null;
-      const review = await decideReview(tx, game, now());
-      if (!review) return { game, improved: await recordGameBests(tx, game), review: null };
+      const review = await decideReview(tx, game);
+      if (!review) return { game, improved: await recordGameBest(tx, game), review: null };
       await tx.update(games).set({ verdict: "review" }).where(eq(games.id, game.id));
       const verification = await openPendingVerification(tx, {
         userId,
@@ -66,7 +62,7 @@ export function createClaimGame(deps: ClaimDeps) {
         gameId: game.id,
         wpm: game.wpm,
       });
-      return { game, improved: [], review: { ranks: review.ranks, verification } satisfies ReviewedGame };
+      return { game, improved: false, review: { rank: review.rank, verification } satisfies ReviewedGame };
     });
 
     if (claimed?.review) {
@@ -100,7 +96,7 @@ export function createClaimGame(deps: ClaimDeps) {
       wpm: game.wpm,
       accuracy: game.accuracy,
       startsAt: game.startsAt,
-      improved: claimed?.improved ?? [],
+      improved: claimed?.improved ?? false,
     });
     return { kind: "ok", claim: { ranking, language: game.language, inputType: game.inputType } };
   };

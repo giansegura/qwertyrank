@@ -229,14 +229,14 @@ describe("RankedTest", () => {
 
   it("anónima con buena partida: la posición que tendría y el botón para guardarla", async () => {
     vi.mocked(finishGame).mockResolvedValue(
-      response({ ranking: { kind: "would_rank", ranks: { day: 4, week: 9, month: 20, all: 150 } } }),
+      response({ ranking: { kind: "would_rank", rank: 4 } }),
     );
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(30_000);
     });
-    expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #4 today.");
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("You'd be #4 on the leaderboard.");
     expect(screen.getByTestId("save-game")).toHaveAttribute("href", "/en/save/g1");
   });
 });
@@ -257,7 +257,7 @@ describe("RankedTest: récord en review", () => {
     vi.mocked(startGame).mockResolvedValue(GAME);
     vi.mocked(sendKeys).mockResolvedValue(undefined);
     vi.mocked(finishGame).mockResolvedValue(
-      response({ verdict: "review", ranking: { kind: "review", ranks: { day: 1, all: 7 }, verification: VERIFICATION } }),
+      response({ verdict: "review", ranking: { kind: "review", rank: 1, verification: VERIFICATION } }),
     );
   });
   afterEach(() => {
@@ -275,7 +275,7 @@ describe("RankedTest: récord en review", () => {
       await vi.advanceTimersByTimeAsync(30_000);
       await vi.dynamicImportSettled();
     });
-    expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1 today · #7 all time.");
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1.");
     // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
     expect(changed).toHaveBeenCalledOnce();
 

@@ -1,6 +1,6 @@
 # QwertyRank
 
-Test de velocidad de escritura con rankings por idioma (inglés, español y portugués), por tipo de teclado (físico o táctil) y por periodo. Las partidas Ranked las valida el servidor.
+Test de velocidad de escritura con un ranking por idioma (inglés, español y portugués) y tipo de teclado (físico o táctil), con la mejor marca de cada jugador desde siempre. Las partidas Ranked las valida el servidor.
 
 ## Desarrollo local
 
@@ -29,8 +29,8 @@ pnpm dev                      # http://localhost:3000
 
 ## Rankings
 
-- **Fuente de verdad:** `period_bests` en PostgreSQL, con la mejor partida de cada jugador por idioma, teclado y periodo (día, semana ISO, mes, año y siempre, en UTC).
-- **Redis** guarda un ranking por combinación (`lb:{idioma}:{teclado}:{periodo}:{clave}`) y calcula las posiciones.
+- **Fuente de verdad:** `bests` en PostgreSQL, con la mejor partida de cada jugador por idioma y teclado: 6 rankings, sin periodos.
+- **Redis** guarda un ranking por idioma y teclado (`lb:{idioma}:{teclado}`, sin caducidad) y calcula las posiciones. `pnpm redis:rebuild --yes` lo rehace desde PostgreSQL y borra las claves que sobran.
 - **El top 100** de la pantalla de ranking se lee de PostgreSQL. La página se regenera cada 60 s, y al momento cuando alguien entra en el top.
 - **Partidas anónimas:** se pueden guardar en una cuenta en los 10 minutos siguientes ("Guárdalo").
 
@@ -44,11 +44,11 @@ pnpm dev                      # http://localhost:3000
 
 ## Verificación de récords
 
-- **Cuándo:** una partida con cuenta que entraría en el top 10 de un ranking visible y abierto (día, semana, mes o siempre, contado en PostgreSQL entre jugadores activos) queda en `review` si sus PPM pasan del 110 % del nivel verificado del jugador en ese idioma y teclado (sin nivel, siempre). No entra en los rankings hasta verificarla.
-- **Cómo:** una partida de 30 s con el texto dibujado en un `canvas`, con el mismo teclado, al menos un 90 % de precisión y el 85 % de las PPM del récord. Hasta 3 intentos en 24 h, desde el resultado ("Verificar ahora") o desde `/verify`. Al superarla se publican todas sus partidas en `review` (cada una en los rankings de su fecha) y el nivel verificado sube al del récord.
+- **Cuándo:** una partida con cuenta que entraría en el top 10 de su ranking (contado en PostgreSQL entre jugadores activos) queda en `review` si sus PPM pasan del 110 % del nivel verificado del jugador en ese idioma y teclado (sin nivel, siempre). No entra en los rankings hasta verificarla.
+- **Cómo:** una partida de 30 s con el texto dibujado en un `canvas`, con el mismo teclado, al menos un 90 % de precisión y el 85 % de las PPM del récord. Hasta 3 intentos en 24 h, desde el resultado ("Verificar ahora") o desde `/verify`. Al superarla se publican todas sus partidas en `review` (cada una con su hora original, que decide el desempate) y el nivel verificado sube al del récord.
 - **Caducidad:** se decide al leer, sin tarea programada. Las partidas de una verificación fallida o caducada se quedan en `review`, fuera de los rankings y del perfil.
 - **Panel:** `/admin/records` (pendientes, verificados y fallidos o caducados de los últimos 7 días) y `/admin/games/<id>` (reproducción y ritmo de cualquier partida). Es de consulta: se actúa con las sanciones de la ficha.
-- **E2E:** los jugadores de los E2E de ranking empiezan con un nivel verificado; los de `e2e/verification.spec.ts` juegan una partida de unas 140 PPM para entrar en el top 10 de hoy (la base de datos de `.env.local` no debe tener diez jugadores activos más rápidos hoy en inglés) y se borran al acabar.
+- **E2E:** los jugadores de los E2E de ranking empiezan con un nivel verificado; los de `e2e/verification.spec.ts` juegan una partida de unas 140 PPM para entrar en el top 10 (la base de datos de `.env.local` no debe tener diez jugadores activos más rápidos en inglés que no sean de prueba) y se borran al acabar. Antes de cada ejecución, `e2e/global-setup.ts` borra las cuentas `@example.com` que dejaron ejecuciones anteriores, con sus marcas y sus partidas.
 
 ## Tests
 

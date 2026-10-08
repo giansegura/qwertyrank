@@ -4,7 +4,7 @@ import { localizedHref } from "./locale-switcher";
 describe("localizedHref", () => {
   it("las rutas fijas, rankings incluidos, se quedan igual: las traduce next-intl", () => {
     expect(localizedHref("/practice", {})).toBe("/practice");
-    expect(localizedHref("/leaderboard/touch/all-time", {})).toBe("/leaderboard/touch/all-time");
+    expect(localizedHref("/leaderboard/touch", {})).toBe("/leaderboard/touch");
   });
 
   it("el perfil y guardar conservan su parámetro", () => {

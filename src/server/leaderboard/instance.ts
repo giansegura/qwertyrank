@@ -20,11 +20,9 @@ export function getRanking(): Ranking {
     db: getDb(),
     store: getLeaderboardStore(),
     // Cada ranking se ve en la página del idioma de su test (spec §3.2). La clave de su caché es la
-    // ruta interna con el idioma delante (/es/leaderboard/physical/today), no la URL pública.
-    onTopChanged: (changes) => {
-      for (const { language, inputType, period } of changes) {
-        revalidatePath(`/${language}${leaderboardHref(inputType, period)}`);
-      }
+    // ruta interna con el idioma delante (/es/leaderboard/physical), no la URL pública.
+    onTopChanged: (boards) => {
+      for (const { language, inputType } of boards) revalidatePath(`/${language}${leaderboardHref(inputType)}`);
     },
   });
   return ranking;

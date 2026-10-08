@@ -1,25 +1,23 @@
-import { randomInt, randomUUID } from "node:crypto";
-import { afterAll, describe, expect, it } from "vitest";
-import { PERIODS, periodKey } from "@/lib/leaderboard/periods";
+import { randomUUID } from "node:crypto";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import type { InputType } from "@/lib/game/types";
+import { emptyBoards } from "@/test/empty-boards";
 import { createDb } from "../db/client";
-import { games, periodBests, users, verifiedLevels } from "../db/schema";
+import { bests, games, users, verifiedLevels } from "../db/schema";
 import { encodeScore } from "../leaderboard/score";
-import type { Board } from "../leaderboard/store";
-import { boardStandings, decideReview, type ReviewCandidate } from "./review";
+import { boardStanding, decideReview, type ReviewCandidate } from "./review";
 
 const db = createDb(process.env.DATABASE_URL!);
+const AT = new Date("2026-10-07T12:00:00Z");
+
+// Cada test empieza con los rankings vacíos.
+beforeEach(async () => {
+  await emptyBoards(db);
+});
 
 afterAll(async () => {
   await db.$client.end();
 });
-
-/**
- * Un día que ninguna otra prueba usa: sus rankings de día, semana y mes empiezan vacíos. Pasado 2057
- * los minutos de la puntuación ya no cuentan, así que lo que decide es la velocidad.
- */
-function freshDay(): Date {
-  return new Date(Date.UTC(randomInt(2100, 9999), randomInt(0, 12), randomInt(1, 29), 12));
-}
 
 async function newUser(status: "active" | "shadowbanned" = "active"): Promise<string> {
   const [row] = await db
@@ -29,118 +27,100 @@ async function newUser(status: "active" | "shadowbanned" = "active"): Promise<st
   return row.id;
 }
 
-/** La marca de un jugador en un ranking, con su partida (`period_bests.game_id` es obligatorio). */
-async function seedBest(userId: string, board: Board, wpm: number, at: Date) {
+/** La marca de un jugador en inglés (teclado táctil si no se dice otro), con su partida (`bests.game_id` es obligatorio). */
+async function seedBest(userId: string, wpm: number, inputType: InputType = "touch") {
   const gameId = randomUUID();
   await db.insert(games).values({
     id: gameId,
     userId,
-    language: board.language,
-    inputType: board.inputType,
+    language: "en",
+    inputType,
     wpm,
     rawWpm: wpm,
     accuracy: 100,
     verdict: "valid",
-    startsAt: at,
-    finishedAt: at,
+    startsAt: AT,
+    finishedAt: AT,
   });
-  await db.insert(periodBests).values({
+  await db.insert(bests).values({
     userId,
-    language: board.language,
-    inputType: board.inputType,
-    periodType: board.period,
-    periodKey: board.key,
+    language: "en",
+    inputType,
     gameId,
     wpm,
     accuracy: 100,
-    score: encodeScore({ wpm, accuracy: 100, achievedAt: at }),
-    achievedAt: at,
+    score: encodeScore({ wpm, accuracy: 100, achievedAt: AT }),
+    achievedAt: AT,
   });
 }
 
-const candidate = (userId: string, startsAt: Date, wpm = 50): ReviewCandidate => ({
+const candidate = (userId: string, wpm = 50): ReviewCandidate => ({
   userId,
   language: "en",
   inputType: "touch",
   verdict: "valid",
   wpm,
   accuracy: 100,
-  startsAt,
+  startsAt: AT,
 });
-const boardAt = (period: Board["period"], at: Date): Board => ({
-  language: "en",
-  inputType: "touch",
-  period,
-  key: periodKey(period, at),
-});
-const aheadIn = (standings: Awaited<ReturnType<typeof boardStandings>>, period: string) =>
-  standings.boards.find((board) => board.period === period)?.ahead;
+const scoreOf = (wpm: number) => encodeScore({ wpm, accuracy: 100, achievedAt: AT });
 
-describe("posiciones en los rankings abiertos (PostgreSQL)", () => {
-  it("cuenta solo a otros jugadores activos que van por delante", async () => {
-    const day = freshDay();
+describe("posición en el ranking (PostgreSQL)", () => {
+  it("cuenta solo a otros jugadores activos de ese idioma y teclado que van por delante", async () => {
     const player = await newUser();
-    const game = candidate(player, day);
-    const score = encodeScore({ wpm: 50, accuracy: 100, achievedAt: day });
-    const before = await boardStandings(db, { ...game, userId: player }, score, day);
-    expect(before.boards.map((board) => board.period)).toEqual(["day", "week", "month", "all"]);
-    expect(aheadIn(before, "day")).toBe(0);
+    const game = { ...candidate(player), userId: player };
+    expect(await boardStanding(db, game, scoreOf(50))).toEqual({ ownScore: null, ahead: 0, verifiedWpm: null });
 
-    for (const period of ["day", "all"] as const) {
-      for (let i = 0; i < 3; i++) await seedBest(await newUser(), boardAt(period, day), 60, day);
-      await seedBest(await newUser("shadowbanned"), boardAt(period, day), 70, day);
-      await seedBest(await newUser(), boardAt(period, day), 40, day);
-    }
+    for (let i = 0; i < 3; i++) await seedBest(await newUser(), 60);
+    await seedBest(await newUser("shadowbanned"), 70);
+    await seedBest(await newUser(), 40);
+    await seedBest(await newUser(), 90, "physical");
 
-    const after = await boardStandings(db, { ...game, userId: player }, score, day);
-    expect(aheadIn(after, "day")).toBe(3);
-    expect(aheadIn(after, "all")).toBe(aheadIn(before, "all")! + 3);
-    expect(after.verifiedWpm).toBeNull();
+    expect(await boardStanding(db, game, scoreOf(50))).toMatchObject({ ahead: 3 });
   });
 
   it("con marca propia mejor, cuenta desde su marca y la devuelve", async () => {
-    const day = freshDay();
     const player = await newUser();
-    await seedBest(await newUser(), boardAt("day", day), 60, day);
-    await seedBest(player, boardAt("day", day), 80, day);
-    const score = encodeScore({ wpm: 50, accuracy: 100, achievedAt: day });
-    const standings = await boardStandings(db, { ...candidate(player, day), userId: player }, score, day);
-    const today = standings.boards.find((board) => board.period === "day")!;
-    expect(today).toEqual({ period: "day", ownScore: encodeScore({ wpm: 80, accuracy: 100, achievedAt: day }), ahead: 0 });
+    await seedBest(await newUser(), 60);
+    await seedBest(player, 80);
+    expect(await boardStanding(db, { ...candidate(player), userId: player }, scoreOf(50))).toEqual({
+      ownScore: scoreOf(80),
+      ahead: 0,
+      verifiedWpm: null,
+    });
   });
 
   it("devuelve su nivel verificado de ese idioma y teclado", async () => {
-    const day = freshDay();
     const player = await newUser();
     await db.insert(verifiedLevels).values([
       { userId: player, language: "en", inputType: "touch", wpm: 72.5 },
       { userId: player, language: "en", inputType: "physical", wpm: 300 },
     ]);
-    const standings = await boardStandings(db, { ...candidate(player, day), userId: player }, 1, day);
-    expect(standings.verifiedWpm).toBe(72.5);
+    expect(await boardStanding(db, { ...candidate(player), userId: player }, 1)).toMatchObject({ verifiedWpm: 72.5 });
   });
 });
 
 describe("decideReview (PostgreSQL)", () => {
-  it("sin nivel y entre los 10 primeros: review, con su posición en cada ranking abierto", async () => {
-    const day = freshDay();
-    expect(await decideReview(db, candidate(await newUser(), day), day)).toEqual({
-      ranks: { day: 1, week: 1, month: 1, all: expect.any(Number) },
-    });
+  it("sin nivel y entre los 10 primeros: review, con la posición que tendría", async () => {
+    for (let i = 0; i < 2; i++) await seedBest(await newUser(), 60);
+    expect(await decideReview(db, candidate(await newUser()))).toEqual({ rank: 3 });
+  });
+
+  it("con 10 jugadores activos por delante, no", async () => {
+    for (let i = 0; i < 10; i++) await seedBest(await newUser(), 60);
+    expect(await decideReview(db, candidate(await newUser()))).toBeNull();
   });
 
   it("por debajo de su nivel × 1,10, no", async () => {
-    const day = freshDay();
     const player = await newUser();
     await db.insert(verifiedLevels).values({ userId: player, language: "en", inputType: "touch", wpm: 50 });
-    expect(await decideReview(db, candidate(player, day, 55), day)).toBeNull();
-    expect(await decideReview(db, candidate(player, day, 55.01), day)).not.toBeNull();
+    expect(await decideReview(db, candidate(player, 55))).toBeNull();
+    expect(await decideReview(db, candidate(player, 55.01))).not.toBeNull();
   });
 
-  it("si no mejora su marca en ningún ranking abierto, no", async () => {
-    const day = freshDay();
+  it("si no mejora su marca, no", async () => {
     const player = await newUser("shadowbanned");
-    for (const period of PERIODS) await seedBest(player, boardAt(period, day), 90, day);
-    expect(await decideReview(db, candidate(player, day, 50), day)).toBeNull();
+    await seedBest(player, 90);
+    expect(await decideReview(db, candidate(player, 50))).toBeNull();
   });
 });

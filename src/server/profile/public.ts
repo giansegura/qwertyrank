@@ -2,7 +2,7 @@ import "server-only";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import type { PublicProfile } from "@/lib/profile";
 import type { Db } from "../db/client";
-import { games, periodBests, users } from "../db/schema";
+import { bests, games, users } from "../db/schema";
 
 export type { ProfileGame, ProfileRecord, PublicProfile } from "@/lib/profile";
 
@@ -19,14 +19,14 @@ async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
   const [records, history] = await Promise.all([
     db
       .select({
-        language: periodBests.language,
-        inputType: periodBests.inputType,
-        wpm: periodBests.wpm,
-        accuracy: periodBests.accuracy,
+        language: bests.language,
+        inputType: bests.inputType,
+        wpm: bests.wpm,
+        accuracy: bests.accuracy,
       })
-      .from(periodBests)
-      .where(and(eq(periodBests.userId, user.id), eq(periodBests.periodType, "all")))
-      .orderBy(desc(periodBests.score)),
+      .from(bests)
+      .where(eq(bests.userId, user.id))
+      .orderBy(desc(bests.score)),
     db
       .select({
         startsAt: games.startsAt,

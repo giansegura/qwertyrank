@@ -15,7 +15,6 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { PERIODS } from "../../lib/leaderboard/periods";
 import { REPORT_REASONS } from "../../lib/reports";
 import { GAME_MODES, VERIFICATION_STATUSES } from "../../lib/verification";
 import { users } from "./auth-schema";
@@ -75,19 +74,17 @@ export const keystrokeLogs = pgTable("keystroke_logs", {
 });
 
 /**
- * Mejor partida de cada jugador por idioma, teclado y periodo (spec §5.2): la fuente de verdad de
- * los rankings. `score` es la puntuación compuesta (§5.4): ordena el top y decide si una partida mejora.
+ * Mejor partida de cada jugador por idioma y teclado (spec §5.2): la fuente de verdad de los rankings.
+ * `score` es la puntuación compuesta (§5.4): ordena el top y decide si una partida mejora.
  */
-export const periodBests = pgTable(
-  "period_bests",
+export const bests = pgTable(
+  "bests",
   {
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     language: text("language", { enum: ["en", "es", "pt"] }).notNull(),
     inputType: text("input_type", { enum: ["physical", "touch"] }).notNull(),
-    periodType: text("period_type", { enum: PERIODS }).notNull(),
-    periodKey: text("period_key").notNull(),
     gameId: uuid("game_id")
       .notNull()
       .references(() => games.id),
@@ -97,16 +94,9 @@ export const periodBests = pgTable(
     achievedAt: timestamp("achieved_at", { withTimezone: true }).notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.userId, table.language, table.inputType, table.periodType, table.periodKey] }),
-    // El top de un ranking: filtra por la combinación y recorre la puntuación de mayor a menor.
-    index("period_bests_board_idx").on(
-      table.language,
-      table.inputType,
-      table.periodType,
-      table.periodKey,
-      table.score.desc(),
-    ),
-    check("period_bests_period_type_check", sql`${table.periodType} in ('day', 'week', 'month', 'year', 'all')`),
+    primaryKey({ columns: [table.userId, table.language, table.inputType] }),
+    // El top de un ranking: filtra por idioma y teclado y recorre la puntuación de mayor a menor.
+    index("bests_board_idx").on(table.language, table.inputType, table.score.desc()),
   ],
 );
 

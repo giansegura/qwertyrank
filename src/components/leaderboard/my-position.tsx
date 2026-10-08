@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { loginHref } from "@/lib/auth-paths";
 import type { InputType } from "@/lib/game/types";
-import type { VisiblePeriod } from "@/lib/leaderboard/periods";
 import type { MyPositionResponse } from "@/lib/leaderboard/types";
 import { displayAccuracy, displayWpm } from "@/lib/scoring/metrics";
 import { getViewer } from "@/lib/viewer";
@@ -15,7 +14,7 @@ import type { TestLanguage } from "@/lib/words/languages";
 type State = { name: "loading" | "signed_out" | "error" } | { name: "loaded"; position: MyPositionResponse };
 
 /** La página del ranking es la misma para todos (en caché 60 s): la posición propia se pide aparte, sin caché. */
-export function MyPosition({ language, input, period }: { language: TestLanguage; input: InputType; period: VisiblePeriod }) {
+export function MyPosition({ language, input }: { language: TestLanguage; input: InputType }) {
   const t = useTranslations("Leaderboard");
   const pathname = usePathname();
   const [state, setState] = useState<State>({ name: "loading" });
@@ -26,9 +25,7 @@ export function MyPosition({ language, input, period }: { language: TestLanguage
     getViewer()
       .then(async (viewer): Promise<State> => {
         if (!viewer) return { name: "signed_out" };
-        const response = await fetch(`/api/leaderboard/me?lang=${language}&input=${input}&period=${period}`, {
-          cache: "no-store",
-        });
+        const response = await fetch(`/api/leaderboard/me?lang=${language}&input=${input}`, { cache: "no-store" });
         if (response.status === 401) return { name: "signed_out" };
         if (!response.ok) return { name: "error" };
         return { name: "loaded", position: (await response.json()) as MyPositionResponse };
@@ -40,10 +37,10 @@ export function MyPosition({ language, input, period }: { language: TestLanguage
     return () => {
       active = false;
     };
-  }, [language, input, period]);
+  }, [language, input]);
 
   return (
-    <p data-testid="my-position" className="min-h-5 font-medium">
+    <p data-testid="my-position" className="min-h-5 text-sm font-medium">
       {state.name === "signed_out" && (
         <Link href={loginHref(pathname)} className="underline">
           {t("youSignIn")}

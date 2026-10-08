@@ -1,15 +1,15 @@
 import "server-only";
 import type { Redis } from "@upstash/redis";
 import type { Db } from "../db/client";
-import { liveBests } from "./live";
-import { boardExpiresAt, boardKey, type BoardScore } from "./store";
+import { activeBests } from "./live";
+import { boardKey, type BoardScore } from "./store";
 
 export interface RebuildReport {
   /** Rankings que se escriben. */
   boards: number;
   /** Marcas que se escriben. */
   entries: number;
-  /** Claves `lb:*` que se borran: sin marcas vivas, o temporales de una ejecución interrumpida. */
+  /** Claves `lb:*` que se borran: sin marcas, de los antiguos rankings por periodo o temporales de una ejecución interrumpida. */
   removed: number;
 }
 
@@ -36,13 +36,15 @@ export async function rebuildLeaderboards(
   db: Db,
   redis: Redis,
   prefix: string,
-  { write, now = new Date() }: { write: boolean; now?: Date },
+  { write }: { write: boolean },
 ): Promise<RebuildReport> {
-  const bests = await liveBests(db, now);
+  const bests = await activeBests(db);
   const byKey = new Map<string, BoardScore[]>();
   for (const best of bests) {
     const key = boardKey(prefix, best.board);
-    byKey.set(key, [...(byKey.get(key) ?? []), best]);
+    const entries = byKey.get(key);
+    if (entries) entries.push(best);
+    else byKey.set(key, [best]);
   }
   const stale = (await scanKeys(redis, `${prefix}lb:*`)).filter((key) => !byKey.has(key));
 
@@ -57,8 +59,6 @@ export async function rebuildLeaderboards(
           .map((entry) => ({ score: entry.score, member: entry.userId }));
         pipeline.zadd(temp, first, ...rest);
       }
-      const expiresAt = boardExpiresAt(entries[0].board.period, entries[0].achievedAt);
-      if (expiresAt) pipeline.expireat(temp, expiresAt);
       pipeline.rename(temp, key);
       await pipeline.exec();
     }

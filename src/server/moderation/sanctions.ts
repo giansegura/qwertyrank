@@ -4,7 +4,7 @@ import type { ReportReason } from "@/lib/reports";
 import type { Db, DbExecutor } from "../db/client";
 import { bannedIdentities, moderationActions, reports, users } from "../db/schema";
 import { userBoards } from "../leaderboard/bests";
-import { liveBests } from "../leaderboard/live";
+import { activeBests } from "../leaderboard/live";
 import type { LeaderboardStore } from "../leaderboard/store";
 import { findFreeNick } from "../profile/nick";
 import { identitiesOf } from "./identities";
@@ -24,7 +24,6 @@ export interface SanctionsDeps {
   /** Con reserva (spec 4a §6.5): `createNickAvailability`. */
   isNickTaken: (nick: string) => Promise<boolean>;
   random?: () => number;
-  now?: () => Date;
 }
 
 const ACTION_FOR = { active: "restore", shadowbanned: "shadowban", banned: "ban" } as const;
@@ -47,7 +46,6 @@ async function resolveOpenReports(
 /** Sanciones de moderación (spec 4a §3). Solo las usan el panel y los scripts. */
 export function createSanctions(deps: SanctionsDeps) {
   const random = deps.random ?? Math.random;
-  const now = deps.now ?? (() => new Date());
 
   async function findTarget(
     adminId: string,
@@ -84,10 +82,10 @@ export function createSanctions(deps: SanctionsDeps) {
       if (status !== "active") await resolveOpenReports(tx, adminId, targetId, "actioned");
     });
 
-    // PostgreSQL ya está al día: Redis se limpia o se reescribe con sus marcas vivas.
+    // PostgreSQL ya está al día: Redis se limpia o se reescribe con sus marcas.
     // Las páginas se revalidan aunque Redis falle: la sanción ya está confirmada.
     try {
-      if (status === "active") await deps.store.add(await liveBests(deps.db, now(), targetId));
+      if (status === "active") await deps.store.add(await activeBests(deps.db, targetId));
       else await deps.store.remove(targetId, await userBoards(deps.db, targetId));
     } catch (error) {
       console.error("setStatus: PostgreSQL actualizado pero Redis falló", error);

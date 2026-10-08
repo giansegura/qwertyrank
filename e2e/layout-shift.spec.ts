@@ -52,7 +52,7 @@ test("la cabecera no se mueve cuando llega la sesión (CLS)", async ({ page }, t
   expect(await layoutShift(page)).toBeLessThan(0.001);
 });
 
-test("el ranking no se mueve cuando llegan tu posición y la cuenta atrás (CLS)", async ({ page }, testInfo) => {
+test("el ranking no se mueve cuando llega tu posición (CLS)", async ({ page }, testInfo) => {
   if (testInfo.project.name === "mobile") await page.setViewportSize({ width: 360, height: 780 });
   await trackLayoutShifts(page);
   // Sin sesión y con algo de latencia, como un visitante anónimo en la red real.
@@ -61,7 +61,7 @@ test("el ranking no se mueve cuando llegan tu posición y la cuenta atrás (CLS)
     await route.fulfill({ json: null });
   });
 
-  await page.goto("/en/leaderboard/physical/today");
+  await page.goto("/en/leaderboard/physical");
   await expect(page.getByTestId("my-position")).toContainText("Sign in to appear in the ranking");
   await page.waitForTimeout(500);
   expect(await layoutShift(page)).toBeLessThan(0.001);

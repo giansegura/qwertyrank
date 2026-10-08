@@ -1,28 +1,18 @@
 import "server-only";
 import type { Redis } from "@upstash/redis";
 import type { InputType } from "@/lib/game/types";
-import { periodKey, periodStart, type Period } from "@/lib/leaderboard/periods";
 import type { TestLanguage } from "@/lib/words/languages";
 
-/** Un ranking: idioma × teclado × periodo concreto (spec §5.1). */
+/** Un ranking: idioma × teclado (spec §5.1). Cuenta la mejor marca de cada jugador desde siempre. */
 export interface Board {
   language: TestLanguage;
   inputType: InputType;
-  period: Period;
-  key: string;
-}
-
-/** El ranking en curso de esa combinación: el del periodo que contiene `at`. */
-export function currentBoard(language: TestLanguage, inputType: InputType, period: Period, at = new Date()): Board {
-  return { language, inputType, period, key: periodKey(period, at) };
 }
 
 export interface BoardScore {
   board: Board;
   userId: string;
   score: number;
-  /** Hora de la partida: de ella sale la caducidad del ranking de día y de semana. */
-  achievedAt: Date;
 }
 
 export interface LeaderboardStore {
@@ -34,19 +24,9 @@ export interface LeaderboardStore {
   remove(userId: string, boards: Board[]): Promise<void>;
 }
 
-const DAY_SECONDS = 86_400;
-/** Spec §5.4: los de día caducan a los 8 días y los de semana a las 6 semanas; mes, año y siempre, nunca. */
-const TTL_DAYS: Partial<Record<Period, number>> = { day: 8, week: 42 };
-
-/** Cuándo caduca un ranking (segundos Unix), desde el inicio de su periodo; `null` si nunca (spec §5.4). */
-export function boardExpiresAt(period: Period, achievedAt: Date): number | null {
-  const days = TTL_DAYS[period];
-  const start = periodStart(period, achievedAt);
-  return days && start ? Math.floor(start.getTime() / 1000) + days * DAY_SECONDS : null;
-}
-
+/** Una lista ordenada por ranking, sin caducidad (spec §5.4): `lb:es:physical`. */
 export function boardKey(prefix: string, board: Board): string {
-  return `${prefix}lb:${board.language}:${board.inputType}:${board.period}:${board.key}`;
+  return `${prefix}lb:${board.language}:${board.inputType}`;
 }
 
 export function createLeaderboardStore(redis: Redis, prefix: string): LeaderboardStore {
@@ -56,12 +36,8 @@ export function createLeaderboardStore(redis: Redis, prefix: string): Leaderboar
     async add(entries) {
       if (entries.length === 0) return;
       const pipeline = redis.pipeline();
-      for (const { board, userId, score, achievedAt } of entries) {
-        // GT: la puntuación solo sube; un jugador nuevo se añade igualmente.
-        pipeline.zadd(key(board), { gt: true }, { score, member: userId });
-        const expiresAt = boardExpiresAt(board.period, achievedAt);
-        if (expiresAt) pipeline.expireat(key(board), expiresAt);
-      }
+      // GT: la puntuación solo sube; un jugador nuevo se añade igualmente.
+      for (const { board, userId, score } of entries) pipeline.zadd(key(board), { gt: true }, { score, member: userId });
       await pipeline.exec();
     },
 

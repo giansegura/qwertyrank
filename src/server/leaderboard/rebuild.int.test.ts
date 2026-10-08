@@ -6,7 +6,7 @@ import { users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
 import { createRedis } from "../redis";
 import { rebuildLeaderboards } from "./rebuild";
-import { boardKey, currentBoard } from "./store";
+import { boardKey } from "./store";
 
 const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
@@ -46,36 +46,38 @@ async function playerWithGame(status: "active" | "banned"): Promise<string> {
   return row.id;
 }
 
+const BOARD = boardKey(prefix, { language: "en", inputType: "physical" });
+
 describe("reconstrucción de Redis", () => {
-  it("sin --yes solo cuenta; con --yes reescribe, quita fantasmas y borra lo que sobra", async () => {
+  it("sin --yes solo cuenta; con --yes reescribe sin caducidad, quita fantasmas y borra las claves de periodo", async () => {
     const player = await playerWithGame("active");
     const banned = await playerWithGame("banned");
-    const today = boardKey(prefix, currentBoard("en", "physical", "day"));
-    await redis.zadd(today, { score: 1, member: "ghost" });
-    const stale = `${prefix}lb:en:physical:day:2020-01-01`;
-    await redis.zadd(stale, { score: 1, member: "old" });
+    await redis.zadd(BOARD, { score: 1, member: "ghost" });
+    // Las claves de los antiguos rankings por periodo (`lb:{lang}:{input}:{period}:{key}`).
+    const day = `${prefix}lb:en:physical:day:2026-10-07`;
+    const all = `${prefix}lb:en:physical:all:all`;
+    for (const key of [day, all]) await redis.zadd(key, { score: 1, member: player });
 
     const dryRun = await rebuildLeaderboards(db, redis, prefix, { write: false });
     expect(dryRun.boards).toBeGreaterThan(0);
-    expect(dryRun.removed).toBeGreaterThanOrEqual(1);
-    expect(await redis.zscore(today, "ghost")).not.toBeNull();
-    expect(await redis.zscore(today, player)).toBeNull();
+    expect(dryRun.removed).toBe(2);
+    expect(await redis.zscore(BOARD, "ghost")).not.toBeNull();
+    expect(await redis.zscore(BOARD, player)).toBeNull();
 
     await rebuildLeaderboards(db, redis, prefix, { write: true });
-    expect(await redis.zscore(today, "ghost")).toBeNull();
-    expect(await redis.zscore(today, player)).not.toBeNull();
-    expect(await redis.zscore(today, banned)).toBeNull();
-    expect(await redis.exists(stale)).toBe(0);
-    expect(await redis.ttl(today)).toBeGreaterThan(0);
+    expect(await redis.zscore(BOARD, "ghost")).toBeNull();
+    expect(await redis.zscore(BOARD, player)).not.toBeNull();
+    expect(await redis.zscore(BOARD, banned)).toBeNull();
+    expect(await redis.ttl(BOARD)).toBe(-1);
+    expect(await redis.exists(day, all)).toBe(0);
   });
 
   it("borra las claves temporales que dejó una ejecución interrumpida", async () => {
     await playerWithGame("active");
-    const today = boardKey(prefix, currentBoard("en", "physical", "day"));
-    const leftover = `${today.replace(/day:[^:]+$/, "day:2020-01-02")}:rebuild`;
+    const leftover = `${prefix}lb:pt:touch:rebuild`;
     await redis.zadd(leftover, { score: 1, member: "half" });
     await rebuildLeaderboards(db, redis, prefix, { write: true });
     expect(await redis.exists(leftover)).toBe(0);
-    expect(await redis.exists(`${today}:rebuild`)).toBe(0);
+    expect(await redis.exists(`${BOARD}:rebuild`)).toBe(0);
   });
 });

@@ -7,7 +7,7 @@ import type { Db } from "../db/client";
 import { games, recordVerifications, users, verifiedLevels } from "../db/schema";
 import { insertGame, type GameRecord } from "../game/persist";
 import type { StartedVerification } from "../game/store";
-import { recordBests, type ImprovedBest } from "../leaderboard/bests";
+import { recordBest } from "../leaderboard/bests";
 
 /** Una partida publicada al superar la verificación, lista para `rankGame`. */
 export interface PublishedGame {
@@ -18,8 +18,8 @@ export interface PublishedGame {
   wpm: number;
   accuracy: number;
   startsAt: Date;
-  /** Periodos en que mejora la marca del jugador (de `recordBests`). */
-  improved: ImprovedBest[];
+  /** Si mejora la marca del jugador (de `recordBest`). */
+  improved: boolean;
 }
 
 /**
@@ -105,7 +105,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
         userId: current.userId,
         inputType: current.inputType,
         ...targetGame,
-        improved: [],
+        improved: false,
       };
       const required = requiredWpm(target.wpm);
       if (current.status === "verified") return { kind: "verified", target, published: [] };
@@ -135,10 +135,10 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
           accuracy: games.accuracy,
           startsAt: games.startsAt,
         });
-      // 2. …con sus marcas, cada una con su hora original: una partida de ayer cuenta en el ranking de ayer.
+      // 2. …con sus marcas, cada una con su hora original, que decide el desempate.
       const published: PublishedGame[] = [];
       for (const game of reviewed.toSorted((a, b) => a.startsAt.getTime() - b.startsAt.getTime())) {
-        const improved = await recordBests(tx, {
+        const improved = await recordBest(tx, {
           userId: current.userId,
           gameId: game.gameId,
           language: game.language,

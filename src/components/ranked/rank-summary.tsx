@@ -4,9 +4,8 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import type { InputType } from "@/lib/game/types";
-import { VISIBLE_PERIODS, type VisiblePeriod } from "@/lib/leaderboard/periods";
 import { leaderboardHref } from "@/lib/leaderboard/slugs";
-import type { GameRanking, PeriodRanks } from "@/lib/leaderboard/types";
+import type { GameRanking } from "@/lib/leaderboard/types";
 import { hoursLeft, type PendingVerification } from "@/lib/verification";
 import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import type { TestLanguage } from "@/lib/words/languages";
@@ -26,17 +25,6 @@ export interface RankSummaryProps {
   onVerify?: (verification: PendingVerification) => void;
 }
 
-/**
- * Las posiciones que tiene, de la del día a la de siempre. Falta la de un periodo que ya ha acabado; la de
- * siempre está siempre, así que nunca queda vacía.
- */
-function openRanks(ranks: PeriodRanks): { period: VisiblePeriod; rank: number }[] {
-  return VISIBLE_PERIODS.flatMap((period) => {
-    const rank = ranks[period];
-    return rank === undefined ? [] : [{ period, rank }];
-  });
-}
-
 /** Intentos y horas que le quedan a una verificación. Las horas, solo en el navegador (`useNow`). */
 function ReviewLeft({ verification }: { verification: PendingVerification }) {
   const t = useTranslations("Ranked");
@@ -49,7 +37,7 @@ function ReviewLeft({ verification }: { verification: PendingVerification }) {
   );
 }
 
-/** Posición de la partida en cada periodo, o la que tendría si se guarda (spec §3.4, paso 7) o se verifica (spec 4b §4.1). */
+/** Posición de la partida en el ranking, o la que tendría si se guarda (spec §3.4, paso 7) o se verifica (spec 4b §4.1). */
 export function RankSummary({ ranking, gameId, language, inputType, onVerify }: RankSummaryProps) {
   const t = useTranslations("Ranked");
   const tv = useTranslations("Verification");
@@ -74,15 +62,12 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
   );
 
   if (ranking.kind === "ranked") {
-    const ranks = openRanks(ranking.ranks);
     return (
       <div data-testid="rank-summary" className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <p className="font-medium">{ranks.map((entry) => t("rankIn", entry)).join(" · ")}</p>
-        {ranking.improved.length > 0 && (
-          <p className="font-medium text-emerald-700 dark:text-emerald-400">{t("newBest")}</p>
-        )}
+        <p className="font-medium">{t("rank", { rank: ranking.rank })}</p>
+        {ranking.improved && <p className="font-medium text-emerald-700 dark:text-emerald-400">{t("newBest")}</p>}
         <Link
-          href={leaderboardHref(inputType, ranks[0].period)}
+          href={leaderboardHref(inputType)}
           locale={language}
           prefetch={false}
           className="text-sm underline"
@@ -98,9 +83,7 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
     const verifyClass = "self-start rounded-md bg-amber-500 px-3 py-1.5 font-semibold text-zinc-950 hover:bg-amber-400";
     return (
       <div data-testid="rank-summary" className="flex flex-col gap-1">
-        <p className="font-medium">
-          {t("reviewWouldRank", { ranks: openRanks(ranking.ranks).map((entry) => t("rankIn", entry)).join(" · ") })}
-        </p>
+        <p className="font-medium">{t("reviewWouldRank", { rank: ranking.rank })}</p>
         {verification.attemptsLeft > 0 ? (
           <>
             <p className="text-sm">{t("reviewExplain", { required: verification.requiredWpm })}</p>
@@ -124,10 +107,9 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
   }
 
   if (ranking.kind === "would_rank") {
-    const [first] = openRanks(ranking.ranks);
     return (
       <div data-testid="rank-summary" className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p className="font-medium">{t("wouldRank", first)}</p>
+        <p className="font-medium">{t("wouldRank", { rank: ranking.rank })}</p>
         {saveIt}
       </div>
     );

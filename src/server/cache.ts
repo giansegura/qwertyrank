@@ -8,5 +8,5 @@ import { revalidatePath } from "next/cache";
  */
 export function revalidatePlayerPages(): void {
   revalidatePath("/[locale]/u/[nick]", "page");
-  revalidatePath("/[locale]/leaderboard/[input]/[period]", "page");
+  revalidatePath("/[locale]/leaderboard/[input]", "page");
 }

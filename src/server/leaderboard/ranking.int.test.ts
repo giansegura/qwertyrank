@@ -2,24 +2,23 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Verdict } from "@/lib/game/types";
-import { periodKey } from "@/lib/leaderboard/periods";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
 import { users } from "../db/schema";
 import { createSaveGame } from "../game/persist";
 import { createRedis } from "../redis";
-import { createRanking, type BoardChange, type Ranking } from "./ranking";
+import { createRanking, type Ranking } from "./ranking";
 import { boardKey, createLeaderboardStore, type Board, type LeaderboardStore } from "./store";
 
 const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
 const prefix = `${process.env.REDIS_KEY_PREFIX}ranking-${randomUUID().slice(0, 8)}:`;
 const store = createLeaderboardStore(redis, prefix);
-const changes: BoardChange[][] = [];
+const changes: Board[][] = [];
 const ranking = createRanking({ db, store, onTopChanged: (change) => changes.push(change) });
 const saveGame = createSaveGame(db);
 const NOW = new Date();
-const TODAY: Board = { language: "es", inputType: "physical", period: "day", key: periodKey("day", NOW) };
+const BOARD: Board = { language: "es", inputType: "physical" };
 
 beforeEach(() => {
   changes.length = 0;
@@ -84,74 +83,87 @@ describe("ranking de una partida", () => {
     expect(await play(await newUser(), 50, { accuracy: 89.9 })).toEqual({ kind: "low_accuracy" });
   });
 
-  it("con cuenta: entra en los rankings y devuelve su posición en cada periodo", async () => {
+  it("con cuenta: entra en el ranking y devuelve su posición", async () => {
     const fast = await newUser();
     await play(fast, 150);
     const slow = await newUser();
-    const result = await play(slow, 140);
-    expect(result).toEqual({
-      kind: "ranked",
-      ranks: { day: 2, week: 2, month: 2, all: 2 },
-      improved: ["day", "week", "month", "all"],
-    });
-    expect(await store.position(TODAY, fast)).toBe(1);
+    expect(await play(slow, 140)).toEqual({ kind: "ranked", rank: 2, improved: true });
+    expect(await store.position(BOARD, fast)).toBe(1);
   });
 
-  it("sin mejorar, enseña su posición de siempre", async () => {
+  it("sin mejorar, enseña la posición de su marca", async () => {
     const player = await newUser();
     await play(player, 145);
     const result = await play(player, 60);
-    expect(result).toMatchObject({ kind: "ranked", improved: [] });
+    expect(result).toMatchObject({ kind: "ranked", improved: false });
     if (result.kind !== "ranked") throw new Error(result.kind);
-    expect(result.ranks.day).toBe(await store.position(TODAY, player));
+    expect(result.rank).toBe(await store.position(BOARD, player));
+  });
+
+  it("una marca de otro día sigue contando: no hay periodos", async () => {
+    const player = await newUser();
+    await play(player, 170, { startsAt: new Date(NOW.getTime() - 40 * 86_400_000) });
+    const result = await play(player, 60);
+    expect(result).toMatchObject({ kind: "ranked", improved: false });
+    if (result.kind !== "ranked") throw new Error(result.kind);
+    expect(result.rank).toBe(await store.position(BOARD, player));
   });
 
   it("anónima: la posición que tendría, sin escribir en el ranking", async () => {
-    const before = await redis.zcard(boardKey(prefix, TODAY));
-    expect(await play(null, 500)).toEqual({ kind: "would_rank", ranks: { day: 1, week: 1, month: 1, all: 1 } });
-    expect(await redis.zcard(boardKey(prefix, TODAY))).toBe(before);
+    const before = await redis.zcard(boardKey(prefix, BOARD));
+    expect(await play(null, 500)).toEqual({ kind: "would_rank", rank: 1 });
+    expect(await redis.zcard(boardKey(prefix, BOARD))).toBe(before);
   });
 
   it("shadow-ban: ve su posición «como si estuviera», pero no entra en el ranking", async () => {
     const hidden = await newUser("shadowbanned");
-    expect(await play(hidden, 400)).toMatchObject({ kind: "ranked", ranks: { day: 1 } });
-    expect(await store.position(TODAY, hidden)).toBeNull();
+    expect(await play(hidden, 400)).toEqual({ kind: "ranked", rank: 1, improved: true });
+    expect(await store.position(BOARD, hidden)).toBeNull();
     expect(changes).toEqual([]);
   });
 
   it("entrar en el top 100 revalida la página de ese ranking", async () => {
     await play(await newUser(), 130);
-    expect(changes).toEqual([
-      [
-        { language: "es", inputType: "physical", period: "day" },
-        { language: "es", inputType: "physical", period: "week" },
-        { language: "es", inputType: "physical", period: "month" },
-        { language: "es", inputType: "physical", period: "all" },
-      ],
-    ]);
+    expect(changes).toEqual([[BOARD]]);
+  });
+
+  it("sin mejorar su marca no revalida nada", async () => {
+    const player = await newUser();
+    await play(player, 125);
+    changes.length = 0;
+    await play(player, 20);
+    expect(changes).toEqual([]);
+  });
+
+  it("fuera del top 100 no revalida la página, aunque mejore su marca", async () => {
+    const player = await newUser();
+    const outsideTop: LeaderboardStore = { ...store, position: async () => 101 };
+    const outside = createRanking({ db, store: outsideTop, onTopChanged: (change) => changes.push(change) });
+    expect(await play(player, 105, { using: outside })).toEqual({ kind: "ranked", rank: 101, improved: true });
+    expect(changes).toEqual([]);
   });
 
   it("posición propia: la de su marca en ese ranking, o null si no tiene", async () => {
     const player = await newUser();
     await play(player, 120);
-    expect(await ranking.myPosition(player, TODAY)).toEqual({
-      rank: await store.position(TODAY, player),
+    expect(await ranking.myPosition(player, BOARD)).toEqual({
+      rank: await store.position(BOARD, player),
       wpm: 120,
       accuracy: 98,
     });
-    expect(await ranking.myPosition(await newUser(), TODAY)).toEqual({ rank: null });
+    expect(await ranking.myPosition(await newUser(), BOARD)).toEqual({ rank: null });
   });
 
   it("si Redis perdió la marca del jugador, la recupera desde PostgreSQL y la posición es la de su marca", async () => {
     const player = await newUser();
     await play(player, 200);
-    await store.remove(player, [TODAY]);
+    await store.remove(player, [BOARD]);
     const result = await play(player, 10);
-    expect(result).toMatchObject({ kind: "ranked", improved: [] });
+    expect(result).toMatchObject({ kind: "ranked", improved: false });
     if (result.kind !== "ranked") throw new Error(result.kind);
-    const position = await store.position(TODAY, player);
+    const position = await store.position(BOARD, player);
     expect(position).not.toBeNull();
-    expect(result.ranks.day).toBe(position);
+    expect(result.rank).toBe(position);
   });
 
   it("si falla la revalidación de la página, la partida conserva su ranking", async () => {
@@ -163,7 +175,8 @@ describe("ranking de una partida", () => {
         throw new Error("revalidate failed");
       },
     });
-    expect(await play(await newUser(), 135, { using: failing })).toMatchObject({ kind: "ranked", ranks: { day: expect.any(Number) } });
+    expect(await play(await newUser(), 135, { using: failing })).toMatchObject({ kind: "ranked", rank: expect.any(Number) });
+    expect(console.error).toHaveBeenCalledWith("leaderboard revalidation failed", expect.any(Error));
     vi.mocked(console.error).mockRestore();
   });
 
@@ -180,20 +193,6 @@ describe("ranking de una partida", () => {
     vi.mocked(console.error).mockRestore();
   });
 
-  it("empezada antes de medianoche y terminada después: sin posición en el día que ya ha acabado", async () => {
-    // Martes 23:59:50 → miércoles 00:00:20: misma semana y mismo mes, otro día.
-    const startsAt = new Date("2027-03-09T23:59:50Z");
-    const late = createRanking({ db, store, onTopChanged: (change) => changes.push(change), now: () => new Date("2027-03-10T00:00:20Z") });
-    const player = await newUser();
-    const result = await play(player, 110, { startsAt, using: late });
-    expect(result).toMatchObject({ kind: "ranked", improved: ["day", "week", "month", "all"] });
-    if (result.kind !== "ranked") throw new Error(result.kind);
-    expect(Object.keys(result.ranks)).toEqual(["week", "month", "all"]);
-    expect(await store.position({ ...TODAY, key: periodKey("day", startsAt) }, player)).toBe(1);
-    expect(changes.flat().map((change) => change.period)).not.toContain("day");
-    expect(await play(null, 500, { startsAt, using: late })).toMatchObject({ kind: "would_rank", ranks: { week: 1 } });
-  });
-
   it("si le sancionan mientras se escribe su partida, no se queda en Redis", async () => {
     const player = await newUser();
     // La sanción llega justo después de escribir en Redis y antes de la comprobación final.
@@ -206,6 +205,6 @@ describe("ranking de una partida", () => {
     };
     const racing = createRanking({ db, store: sanctionedMidway, onTopChanged: () => {} });
     await play(player, 160, { using: racing });
-    expect(await store.position(TODAY, player)).toBeNull();
+    expect(await store.position(BOARD, player)).toBeNull();
   });
 });

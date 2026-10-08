@@ -2,18 +2,17 @@ import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { VerificationFinishResponse } from "@/lib/game/types";
-import { periodKey } from "@/lib/leaderboard/periods";
 import type { TypingEvent } from "@/lib/scoring/types";
 import { untilASessionWaitsForALock } from "@/test/lock-wait";
 import { seedPendingVerification } from "@/test/pending-verification";
 import { typed } from "@/test/typing-events";
 import { createDb } from "../db/client";
-import { games, periodBests, recordVerifications, users, verifiedLevels } from "../db/schema";
+import { bests, games, recordVerifications, users, verifiedLevels } from "../db/schema";
 import { createSaveGame, insertGame, type GameRecord } from "../game/persist";
 import { createGameService, type GameService } from "../game/service";
 import { createGameStore } from "../game/store";
-import { createRanking, type BoardChange } from "../leaderboard/ranking";
-import { boardKey, createLeaderboardStore, currentBoard, type Board, type LeaderboardStore } from "../leaderboard/store";
+import { createRanking } from "../leaderboard/ranking";
+import { boardKey, createLeaderboardStore, type Board, type LeaderboardStore } from "../leaderboard/store";
 import { createRedis } from "../redis";
 import { spendAttempt } from "./attempts";
 import { createSaveVerificationGame } from "./finish";
@@ -23,7 +22,8 @@ const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
 const prefix = `${process.env.REDIS_KEY_PREFIX}verify-${randomUUID().slice(0, 8)}:`;
 const store = createLeaderboardStore(redis, prefix);
-const changes: BoardChange[][] = [];
+const changes: Board[][] = [];
+const BOARD: Board = { language: "en", inputType: "physical" };
 
 /** Como en producción, con 1,5 s de partida y sin cuenta atrás. */
 function serviceWith(leaderboard: LeaderboardStore): GameService {
@@ -110,17 +110,11 @@ const verificationRow = async (id: string) =>
   (await db.select().from(recordVerifications).where(eq(recordVerifications.id, id)))[0];
 const verdictOf = async (gameId: string) =>
   (await db.select({ verdict: games.verdict }).from(games).where(eq(games.id, gameId)))[0].verdict;
-const bestsOf = (gameId: string) =>
-  db.select({ period: periodBests.periodType, key: periodBests.periodKey }).from(periodBests).where(eq(periodBests.gameId, gameId));
-const board = (period: Board["period"], at: Date): Board => ({
-  language: "en",
-  inputType: "physical",
-  period,
-  key: periodKey(period, at),
-});
+const bestsOf = (userId: string) =>
+  db.select({ gameId: bests.gameId, wpm: bests.wpm, achievedAt: bests.achievedAt }).from(bests).where(eq(bests.userId, userId));
 
 describe("partida de verificación (spec 4b §3)", () => {
-  it("superada: publica el récord, sube el nivel, cierra la verificación y responde con sus posiciones", async () => {
+  it("superada: publica el récord, sube el nivel, cierra la verificación y responde con su posición", async () => {
     const userId = await newUser();
     const { gameId, verification } = await seedPendingVerification(db, userId, { startsAt: new Date(Date.now() - 60_000) });
 
@@ -129,15 +123,15 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(response).toMatchObject({
       verdict: "valid",
       wpm: 120,
-      verification: { kind: "verified", ranking: { kind: "ranked", ranks: { day: expect.any(Number) } } },
+      verification: { kind: "verified", ranking: { kind: "ranked", rank: expect.any(Number), improved: true } },
     });
     expect(await verdictOf(gameId)).toBe("valid");
-    expect(await bestsOf(gameId)).toHaveLength(5);
+    expect(await bestsOf(userId)).toEqual([expect.objectContaining({ gameId, wpm: 100 })]);
     expect(await verificationRow(verification.id)).toMatchObject({ status: "verified", attempts: 1, resolvedAt: expect.any(Date) });
     const [level] = await db.select().from(verifiedLevels).where(eq(verifiedLevels.userId, userId));
     expect(level).toMatchObject({ language: "en", inputType: "physical", wpm: 100 });
-    expect(await store.position(currentBoard("en", "physical", "day"), userId)).not.toBeNull();
-    expect(changes.flat()).toContainEqual({ language: "en", inputType: "physical", period: "day" });
+    expect(await store.position(BOARD, userId)).not.toBeNull();
+    expect(changes.flat()).toContainEqual(BOARD);
 
     // La partida de verificación se guarda con su modo y su verificación, sin marcas propias.
     const [played] = await db
@@ -145,37 +139,28 @@ describe("partida de verificación (spec 4b §3)", () => {
       .from(games)
       .where(and(eq(games.verificationId, verification.id), eq(games.mode, "verification")));
     expect(played).toMatchObject({ verdict: "valid", wpm: 120, userId });
-    expect(await bestsOf(played.id)).toEqual([]);
+    expect((await bestsOf(userId)).map((best) => best.gameId)).not.toContain(played.id);
   });
 
-  it("un récord de ayer a las 23:59 entra en el ranking de ayer: sin «#N hoy» ni claves caducadas en Redis", async () => {
+  it("un récord de hace días entra en el ranking con su hora original, sin caducidad en Redis", async () => {
     const userId = await newUser();
-    const today = new Date();
-    const lastNight = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 23, 59, 30));
-    const longAgo = new Date(today.getTime() - 9 * DAY_MS);
-    const twoDaysAgo = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 2, 12));
+    const lastNight = new Date(Date.now() - DAY_MS);
+    const longAgo = new Date(Date.now() - 9 * DAY_MS);
+    // La partida del récord, de anoche, y otras dos que esperaban la misma verificación, más lentas.
     const { gameId, verification } = await seedPendingVerification(db, userId, { startsAt: lastNight });
-    // Otras partidas que esperaban la misma verificación: una de hace 9 días, cuyo ranking de día ya no
-    // existe, y una de anteayer, cuyo ranking de día sigue abierto en Redis.
     const old = await seedPendingVerification(db, userId, { startsAt: longAgo, wpm: 80 });
-    const recent = await seedPendingVerification(db, userId, { startsAt: twoDaysAgo, wpm: 90 });
+    const recent = await seedPendingVerification(db, userId, { startsAt: new Date(Date.now() - 2 * DAY_MS), wpm: 90 });
     expect([old.verification.id, recent.verification.id]).toEqual([verification.id, verification.id]);
 
     const response = await verify(userId, verification.id, FAST);
 
-    if (response.verification.kind !== "verified") throw new Error(response.verification.kind);
-    const { ranking } = response.verification;
-    if (ranking.kind !== "ranked") throw new Error(ranking.kind);
-    expect(ranking.ranks.day).toBeUndefined();
-    expect(await bestsOf(gameId)).toContainEqual({ period: "day", key: periodKey("day", lastNight) });
-    expect(await store.position(board("day", lastNight), userId)).toBe(1);
-    expect(await redis.ttl(boardKey(prefix, board("day", lastNight)))).toBeGreaterThan(0);
-    expect(await store.position(board("day", today), userId)).toBeNull();
-    expect(await bestsOf(old.gameId)).toContainEqual({ period: "day", key: periodKey("day", longAgo) });
-    expect(await redis.exists(boardKey(prefix, board("day", longAgo)))).toBe(0);
-    // Cada partida publicada pasa por el ranking, no solo la del récord: la de anteayer entra en el suyo.
-    expect(await bestsOf(recent.gameId)).toContainEqual({ period: "day", key: periodKey("day", twoDaysAgo) });
-    expect(await store.position(board("day", twoDaysAgo), userId)).toBe(1);
+    const position = await store.position(BOARD, userId);
+    expect(position).not.toBeNull();
+    expect(response.verification).toEqual({ kind: "verified", ranking: { kind: "ranked", rank: position, improved: true } });
+    // Las tres pasan a `valid`; la marca es la más rápida, con la hora en que se jugó.
+    for (const game of [gameId, old.gameId, recent.gameId]) expect(await verdictOf(game)).toBe("valid");
+    expect(await bestsOf(userId)).toEqual([{ gameId, wpm: 100, achievedAt: lastNight }]);
+    expect(await redis.ttl(boardKey(prefix, BOARD))).toBe(-1);
   });
 
   it("no superada: siguen pendientes los intentos que quedan; al tercero, fallida y el récord sigue en review", async () => {
@@ -193,7 +178,7 @@ describe("partida de verificación (spec 4b §3)", () => {
 
     expect(await verificationRow(verification.id)).toMatchObject({ status: "failed", attempts: 3, resolvedAt: expect.any(Date) });
     expect(await verdictOf(gameId)).toBe("review");
-    expect(await bestsOf(gameId)).toEqual([]);
+    expect(await bestsOf(userId)).toEqual([]);
   });
 
   it("con otro teclado no cuenta, aunque llegue a las PPM", async () => {
@@ -278,7 +263,7 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(late).toMatchObject({ kind: "verified", target: { gameId }, published: [] });
     expect(await verificationRow(verification.id)).toMatchObject({ status: "verified" });
     expect(await verdictOf(gameId)).toBe("valid");
-    expect(await bestsOf(gameId)).toHaveLength(5);
+    expect(await bestsOf(userId)).toEqual([expect.objectContaining({ gameId })]);
   });
 
   it("si borra la cuenta a mitad de intento, no hay nada que verificar: fallida y sin guardar la partida", async () => {
@@ -301,10 +286,10 @@ describe("partida de verificación (spec 4b §3)", () => {
     const { gameId, verification } = await seedPendingVerification(db, userId);
     expect((await verify(userId, verification.id, FAST)).verification).toMatchObject({
       kind: "verified",
-      ranking: { kind: "ranked", ranks: { day: expect.any(Number) } },
+      ranking: { kind: "ranked", rank: expect.any(Number), improved: true },
     });
-    expect(await bestsOf(gameId)).toHaveLength(5);
-    expect(await store.position(currentBoard("en", "physical", "day"), userId)).toBeNull();
+    expect(await bestsOf(userId)).toEqual([expect.objectContaining({ gameId })]);
+    expect(await store.position(BOARD, userId)).toBeNull();
   });
 
   it("con Redis caído, el récord queda publicado en PostgreSQL y la respuesta lo dice", async () => {
@@ -319,7 +304,7 @@ describe("partida de verificación (spec 4b §3)", () => {
       kind: "verified",
       ranking: { kind: "unavailable", canSave: false },
     });
-    expect(await bestsOf(gameId)).toHaveLength(5);
+    expect(await bestsOf(userId)).toEqual([expect.objectContaining({ gameId })]);
     expect(await verificationRow(verification.id)).toMatchObject({ status: "verified" });
     vi.mocked(console.error).mockRestore();
   });

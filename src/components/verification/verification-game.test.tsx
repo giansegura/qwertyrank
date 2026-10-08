@@ -125,11 +125,11 @@ describe("VerificationGame", () => {
     expect(screen.queryByTestId("focus-prompt")).toBeNull();
   });
 
-  it("superada: ¡verificado!, con sus posiciones, y vuelve a Ranked", async () => {
+  it("superada: ¡verificado!, con su posición, y vuelve a Ranked", async () => {
     vi.mocked(finishGame).mockResolvedValue(
       response({
         wpm: 110,
-        verification: { kind: "verified", ranking: { kind: "ranked", ranks: { day: 3, all: 40 }, improved: ["day"] } },
+        verification: { kind: "verified", ranking: { kind: "ranked", rank: 3, improved: true } },
       }),
     );
     const changed = listenVerificationChanged();
@@ -138,7 +138,7 @@ describe("VerificationGame", () => {
     await playToTheEnd();
     expect(finishGame).toHaveBeenCalledWith("g1", { lastSeq: 0 });
     expect(screen.getByTestId("verify-result")).toHaveTextContent("Verified! Your record is now on the ranking.");
-    expect(screen.getByTestId("rank-summary")).toHaveTextContent("#3 today · #40 all time");
+    expect(screen.getByTestId("rank-summary")).toHaveTextContent("#3 on the leaderboard");
     // El aviso de la cabecera vuelve a pedir las pendientes: esta ya no lo está.
     expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-done"));
@@ -205,7 +205,7 @@ describe("VerificationGame", () => {
     vi.mocked(finishGame).mockResolvedValue(
       response({
         wpm: 110,
-        verification: { kind: "verified", ranking: { kind: "ranked", ranks: { day: 3, all: 40 }, improved: ["day"] } },
+        verification: { kind: "verified", ranking: { kind: "ranked", rank: 3, improved: true } },
       }),
     );
     const onDone = await mount(vi.fn(), "Back to your records");

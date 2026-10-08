@@ -1,8 +1,8 @@
 import "server-only";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Db } from "../db/client";
-import { accounts, games, moderationActions, periodBests, reports, users, verifiedLevels } from "../db/schema";
+import { accounts, bests, games, moderationActions, reports, users, verifiedLevels } from "../db/schema";
 import type { PlayerStatus } from "./sanctions";
 
 export interface ReportedPlayer {
@@ -120,14 +120,14 @@ export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | n
     db.select({ providerId: accounts.providerId }).from(accounts).where(eq(accounts.userId, id)),
     db
       .select({
-        language: periodBests.language,
-        inputType: periodBests.inputType,
-        wpm: periodBests.wpm,
-        accuracy: periodBests.accuracy,
+        language: bests.language,
+        inputType: bests.inputType,
+        wpm: bests.wpm,
+        accuracy: bests.accuracy,
       })
-      .from(periodBests)
-      .where(and(eq(periodBests.userId, id), eq(periodBests.periodType, "all")))
-      .orderBy(desc(periodBests.score)),
+      .from(bests)
+      .where(eq(bests.userId, id))
+      .orderBy(desc(bests.score)),
     db
       .select({
         id: games.id,

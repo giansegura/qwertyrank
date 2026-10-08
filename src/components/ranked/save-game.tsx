@@ -14,7 +14,7 @@ type State = { name: "saving" } | { name: "saved"; claim: ClaimResponse } | { na
 
 const SAVE_ERRORS: Record<string, SaveError> = { expired: "expired", not_found: "notFound" };
 
-/** Pasa a la cuenta la partida anónima de este navegador (spec §3.7) y enseña sus posiciones. */
+/** Pasa a la cuenta la partida anónima de este navegador (spec §3.7) y enseña su posición. */
 export function SaveGame({ gameId }: { gameId: string }) {
   const t = useTranslations("Save");
   const router = useRouter();

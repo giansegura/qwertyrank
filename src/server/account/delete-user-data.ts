@@ -7,8 +7,8 @@ import type { LeaderboardStore } from "../leaderboard/store";
 
 /**
  * Al borrar una cuenta (spec §6):
- * - el jugador sale de todos los rankings de Redis y los demás suben (sus `period_bests` caen en
- *   cascada al borrar la fila de `users`);
+ * - el jugador sale de todos los rankings de Redis y los demás suben (sus `bests` caen en cascada
+ *   al borrar la fila de `users`);
  * - se borran las pulsaciones de sus partidas y las partidas se anonimizan: sin usuario, sin
  *   `anon_id` y sin hash de IP. Las PPM se quedan para estadísticas.
  * Sesiones, cuentas y passkeys también caen en cascada.

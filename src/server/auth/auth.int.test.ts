@@ -3,9 +3,10 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { verifyEverywhere } from "@/test/verified";
 import { createDb } from "../db/client";
-import { bannedIdentities, games, keystrokeLogs, periodBests, sessions, users } from "../db/schema";
+import { bannedIdentities, bests, games, keystrokeLogs, sessions, users } from "../db/schema";
 import type { EmailMessage } from "../email/mailer";
 import { createSaveGame } from "../game/persist";
+import { activeBests } from "../leaderboard/live";
 import { createLeaderboardStore } from "../leaderboard/store";
 import { identityHash } from "../moderation/identities";
 import { checkNick } from "../profile/nick";
@@ -210,7 +211,7 @@ describe("cuentas con Better Auth", () => {
     await verifyEverywhere(db, user.id);
     const store = createLeaderboardStore(redis, process.env.REDIS_KEY_PREFIX!);
     const startsAt = new Date();
-    const saved = await createSaveGame(db)({
+    await createSaveGame(db)({
       id: randomUUID(),
       userId: user.id,
       anonId: randomUUID(),
@@ -227,18 +228,14 @@ describe("cuentas con Better Auth", () => {
       words: [],
       batches: [],
     });
-    const boards = saved.improved.map((best) => ({
-      language: "en" as const,
-      inputType: "touch" as const,
-      period: best.period,
-      key: best.key,
-    }));
-    await store.add(boards.map((board, i) => ({ board, userId: user.id, score: saved.improved[i].score, achievedAt: startsAt })));
+    const board = { language: "en" as const, inputType: "touch" as const };
+    await store.add(await activeBests(db, user.id));
+    expect(await store.position(board, user.id)).not.toBeNull();
 
     await auth.api.deleteUser({ body: {}, headers });
 
-    for (const board of boards) expect(await store.position(board, user.id)).toBeNull();
-    expect(await db.select().from(periodBests).where(eq(periodBests.userId, user.id))).toEqual([]);
+    expect(await store.position(board, user.id)).toBeNull();
+    expect(await db.select().from(bests).where(eq(bests.userId, user.id))).toEqual([]);
   });
 
   it("la sesión que ve el navegador no incluye status ni role", async () => {

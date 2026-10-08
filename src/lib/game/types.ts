@@ -60,14 +60,14 @@ export interface FinishResponse extends TestResult {
   inputType: InputType;
   verdict: Verdict;
   reason: PublicReason | null;
-  /** Posiciones en los rankings (spec §3.4, §8.3). */
+  /** Posición en el ranking (spec §3.4, §8.3). */
   ranking: GameRanking;
 }
 
 /** `finish` de una partida de verificación (spec 4b §3.3): en lugar de `ranking`, su resultado. */
 export type VerificationFinishResponse = Omit<FinishResponse, "ranking"> & { verification: VerificationOutcome };
 
-/** `POST /api/game/{id}/claim`: la partida pasa a la cuenta y estas son sus posiciones (spec §3.7). */
+/** `POST /api/game/{id}/claim`: la partida pasa a la cuenta y esta es su posición (spec §3.7). */
 export interface ClaimResponse {
   ranking: GameRanking;
   language: TestLanguage;

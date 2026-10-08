@@ -135,6 +135,14 @@ describe("ranking de una partida", () => {
     expect(changes).toEqual([]);
   });
 
+  it("fuera del top 100 no revalida la página, aunque mejore su marca", async () => {
+    const player = await newUser();
+    const outsideTop: LeaderboardStore = { ...store, position: async () => 101 };
+    const outside = createRanking({ db, store: outsideTop, onTopChanged: (change) => changes.push(change) });
+    expect(await play(player, 105, { using: outside })).toEqual({ kind: "ranked", rank: 101, improved: true });
+    expect(changes).toEqual([]);
+  });
+
   it("posición propia: la de su marca en ese ranking, o null si no tiene", async () => {
     const player = await newUser();
     await play(player, 120);
@@ -168,6 +176,7 @@ describe("ranking de una partida", () => {
       },
     });
     expect(await play(await newUser(), 135, { using: failing })).toMatchObject({ kind: "ranked", rank: expect.any(Number) });
+    expect(console.error).toHaveBeenCalledWith("leaderboard revalidation failed", expect.any(Error));
     vi.mocked(console.error).mockRestore();
   });
 

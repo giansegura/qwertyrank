@@ -42,7 +42,7 @@ export interface GameServiceDeps {
   random: () => number;
   newId: () => string;
   times: GameTimes;
-  /** Publica las marcas y calcula las posiciones (spec §5.5–5.6); no lanza. */
+  /** Publica las marcas y calcula su posición (spec §5.5–5.6); no lanza. */
   rankGame: (game: RankGameInput) => Promise<GameRanking>;
 }
 
@@ -79,7 +79,7 @@ export function createGameService(deps: GameServiceDeps): GameService {
   /**
    * Tras publicar el récord (spec 4b §3.3), cada partida publicada pasa por el ranking como una partida
    * más: ZADD de lo que mejora (salvo shadow-ban), autorreparado, relectura del estado y revalidación.
-   * La del récord va la última: sus posiciones son las de la respuesta.
+   * La del récord va la última: su posición es la de la respuesta.
    */
   async function rankVerified({ target, published }: Extract<VerificationResult, { kind: "verified" }>): Promise<GameRanking> {
     for (const game of published) {
@@ -172,7 +172,7 @@ export function createGameService(deps: GameServiceDeps): GameService {
       }
 
       const saved: SavedGame = await save(gameId, () => deps.saveGame(record));
-      // En `review` no se toca Redis: sus posiciones ya salen de PostgreSQL (spec 4b §2.2). Si no, ya
+      // En `review` no se toca Redis: su posición ya sale de PostgreSQL (spec 4b §2.2). Si no, ya
       // guardada: si el ranking falla, `rankGame` responde `unavailable` y la partida se da igual.
       const ranking: GameRanking = saved.review
         ? { kind: "review", ...saved.review }

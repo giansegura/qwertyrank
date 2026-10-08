@@ -42,7 +42,9 @@ export async function rebuildLeaderboards(
   const byKey = new Map<string, BoardScore[]>();
   for (const best of bests) {
     const key = boardKey(prefix, best.board);
-    byKey.set(key, [...(byKey.get(key) ?? []), best]);
+    const entries = byKey.get(key);
+    if (entries) entries.push(best);
+    else byKey.set(key, [best]);
   }
   const stale = (await scanKeys(redis, `${prefix}lb:*`)).filter((key) => !byKey.has(key));
 

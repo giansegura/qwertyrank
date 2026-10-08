@@ -27,6 +27,9 @@ En Cloudflare → *Email* → *Email Routing*:
 1. Crea la cuenta (plan Hobby) e importa el repositorio de GitHub. El framework se detecta solo. `vercel.json` ya
    define el build (`pnpm db:migrate && pnpm build`), la tarea diaria y la región de las funciones (`fra1`, Fráncfort,
    junto a Neon y Upstash).
+
+   El despliegue que Vercel lanza al importar el repositorio **falla** porque todavía no hay `DATABASE_URL`. Es lo
+   esperado: se vuelve a desplegar tras los pasos 4 a 6.
 2. *Settings* → *General* → *Node.js Version*: 24.x, la de `.nvmrc`.
 3. *Settings* → *Domains*:
    - añade `qwertyrank.com`;
@@ -45,14 +48,21 @@ En Cloudflare → *Email* → *Email Routing*:
 
    La integración pone `DATABASE_URL` y `DATABASE_URL_UNPOOLED` en cada entorno.
 3. **Comprueba:** en *Environment Variables* aparecen las dos, en Production y en Preview.
+4. En la primera PR, comprueba en *Settings* → *Environment Variables* (o en el despliegue de la vista previa) que
+   el `DATABASE_URL` de Preview apunta a una rama `preview/<rama>` de Neon y no a `main`. Si apunta a `main`, el build
+   migraría la base de producción con el código de la PR.
 
 ## 5. Upstash (Redis)
 
 1. Crea la cuenta y una base Redis en **Frankfurt** (`eu-central-1`).
 2. En Vercel → *Integrations*, instala **Upstash** y conéctalo al proyecto. Pone `UPSTASH_REDIS_REST_URL` y
-   `UPSTASH_REDIS_REST_TOKEN`.
+   `UPSTASH_REDIS_REST_TOKEN`. La app lee justo esos dos nombres: si la integración crea variables con otro nombre
+   (por ejemplo `KV_REST_API_URL` y `KV_REST_API_TOKEN`), añade `UPSTASH_REDIS_REST_URL` y
+   `UPSTASH_REDIS_REST_TOKEN` a mano con los mismos valores.
 3. Añade `REDIS_KEY_PREFIX=qr:` **solo en Production**. En las vistas previas no la pongas: cada una usa su propio
    prefijo, `pr-<número de la PR>:`.
+   Si `qr:` llega también a Preview, la vista previa se despliega en verde pero todas las peticiones fallan con un
+   500 cuyo error menciona `REDIS_KEY_PREFIX` (la validación del entorno es perezosa): quítala de Preview.
 
 ## 6. Secretos
 
@@ -92,7 +102,8 @@ de la URL de su rama.
 
 ## 10. Sentry
 
-1. Crea la cuenta y un proyecto de tipo *Next.js*. De la configuración solo necesitas el DSN.
+1. Crea la cuenta y elige la región de datos de la **UE** al crear la organización: después no se puede cambiar.
+   Crea un proyecto de tipo *Next.js*. De la configuración solo necesitas el DSN.
 2. `SENTRY_DSN` en Production y en Preview. Los eventos se distinguen por su `environment`.
 
 Sentry corre solo en el servidor. No hay que tocar el código ni subir source maps.
@@ -113,9 +124,22 @@ En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main
 3. Vercel → *Settings* → *Cron Jobs*: aparece `/api/cron/daily` a las 04:00 UTC. Pulsa **Run** y mira en los logs
    de la función (Vercel no muestra el cuerpo de la respuesta) la línea `daily retention` con
    `{ extracted: …, deletedLogs: …, anonymizedGames: …, done: true }`.
+   Como alternativa a **Run**, esta orden sí devuelve el JSON del informe. Usa el `CRON_SECRET` de Production, el de
+   la sección 6 (*Secretos*; cópialo de *Environment Variables*). Pega el valor y pulsa Enter (así no queda en el
+   historial del shell):
+
+   ```bash
+   read -rs CRON_SECRET
+   curl -H "Authorization: Bearer $CRON_SECRET" https://qwertyrank.com/api/cron/daily
+   ```
+
+   Si la variable está marcada como *Sensitive* en Vercel, no se puede volver a leer de *Environment Variables*:
+   guárdala al generarla (§6) o genera una nueva.
 4. Crea tu cuenta en la web. Después nómbrate admin desde tu máquina:
 
    ```bash
+   vercel login   # una vez
+   vercel link    # una vez
    vercel env pull .env.vercel-prod --environment=production
    pnpm admin:grant <tu-email> --env .env.vercel-prod
    rm .env.vercel-prod
@@ -128,6 +152,8 @@ En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main
 - [ ] Un récord que pida verificación, verificado desde un **Android** y un **iPhone** reales: al tocar el texto se
       abre el teclado.
 - [ ] El ranking y tu perfil enseñan tu marca.
+- [ ] En las vistas previas, las passkeys solo funcionan en la URL de la rama (`*-git-<rama>-*.vercel.app`), no en
+      la URL única del despliegue.
 - [ ] El pie: "beta" y "Envíanos tus comentarios" abren un correo a `feedback@`; Privacidad y Términos cargan en los
       tres idiomas.
 - [ ] `curl -sI https://qwertyrank.com/en | grep -i x-robots-tag` devuelve `noindex`.

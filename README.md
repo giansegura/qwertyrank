@@ -74,8 +74,8 @@ La guía para abrir la beta (cuentas, variables y comprobaciones) está en [`doc
 
 - **Entornos:** producción en `qwertyrank.com` y una vista previa por PR, con su rama de Neon. En las vistas previas, `BETTER_AUTH_URL` sale de la URL de su rama y `REDIS_KEY_PREFIX` es `pr-<número de la PR>:`.
 - **Tarea diaria** (`GET /api/cron/daily`, Vercel Cron a las 04:00 UTC, con `CRON_SECRET`):
-  - borra las pulsaciones de más de 30 días, salvo las de las mejores marcas vigentes, y antes guarda de cada una un extracto de ritmo anónimo en `rhythm_samples`, para calibrar el riesgo;
-  - quita `anon_id` e `ip_hash` a las partidas anónimas de más de 30 días.
+  - borra las pulsaciones de más de 30 días, salvo las de las mejores marcas vigentes, y antes guarda de cada una un extracto de ritmo seudónimo (con PPM y precisión redondeadas) en `rhythm_samples`, para calibrar el riesgo;
+  - quita `anon_id` e `ip_hash` a todas las partidas de más de 30 días, con cuenta o sin ella.
 
   En local: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily`.
 - **Sentry**, solo en el servidor (`src/instrumentation.ts`). Sin `SENTRY_DSN` no se inicia. Solo conserva el método de la petición: ni URL con su query, ni cuerpo, ni cabeceras, ni cookies. Tampoco los parámetros de las consultas fallidas, los argumentos de `console.error` ni las migas de consola.

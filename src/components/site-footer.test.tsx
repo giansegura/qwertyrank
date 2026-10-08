@@ -6,7 +6,7 @@ import { SiteFooter } from "./site-footer";
 describe("SiteFooter", () => {
   it("la beta y los comentarios abren un correo; las páginas legales, con su ruta traducida", () => {
     renderWithIntl(<SiteFooter />, "es");
-    expect(screen.getByRole("link", { name: "beta" })).toHaveAttribute("href", "mailto:feedback@qwertyrank.com");
+    expect(screen.getByRole("link", { name: "Beta: envíanos tus comentarios" })).toHaveAttribute("href", "mailto:feedback@qwertyrank.com");
     expect(screen.getByRole("link", { name: "Envíanos tus comentarios" })).toHaveAttribute(
       "href",
       "mailto:feedback@qwertyrank.com",

@@ -24,8 +24,11 @@ const EVENTS: TypingEvent[] = [..."hola"].flatMap((char, i): TypingEvent[] => [
   { t: i * 120 + 70, type: "up", key: char, code: `Key${char.toUpperCase()}`, trusted: true },
 ]);
 
-/** Unas PPM que nadie más usa: así se encuentra el extracto de esta partida, que no guarda su id. */
-const uniqueWpm = () => 50 + Math.random() * 1_000;
+/**
+ * Unas PPM enteras que nadie más usa: así se encuentra el extracto de esta partida, que no guarda su id.
+ * Enteras y grandes para que el redondeo del extracto no las cambie ni choquen con las de otras ejecuciones.
+ */
+const uniqueWpm = () => 1_000_000 + Math.floor(Math.random() * 1e9);
 
 async function newUser(status: "active" | "shadowbanned" | "banned" = "active"): Promise<string> {
   const [row] = await db
@@ -85,13 +88,24 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
       verdict: "valid",
       rejectReason: null,
       wpm: old.wpm,
-      accuracy: 97.5,
+      accuracy: 98,
       playedWeek: weekOf(old.startsAt),
       playerStatus: "active",
       ...rhythmOf(EVENTS),
       createdAt: expect.any(Date),
     });
     expect(await samplesWith(recent.wpm)).toEqual([]);
+  });
+
+  it("el extracto guarda las PPM y la precisión redondeadas", async () => {
+    const wpm = uniqueWpm();
+    await oldGame({ days: 31, wpm: wpm + 0.4 });
+
+    await runDailyRetention(db);
+
+    expect(await samplesWith(wpm + 0.4)).toEqual([]);
+    const [sample] = await samplesWith(wpm);
+    expect(sample).toMatchObject({ wpm, accuracy: 98 });
   });
 
   it("las pulsaciones de una mejor marca vigente se quedan, aunque tengan más de 30 días", async () => {
@@ -180,16 +194,26 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
   });
 });
 
-describe("tarea diaria: partidas anónimas (spec 5a §3.2.2)", () => {
-  it("las anónimas de más de 30 días pierden anon_id e ip_hash; las demás no cambian", async () => {
+describe("tarea diaria: identificadores de las partidas (spec 2 de endurecer la beta)", () => {
+  it("las partidas de más de 30 días, con o sin cuenta, pierden anon_id e ip_hash; las recientes no cambian", async () => {
+    const userId = await newUser();
     const anonymousOld = await oldGame({ days: 31, log: null });
+    const userOld = await oldGame({ days: 31, userId, log: null });
     const anonymousRecent = await oldGame({ days: 29, log: null });
-    const userOld = await oldGame({ days: 31, userId: await newUser(), log: null });
+    const userRecent = await oldGame({ days: 29, userId, log: null });
 
     await runDailyRetention(db);
 
     expect(await gameRow(anonymousOld.id)).toMatchObject({ anonId: null, ipHash: null, wpm: anonymousOld.wpm });
-    expect(await gameRow(anonymousRecent.id)).toMatchObject({ anonId: expect.any(String), ipHash: "a".repeat(64) });
-    expect(await gameRow(userOld.id)).toMatchObject({ anonId: expect.any(String), ipHash: "a".repeat(64) });
+    expect(await gameRow(userOld.id)).toMatchObject({
+      anonId: null,
+      ipHash: null,
+      userId,
+      wpm: userOld.wpm,
+      accuracy: 97.5,
+    });
+    for (const recent of [anonymousRecent, userRecent]) {
+      expect(await gameRow(recent.id)).toMatchObject({ anonId: expect.any(String), ipHash: "a".repeat(64) });
+    }
   });
 });

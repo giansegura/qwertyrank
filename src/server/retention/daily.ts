@@ -5,7 +5,7 @@ import { keystrokeLogs, rhythmSamples } from "../db/schema";
 import { decodeKeystrokeLog } from "../game/keystroke-log";
 import { rhythmOf, weekOf } from "./rhythm";
 
-/** Spec general §6: las pulsaciones y las partidas anónimas sin reclamar se guardan 30 días. */
+/** Las pulsaciones y los identificadores (`anon_id`, `ip_hash`) de las partidas se guardan 30 días. */
 export const RETENTION_DAYS = 30;
 const DAY_MS = 86_400_000;
 
@@ -25,7 +25,7 @@ export interface RetentionReport {
   extracted: number;
   /** Registros de pulsaciones borrados (con extracto o, si eran ilegibles o sin eventos, sin él). */
   deletedLogs: number;
-  /** Partidas anónimas que han perdido `anon_id` e `ip_hash`. */
+  /** Partidas que han perdido `anon_id` e `ip_hash`. */
   anonymizedGames: number;
   /** `false` si se ha acabado el tiempo y queda trabajo para mañana. */
   done: boolean;
@@ -76,8 +76,9 @@ async function extractBatch(db: Db, cutoff: Date, limit: number): Promise<{ extr
           mode: log.mode,
           verdict: log.verdict,
           rejectReason: log.reject_reason,
-          wpm: log.wpm,
-          accuracy: log.accuracy,
+          // Redondeados: un decimal exacto reduciría el enlace del extracto con su partida (spec §2.2).
+          wpm: Math.round(log.wpm),
+          accuracy: Math.round(log.accuracy),
           playedWeek: weekOf(new Date(log.starts_at)),
           playerStatus: log.player_status,
           ...rhythmOf(decoded.events),
@@ -90,13 +91,13 @@ async function extractBatch(db: Db, cutoff: Date, limit: number): Promise<{ extr
   });
 }
 
-/** Un lote de partidas anónimas sin reclamar y caducadas: pierden `anon_id` e `ip_hash` (spec 5a §3.2.2). */
+/** Un lote de partidas caducadas, con o sin cuenta: pierden `anon_id` e `ip_hash` (spec 5a §3.2.2, ampliado en el spec de endurecer la beta §2). */
 async function anonymizeBatch(db: Db, cutoff: Date, limit: number): Promise<number> {
   const rows = await db.execute<{ id: string }>(sql`
     update games set anon_id = null, ip_hash = null
     where id in (
       select id from games
-      where user_id is null and (anon_id is not null or ip_hash is not null) and finished_at < ${cutoff.toISOString()}
+      where (anon_id is not null or ip_hash is not null) and finished_at < ${cutoff.toISOString()}
       order by finished_at
       limit ${limit}
       for update skip locked
@@ -108,7 +109,7 @@ async function anonymizeBatch(db: Db, cutoff: Date, limit: number): Promise<numb
 
 /**
  * La tarea diaria (spec 5a §3): extracto de ritmo y borrado de pulsaciones de más de 30 días, y
- * anonimización de las partidas anónimas de más de 30 días. Por lotes y con un tope de tiempo.
+ * borrado de `anon_id` e `ip_hash` de las partidas de más de 30 días. Por lotes y con un tope de tiempo.
  */
 export async function runDailyRetention(db: Db, options: RetentionOptions = {}): Promise<RetentionReport> {
   const { now = () => new Date(), batchSize = 1_000, budgetMs = 20_000, clock = Date.now } = options;

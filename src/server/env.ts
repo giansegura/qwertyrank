@@ -9,6 +9,13 @@ const optionalUrl = z.preprocess(blankAsUndefined, z.url().optional());
 /** Prefijo de las claves de Redis cuando `REDIS_KEY_PREFIX` no está definida. */
 export const DEFAULT_REDIS_KEY_PREFIX = "qr:";
 
+/** Cada vista previa con sus claves: no se pisan entre sí ni tocan las de producción. */
+function redisKeyPrefix({ explicit, preview, pullRequestId }: { explicit?: string; preview: boolean; pullRequestId?: string }): string {
+  if (explicit) return explicit;
+  if (!preview) return DEFAULT_REDIS_KEY_PREFIX;
+  return pullRequestId ? `pr-${pullRequestId}:` : "preview:";
+}
+
 const schema = z
   .object({
     DATABASE_URL: z.url(),
@@ -51,6 +58,10 @@ const schema = z
     message: "CRON_SECRET es obligatoria en producción: sin ella la tarea diaria no se ejecuta nunca",
     path: ["CRON_SECRET"],
   })
+  .refine((env) => env.VERCEL_ENV !== "preview" || env.REDIS_KEY_PREFIX !== DEFAULT_REDIS_KEY_PREFIX, {
+    message: `REDIS_KEY_PREFIX no puede ser "${DEFAULT_REDIS_KEY_PREFIX}" en una vista previa: compartiría las claves de Redis con producción`,
+    path: ["REDIS_KEY_PREFIX"],
+  })
   .transform((env, ctx) => {
     const preview = env.VERCEL_ENV === "preview";
     // En una vista previa, la URL estable de su rama: el enlace por email y las passkeys funcionan en ella.
@@ -66,10 +77,11 @@ const schema = z
     return {
       ...env,
       BETTER_AUTH_URL: baseURL,
-      // Cada vista previa con sus claves: no se pisan entre sí ni tocan las de producción.
-      REDIS_KEY_PREFIX:
-        env.REDIS_KEY_PREFIX ??
-        (preview ? (env.VERCEL_GIT_PULL_REQUEST_ID ? `pr-${env.VERCEL_GIT_PULL_REQUEST_ID}:` : "preview:") : DEFAULT_REDIS_KEY_PREFIX),
+      REDIS_KEY_PREFIX: redisKeyPrefix({
+        explicit: env.REDIS_KEY_PREFIX,
+        preview,
+        pullRequestId: env.VERCEL_GIT_PULL_REQUEST_ID,
+      }),
       /** Orígenes que Better Auth acepta además del de `BETTER_AUTH_URL`: la URL única del despliegue de una vista previa. */
       AUTH_TRUSTED_ORIGINS: preview && env.VERCEL_URL ? [`https://${env.VERCEL_URL}`] : [],
     };

@@ -37,7 +37,7 @@ describe("parseServerEnv", () => {
   });
 
   it("exige un secreto de Better Auth de al menos 32 caracteres", () => {
-    expect(() => parseServerEnv({ ...BASE, BETTER_AUTH_SECRET: "corto" })).toThrow();
+    expect(() => parseServerEnv({ ...BASE, BETTER_AUTH_SECRET: "corto" })).toThrow(/BETTER_AUTH_SECRET/);
   });
 
   it("en producción de Vercel exige la clave de Resend", () => {
@@ -60,14 +60,14 @@ describe("parseServerEnv", () => {
 
   it("en producción de Vercel exige CRON_SECRET de al menos 32 caracteres", () => {
     expect(() => parseServerEnv(PRODUCTION)).toThrow(/CRON_SECRET/);
-    expect(() => parseServerEnv({ ...PRODUCTION, CRON_SECRET: "corto" })).toThrow();
+    expect(() => parseServerEnv({ ...PRODUCTION, CRON_SECRET: "corto" })).toThrow(/CRON_SECRET/);
     expect(parseServerEnv({ ...PRODUCTION, CRON_SECRET: CRON }).CRON_SECRET).toBe(CRON);
     expect(parseServerEnv(BASE).CRON_SECRET).toBeUndefined();
   });
 
   it("SENTRY_DSN es opcional, pero si está tiene que ser una URL", () => {
     expect(parseServerEnv({ ...BASE, SENTRY_DSN: "" }).SENTRY_DSN).toBeUndefined();
-    expect(() => parseServerEnv({ ...BASE, SENTRY_DSN: "no-es-una-url" })).toThrow();
+    expect(() => parseServerEnv({ ...BASE, SENTRY_DSN: "no-es-una-url" })).toThrow(/SENTRY_DSN/);
     expect(parseServerEnv({ ...BASE, SENTRY_DSN: "https://k@o1.ingest.sentry.io/2" }).SENTRY_DSN).toBe(
       "https://k@o1.ingest.sentry.io/2",
     );
@@ -92,5 +92,11 @@ describe("parseServerEnv", () => {
     expect(
       parseServerEnv({ ...PREVIEW, BETTER_AUTH_URL: "https://beta.example.com", REDIS_KEY_PREFIX: "x:" }),
     ).toMatchObject({ BETTER_AUTH_URL: "https://beta.example.com", REDIS_KEY_PREFIX: "x:" });
+  });
+
+  it("una vista previa no puede usar el prefijo de producción qr:", () => {
+    expect(() => parseServerEnv({ ...PREVIEW, REDIS_KEY_PREFIX: "qr:" })).toThrow(/REDIS_KEY_PREFIX/);
+    expect(parseServerEnv({ ...PREVIEW, REDIS_KEY_PREFIX: "pr-7:" }).REDIS_KEY_PREFIX).toBe("pr-7:");
+    expect(parseServerEnv({ ...PRODUCTION, CRON_SECRET: CRON, REDIS_KEY_PREFIX: "qr:" }).REDIS_KEY_PREFIX).toBe("qr:");
   });
 });

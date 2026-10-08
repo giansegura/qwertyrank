@@ -47,6 +47,11 @@ describe("rhythmOf", () => {
     expect(rhythm).toEqual({ intervalsMs: [MAX_RHYTHM_MS], holdsMs: [MAX_RHYTHM_MS] });
   });
 
+  it("las pulsaciones con code vacío no dan duraciones, pero los input siguen dando intervalos", () => {
+    const events = [down(0, ""), down(10, ""), input(20, "a"), up(50, ""), input(60, "b"), up(80, "")];
+    expect(rhythmOf(events)).toEqual({ intervalsMs: [40], holdsMs: [] });
+  });
+
   it("sin eventos, ritmo vacío", () => {
     expect(rhythmOf([])).toEqual({ intervalsMs: [], holdsMs: [] });
   });

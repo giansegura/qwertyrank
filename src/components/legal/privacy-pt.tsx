@@ -63,13 +63,14 @@ export function PrivacyPt() {
           para poder revisá-la.
         </li>
         <li>
-          Antes de apagar as teclas guardamos um extrato anônimo do seu ritmo (tempos entre teclas, sem texto, sem teclas
-          e sem identificadores, ou seja, pseudonimizado) para melhorar a detecção de trapaças. É guardado sem prazo com
-          base no nosso interesse legítimo em calibrar o antitrapaça.
+          Antes de apagar as teclas guardamos um extrato do seu ritmo (tempos entre teclas, sem texto, sem teclas e sem
+          identificadores, com a velocidade e a precisão arredondadas), ou seja, pseudonimizado, para melhorar a detecção de
+          trapaças. É guardado sem prazo com base no nosso interesse legítimo em calibrar o antitrapaça.
         </li>
         <li>
-          Partidas sem conta: após 30 dias, o identificador anônimo e o resumo do IP são apagados; ficam apenas os
-          números, para estatísticas.
+          Partidas: após 30 dias, o identificador anônimo e o resumo do IP de todas as partidas são apagados, com conta ou
+          sem ela. Das partidas sem conta ficam apenas os números, para estatísticas; as da sua conta continuam nela até você
+          apagá-la.
         </li>
         <li>
           Sua conta: até você apagá-la. Ao apagá-la, eliminamos seu email, nick, país, sessões, passkeys, suas marcas e

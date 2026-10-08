@@ -63,13 +63,14 @@ export function PrivacyEn() {
           can be reviewed.
         </li>
         <li>
-          Before deleting keystrokes we keep an anonymous extract of their rhythm (time between keys, with no text, no
-          keys and no identifiers, so it is pseudonymised) to improve cheat detection. It is kept with no time limit on the
-          basis of our legitimate interest in calibrating anti-cheat.
+          Before deleting keystrokes we keep an extract of their rhythm (time between keys, with no text, no keys and no
+          identifiers, with speed and accuracy rounded), so it is pseudonymised, to improve cheat detection. It is kept with
+          no time limit on the basis of our legitimate interest in calibrating anti-cheat.
         </li>
         <li>
-          Games played without an account: after 30 days their anonymous ID and IP digest are deleted; only the figures
-          remain, for statistics.
+          Games: after 30 days the anonymous ID and IP digest of all games are deleted, whether or not you had an account.
+          For games without an account only the figures remain, for statistics; those of your account stay in it until you
+          delete it.
         </li>
         <li>
           Your account: until you delete it. When you do, we delete your email, nickname, country, sessions, passkeys,

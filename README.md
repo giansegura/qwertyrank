@@ -37,6 +37,7 @@ pnpm dev                      # http://localhost:3000
 ## Moderación
 
 - **Pase humano:** antes de una partida Ranked, Cloudflare Turnstile hace un reto invisible; superado, vale una hora. En local es opcional: sin `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` no se pide. En producción son obligatorias (widget "Managed" en el panel de Cloudflare). Los E2E usan las claves de prueba de Cloudflare, así que necesitan red.
+- **Umbrales del anti-trampas:** en producción salen de `ANTICHEAT_CONFIG` (JSON, `docs/launch.md` §6) y no están en el código, que es público. En local y en los tests se usan los de desarrollo de `src/server/anticheat/config.ts`.
 - **Límites:** 100 partidas Ranked por hora por cuenta (o navegador) y 150 por IP; 10 denuncias al día por jugador.
 - **Admins:** `pnpm admin:grant tu@email.com` da el rol (y `pnpm admin:revoke` lo quita). El panel está en `/admin`; para quien no es admin, no existe (404).
 - **Reconstruir Redis:** `pnpm redis:rebuild` dice lo que haría; `pnpm redis:rebuild --yes` lo hace.

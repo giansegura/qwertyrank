@@ -16,6 +16,7 @@ import { decodeKeystrokeLog } from "./keystroke-log";
 import { createSaveGame } from "./persist";
 import { createGameService } from "./service";
 import { createGameStore } from "./store";
+import { DEV_ANTICHEAT_CONFIG } from "../anticheat/config";
 
 const db = createDb(process.env.DATABASE_URL!);
 const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTASH_REDIS_REST_TOKEN!);
@@ -32,6 +33,7 @@ const service = createGameService({
   random: Math.random,
   newId: randomUUID,
   times: { countdownMs: 0, durationMs: 1_500, graceMs: 500 },
+  anticheat: DEV_ANTICHEAT_CONFIG,
   rankGame: ranking.rankGame,
 });
 

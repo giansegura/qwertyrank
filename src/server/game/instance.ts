@@ -33,6 +33,7 @@ export function gameService(): GameService {
     random: secureRandom,
     newId: randomUUID,
     times: RANKED_TIMES,
+    anticheat: serverEnv().ANTICHEAT,
     rankGame: (game) => getRanking().rankGame(game),
   });
   return service;

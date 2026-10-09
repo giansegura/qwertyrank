@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { anticheatConfigJson, DEV_ANTICHEAT_CONFIG, sameAnticheatConfig } from "./anticheat/config";
 
 /** Una variable vacía en `.env` (`GOOGLE_CLIENT_ID=`) cuenta como no definida. */
 const blankAsUndefined = (value: unknown) => (value === "" ? undefined : value);
@@ -36,6 +37,8 @@ const schema = z
     CRON_SECRET: z.preprocess(blankAsUndefined, z.string().min(32).optional()),
     /** Sin ella, Sentry no se inicia (spec 5a §6.1). */
     SENTRY_DSN: optionalUrl,
+    /** Umbrales del anti-trampas en JSON (`src/server/anticheat/config.ts`). Sin ella, los de desarrollo. */
+    ANTICHEAT_CONFIG: z.preprocess(blankAsUndefined, anticheatConfigJson.optional()),
     // Variables de sistema de Vercel (spec 5a §2.3).
     VERCEL_ENV: optional,
     VERCEL_URL: optional,
@@ -58,6 +61,20 @@ const schema = z
     message: "CRON_SECRET es obligatoria en producción: sin ella la tarea diaria no se ejecuta nunca",
     path: ["CRON_SECRET"],
   })
+  .refine((env) => env.VERCEL_ENV !== "production" || env.ANTICHEAT_CONFIG !== undefined, {
+    message: "ANTICHEAT_CONFIG es obligatoria en producción: los umbrales de desarrollo están en el código, que es público",
+    path: ["ANTICHEAT_CONFIG"],
+  })
+  .refine(
+    (env) =>
+      env.VERCEL_ENV !== "production" ||
+      env.ANTICHEAT_CONFIG === undefined ||
+      !sameAnticheatConfig(env.ANTICHEAT_CONFIG, DEV_ANTICHEAT_CONFIG),
+    {
+      message: "ANTICHEAT_CONFIG no puede tener en producción los umbrales de desarrollo, que son públicos",
+      path: ["ANTICHEAT_CONFIG"],
+    },
+  )
   .refine((env) => env.VERCEL_ENV !== "preview" || env.REDIS_KEY_PREFIX !== DEFAULT_REDIS_KEY_PREFIX, {
     message: `REDIS_KEY_PREFIX no puede ser "${DEFAULT_REDIS_KEY_PREFIX}" en una vista previa: compartiría las claves de Redis con producción`,
     path: ["REDIS_KEY_PREFIX"],
@@ -82,6 +99,7 @@ const schema = z
         preview,
         pullRequestId: env.VERCEL_GIT_PULL_REQUEST_ID,
       }),
+      ANTICHEAT: env.ANTICHEAT_CONFIG ?? DEV_ANTICHEAT_CONFIG,
       /** Orígenes que Better Auth acepta además del de `BETTER_AUTH_URL`: la URL única del despliegue de una vista previa. */
       AUTH_TRUSTED_ORIGINS: preview && env.VERCEL_URL ? [`https://${env.VERCEL_URL}`] : [],
     };

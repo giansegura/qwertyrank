@@ -78,6 +78,21 @@ Genera cada uno con `openssl rand -base64 32`, **distintos en Production y en Pr
 Además, **solo en Production**: `BETTER_AUTH_URL=https://qwertyrank.com`. En las vistas previas no hace falta: sale
 de la URL de su rama.
 
+### Umbrales del anti-trampas (`ANTICHEAT_CONFIG`)
+
+El código es público, así que los umbrales de producción solo están en esta variable, **solo en Production**. Es un
+JSON con los mismos campos que `DEV_ANTICHEAT_CONFIG` en `src/server/anticheat/config.ts`, en una línea:
+
+```
+{"timingToleranceMs":…,"burstWindow":…,"burstMedianMs":…,"keydownLookbackMs":…,"touchMultiInsertLimit":…,"wpmCeiling":{"physical":…,"touch":…},"minKeysForSignature":…,"unidentifiedRatio":…,"physicalMinHoldMs":…}
+```
+
+- Los valores de desarrollo están en el código y en el historial del repositorio: producción tiene que usar otros. Si
+  son iguales, el servidor no arranca.
+- Si falta, tampoco arranca. Si el JSON está mal, el error dice qué campo falla, pero nunca enseña el valor.
+- Guárdalos fuera del repositorio (en tu gestor de contraseñas). Para cambiarlos, edita la variable y vuelve a
+  desplegar.
+
 ## 7. Resend (emails)
 
 1. Crea la cuenta y añade el dominio `qwertyrank.com`. Crea en Cloudflare los registros DNS (SPF, DKIM) que te pida

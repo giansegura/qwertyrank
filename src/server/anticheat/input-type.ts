@@ -1,15 +1,12 @@
 import "server-only";
 import type { ClientEnv, InputType } from "@/lib/game/types";
 import type { KeyTypingEvent, TypingEvent } from "@/lib/scoring/types";
+import type { AnticheatConfig } from "./config";
 
 /**
  * Teclado físico o táctil, decidido por la forma de las pulsaciones (spec §4.5).
- * Heurística inicial: hay que calibrarla con partidas de dispositivos reales.
+ * Heurística inicial: hay que calibrarla con partidas de dispositivos reales. Umbrales en `AnticheatConfig`.
  */
-
-export const MIN_KEYS_FOR_SIGNATURE = 10;
-export const UNIDENTIFIED_RATIO = 0.5;
-export const PHYSICAL_MIN_HOLD_MS = 20;
 
 const IME_KEYS = new Set(["Unidentified", "Process"]);
 
@@ -34,14 +31,14 @@ function holdTimes(events: readonly TypingEvent[]): number[] {
   return holds;
 }
 
-export function classifyInputType(events: readonly TypingEvent[], env: ClientEnv): InputType {
+export function classifyInputType(events: readonly TypingEvent[], env: ClientEnv, config: AnticheatConfig): InputType {
   const downs = events.filter((event): event is KeyTypingEvent => event.type === "down");
-  if (downs.length < MIN_KEYS_FOR_SIGNATURE) return fromEnv(env);
+  if (downs.length < config.minKeysForSignature) return fromEnv(env);
 
   const unidentified = downs.filter((event) => IME_KEYS.has(event.key)).length;
-  if (unidentified / downs.length > UNIDENTIFIED_RATIO) return "touch";
+  if (unidentified / downs.length > config.unidentifiedRatio) return "touch";
 
   const holds = holdTimes(events).toSorted((a, b) => a - b);
-  if (holds.length < MIN_KEYS_FOR_SIGNATURE) return fromEnv(env);
-  return holds[Math.floor(holds.length / 2)] >= PHYSICAL_MIN_HOLD_MS ? "physical" : "touch";
+  if (holds.length < config.minKeysForSignature) return fromEnv(env);
+  return holds[Math.floor(holds.length / 2)] >= config.physicalMinHoldMs ? "physical" : "touch";
 }

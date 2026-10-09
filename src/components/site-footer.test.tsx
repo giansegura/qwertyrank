@@ -11,6 +11,7 @@ describe("SiteFooter", () => {
       "href",
       "mailto:feedback@qwertyrank.com",
     );
+    expect(screen.getByRole("link", { name: "Guías" })).toHaveAttribute("href", "/es/guias");
     expect(screen.getByRole("link", { name: "Privacidad" })).toHaveAttribute("href", "/es/privacidad");
     expect(screen.getByRole("link", { name: "Términos" })).toHaveAttribute("href", "/es/terminos");
   });

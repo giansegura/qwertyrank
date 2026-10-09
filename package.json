@@ -22,6 +22,9 @@
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.7",
+    "@mdx-js/loader": "3.1.1",
+    "@mdx-js/react": "3.1.1",
+    "@next/mdx": "16.3.8",
     "@sentry/nextjs": "10.75.3",
     "@upstash/redis": "1.39.0",
     "@vercel/functions": "3.9.9",
@@ -45,6 +48,7 @@
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@types/mdx": "2.0.14",
     "@types/node": "^24.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

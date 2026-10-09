@@ -1,10 +1,18 @@
 import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
+import { GUIDE_IDS, guideHref } from "@/lib/guides";
 import { localizedPath, type SeoHref } from "@/lib/seo/metadata";
 import { SITE_URL } from "@/lib/site";
 
-/** Sitemap pages (spec 5b §4): the legal ones are left out; the guides will come with 5c. */
-const PAGES: SeoHref[] = ["/", "/practice", "/leaderboard/physical", "/leaderboard/touch"];
+/** Sitemap pages (spec 5b §4, 5c §5): the legal ones are left out. */
+const PAGES: SeoHref[] = [
+  "/",
+  "/practice",
+  "/leaderboard/physical",
+  "/leaderboard/touch",
+  "/guides",
+  ...GUIDE_IDS.map(guideHref),
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return PAGES.flatMap((href) => {

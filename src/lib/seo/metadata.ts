@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import { getPathname } from "@/i18n/navigation";
+import type { GuideHref } from "@/lib/guides";
 import { type Locale, routing } from "@/i18n/routing";
 import { SITE_NAME } from "@/lib/site";
 
 /** The internal routes with an indexable page (spec 5b §3.1). */
-export type SeoHref = "/" | "/practice" | "/leaderboard/physical" | "/leaderboard/touch" | "/privacy" | "/terms";
+export type SeoHref =
+  | "/"
+  | "/practice"
+  | "/leaderboard/physical"
+  | "/leaderboard/touch"
+  | "/privacy"
+  | "/terms"
+  | "/guides"
+  | GuideHref;
 
 /** Size of the share images: each page's and each game's. */
 const IMAGE_SIZE = { width: 1200, height: 630 } as const;
@@ -34,6 +43,8 @@ interface PageMetadataInput {
   /** Without the brand: the layout's template adds it. The home page gets the full title (`absolute`). */
   title: string;
   description?: string;
+  /** `article` for a guide (spec 5c §5), matching its Article JSON-LD. */
+  ogType?: "website" | "article";
 }
 
 /**
@@ -54,7 +65,7 @@ export function resultImage(locale: Locale, id: string, alt: string) {
  * the common fields and the image are repeated here. Without a description the key is not declared: with
  * `undefined`, Next would erase the layout's instead of inheriting it.
  */
-export function pageMetadata({ locale, href, title, description }: PageMetadataInput): Metadata {
+export function pageMetadata({ locale, href, title, description, ogType = "website" }: PageMetadataInput): Metadata {
   const alternates = alternatesFor(locale, href);
   const fullTitle = href === "/" ? title : `${title} · ${SITE_NAME}`;
   const described = description === undefined ? {} : { description };
@@ -68,7 +79,7 @@ export function pageMetadata({ locale, href, title, description }: PageMetadataI
       url: alternates.canonical,
       siteName: SITE_NAME,
       locale: OG_LOCALE[locale],
-      type: "website",
+      type: ogType,
       images: [defaultImage(locale)],
     },
     twitter: { card: "summary_large_image", title: fullTitle, ...described, images: [defaultImage(locale)] },

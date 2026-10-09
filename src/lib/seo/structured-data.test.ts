@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breadcrumbStructuredData, homeStructuredData, serializeJsonLd } from "./structured-data";
+import { articleStructuredData, breadcrumbStructuredData, homeStructuredData, serializeJsonLd } from "./structured-data";
 
 describe("structured data", () => {
   it("the home page declares the website, the organization and the application", () => {
@@ -30,5 +30,32 @@ describe("structured data", () => {
     const json = serializeJsonLd({ name: "</script><script>alert(1)</script>" });
     expect(json).not.toContain("<");
     expect(JSON.parse(json)).toEqual({ name: "</script><script>alert(1)</script>" });
+  });
+
+  it("a guide's breadcrumbs go through the guides index", () => {
+    const data = breadcrumbStructuredData("es", "/guides/wpm-vs-cpm", "PPM y CPM", { href: "/guides", name: "Guías" });
+    expect(data.itemListElement).toEqual([
+      { "@type": "ListItem", position: 1, name: "QwertyRank", item: "https://qwertyrank.com/es" },
+      { "@type": "ListItem", position: 2, name: "Guías", item: "https://qwertyrank.com/es/guias" },
+      { "@type": "ListItem", position: 3, name: "PPM y CPM", item: "https://qwertyrank.com/es/guias/ppm-y-cpm" },
+    ]);
+  });
+
+  it("a guide is an Article published by QwertyRank, with absolute URLs", () => {
+    expect(
+      articleStructuredData({ locale: "pt", href: "/guides/finger-placement", title: "Posição dos dedos", description: "Desc" }),
+    ).toEqual({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: "Posição dos dedos",
+      description: "Desc",
+      inLanguage: "pt",
+      datePublished: "2026-10-09",
+      dateModified: "2026-10-09",
+      mainEntityOfPage: "https://qwertyrank.com/pt/guias/posicao-dos-dedos",
+      image: "https://qwertyrank.com/pt/opengraph-image",
+      author: { "@type": "Organization", name: "QwertyRank", url: "https://qwertyrank.com" },
+      publisher: { "@type": "Organization", name: "QwertyRank", url: "https://qwertyrank.com" },
+    });
   });
 });

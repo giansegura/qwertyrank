@@ -23,7 +23,8 @@
     "aboutTitle": "How the typing speed test works",
     "about1": "Type the words on screen for 30 seconds, exactly as you see them. When time is up you get your words per minute (WPM): the characters you typed correctly, divided by five, per minute. We also measure your accuracy, the share of keystrokes that were correct.",
     "about2": "Each language and keyboard type has its own ranking. Your best game counts as long as its accuracy is at least 90%, and the server works out whether you typed on a physical or a touch keyboard. You need an account to enter the ranking; you can play without one and save your game if you sign in within 10 minutes.",
-    "about3": "Want to warm up first? The <practice>15-second practice</practice> has no ranking and starts as soon as you type."
+    "about3": "Want to warm up first? The <practice>15-second practice</practice> has no ranking and starts as soon as you type.",
+    "about4": "Want to improve? Read our <guides>typing guides</guides>."
   },
   "Practice": {
     "title": "Practice",
@@ -200,6 +201,36 @@
     "copyManually": "Copy this link:",
     "viewResult": "View result"
   },
+  "Guides": {
+    "indexTitle": "Typing guides",
+    "indexDescription": "Guides to type faster and understand your typing test: average typing speed, WPM vs CPM, finger placement and physical vs touch keyboards.",
+    "indexIntro": "Short, practical guides to understand your typing speed test results and improve them.",
+    "back": "All guides",
+    "ctaTitle": "Put it into practice",
+    "ctaTest": "Take the 30-second typing test",
+    "ctaPractice": "Warm up with practice",
+    "more": "More guides",
+    "average-typing-speed": {
+      "title": "Average typing speed: what's a good WPM?",
+      "description": "What average typing speed looks like for adults, students and professionals, what affects it and how to measure your WPM with a typing test."
+    },
+    "how-to-type-faster": {
+      "title": "How to type faster: a practical plan",
+      "description": "How to type faster without losing accuracy: touch typing, posture, short daily practice and how to track your WPM with a typing speed test."
+    },
+    "wpm-vs-cpm": {
+      "title": "WPM vs CPM: how typing speed is measured",
+      "description": "What WPM and CPM mean, why a word counts as five characters, raw vs net WPM, accuracy and how to convert between them."
+    },
+    "finger-placement": {
+      "title": "Finger placement for touch typing",
+      "description": "The home row, which finger presses each key, thumbs on the space bar and posture: the basics of touch typing on a keyboard."
+    },
+    "physical-vs-touch-keyboard": {
+      "title": "Physical vs touch keyboard: typing speed compared",
+      "description": "How typing on a physical keyboard differs from a phone or tablet touch keyboard, typical speeds and why each has its own leaderboard."
+    }
+  },
   "Email": {
     "magicLinkSubject": "Your QwertyRank sign-in link",
     "magicLinkIntro": "Use this link to sign in to QwertyRank. It expires in 10 minutes and works only once.",
@@ -235,7 +266,8 @@
     "beta": "beta",
     "feedback": "Send us your feedback",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "guides": "Guides"
   },
   "Legal": {
     "privacyTitle": "Privacy policy",

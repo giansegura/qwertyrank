@@ -43,22 +43,22 @@ async function newUser(status: "active" | "banned" = "active"): Promise<string> 
   return row.id;
 }
 
-describe("POST /api/game/start en modo verificación", () => {
-  it("sin sesión, 401 unauthorized", async () => {
+describe("POST /api/game/start in verification mode", () => {
+  it("without a session, 401 unauthorized", async () => {
     getSessionUser.mockResolvedValue(null);
     const response = await start({ language: "en", env: ENV, mode: "verification", verificationId: randomUUID() });
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "unauthorized" });
   });
 
-  it("sin una verificación pendiente suya, 409 no_pending_verification", async () => {
+  it("without a pending verification of their own, 409 no_pending_verification", async () => {
     getSessionUser.mockResolvedValue({ id: await newUser() });
     const response = await start({ language: "en", env: ENV, mode: "verification", verificationId: randomUUID() });
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ error: "no_pending_verification" });
   });
 
-  it("gasta un intento y crea la partida de verificación en Redis", async () => {
+  it("spends an attempt and creates the verification game in Redis", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     getSessionUser.mockResolvedValue({ id: userId });
@@ -75,8 +75,8 @@ describe("POST /api/game/start en modo verificación", () => {
     });
   });
 
-  it("baneado durante la verificación: la puerta lo frena y no gasta el intento", async () => {
-    // La verificación se abrió antes del ban.
+  it("banned during the verification: the gate stops them and the attempt is not spent", async () => {
+    // The verification was opened before the ban.
     const userId = await newUser("banned");
     const { verification } = await seedPendingVerification(db, userId);
     getSessionUser.mockResolvedValue({ id: userId });
@@ -87,7 +87,7 @@ describe("POST /api/game/start en modo verificación", () => {
     expect(row.attempts).toBe(0);
   });
 
-  it("varios inicios a la vez: tres partidas y el resto 409", async () => {
+  it("several starts at once: three games and the rest 409", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     getSessionUser.mockResolvedValue({ id: userId });

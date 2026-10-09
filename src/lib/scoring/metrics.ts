@@ -4,7 +4,7 @@ export function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-/** Caracteres de palabras correctas (con su espacio) + prefijo correcto de la palabra activa. */
+/** Characters of correct words (with their space) + correct prefix of the active word. */
 export function countCorrectChars(state: EngineState): number {
   let total = 0;
   const committed = Math.min(state.current, state.words.length);
@@ -18,7 +18,7 @@ export function countCorrectChars(state: EngineState): number {
   return total;
 }
 
-/** Todos los caracteres escritos que siguen en pantalla, con los espacios de las palabras confirmadas. */
+/** All typed characters still on screen, with the spaces of the committed words. */
 export function countTypedChars(state: EngineState): number {
   let total = 0;
   const committed = Math.min(state.current, state.words.length);
@@ -37,12 +37,12 @@ export function accuracyPercent(correct: number, total: number): number {
   return round2((correct / total) * 100);
 }
 
-/** PPM tal como se enseñan: redondeadas. */
+/** WPM as displayed: rounded. */
 export function displayWpm(wpm: number): number {
   return Math.round(wpm);
 }
 
-/** Precisión tal como se enseña: hacia abajo, para que un 89,9 % nunca parezca el 90 % que pide el ranking. */
+/** Accuracy as displayed: rounded down, so that 89.9 % never looks like the 90 % the ranking requires. */
 export function displayAccuracy(accuracy: number): number {
   return Math.floor(accuracy);
 }

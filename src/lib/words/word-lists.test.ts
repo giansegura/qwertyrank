@@ -8,14 +8,14 @@ const ALLOWED: Record<TestLanguage, RegExp> = {
   pt: /^[a-záàâãçéêíóôõú]+$/u,
 };
 
-describe.each(TEST_LANGUAGES)("lista de palabras %s", (language) => {
-  it("tiene 200 palabras únicas", async () => {
+describe.each(TEST_LANGUAGES)("word list %s", (language) => {
+  it("has 200 unique words", async () => {
     const list = await loadWordList(language);
     expect(list).toHaveLength(200);
     expect(new Set(list).size).toBe(200);
   });
 
-  it("solo usa minúsculas del idioma, en forma NFC", async () => {
+  it("only uses the language's lowercase letters, in NFC form", async () => {
     const list = await loadWordList(language);
     for (const word of list) {
       expect(word, word).toMatch(ALLOWED[language]);

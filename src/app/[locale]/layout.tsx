@@ -28,11 +28,11 @@ export async function generateMetadata({ params }: Omit<LayoutProps, "children">
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: "Metadata" });
   return {
-    // Las URLs de canonical, `hreflang` y Open Graph son siempre las de producción (spec 5b §2).
+    // The canonical, `hreflang` and Open Graph URLs are always the production ones (spec 5b §2).
     metadataBase: new URL(SITE_URL),
     title: { default: t("title"), template: `%s · ${SITE_NAME}` },
     description: t("description"),
-    // Durante la beta no se indexa (spec 5a §5).
+    // Nothing is indexed during the beta (spec 5a §5).
     robots: INDEXABLE ? undefined : { index: false, follow: false },
   };
 }

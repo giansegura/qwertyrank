@@ -2,12 +2,12 @@ import type { RhythmPoint } from "@/lib/replay/timeline";
 
 const WIDTH = 600;
 const HEIGHT = 160;
-/** Por encima de medio segundo, todo es "una pausa": la gráfica se corta ahí. */
+/** Above half a second, everything is "a pause": the chart is cut off there. */
 const MAX_MS = 500;
 
 /**
- * Ritmo de una partida (spec 4b §6.2) en SVG: el intervalo entre letras (línea) y, con teclado físico,
- * la duración de cada pulsación (puntos). Un ritmo plano y sin pausas es lo raro en una persona.
+ * Rhythm of a game (spec 4b §6.2) in SVG: the interval between letters (line) and, with a physical
+ * keyboard, the duration of each keystroke (dots). A flat rhythm without pauses is what is odd for a person.
  */
 export function RhythmChart({ intervals, holds, durationMs }: { intervals: RhythmPoint[]; holds: RhythmPoint[]; durationMs: number }) {
   const x = (t: number) => ((t / durationMs) * WIDTH).toFixed(1);
@@ -18,7 +18,7 @@ export function RhythmChart({ intervals, holds, durationMs }: { intervals: Rhyth
         data-testid="rhythm-chart"
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
-        aria-label="Ritmo: intervalo entre letras y duración de cada pulsación"
+        aria-label="Rhythm: interval between letters and duration of each keystroke"
         className="w-full max-w-2xl rounded-md border border-zinc-200 dark:border-zinc-800"
       >
         <polyline
@@ -32,7 +32,7 @@ export function RhythmChart({ intervals, holds, durationMs }: { intervals: Rhyth
         ))}
       </svg>
       <figcaption className="text-xs text-zinc-600 dark:text-zinc-400">
-        Línea ámbar: ms entre letras. Puntos azules: ms de cada pulsación (teclado físico). Eje vertical hasta {MAX_MS} ms.
+        Amber line: ms between letters. Blue dots: ms of each keystroke (physical keyboard). Vertical axis up to {MAX_MS} ms.
       </figcaption>
     </figure>
   );

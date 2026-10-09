@@ -10,7 +10,7 @@ import { resultMetadata } from "@/lib/seo/metadata";
 import { getDb } from "@/server/db/client";
 import { getPublicResult } from "@/server/game/result";
 
-/** Como el perfil: se regenera cada 60 s y no se genera nada en el build (spec 5d §3.1). */
+/** Like the profile: it is regenerated every 60 s and nothing is generated at build time (spec 5d §3.1). */
 export const revalidate = 60;
 
 export function generateStaticParams() {
@@ -21,7 +21,7 @@ interface ResultPageProps {
   params: Promise<{ locale: string; id: string }>;
 }
 
-/** Una consulta por petición, compartida por los metadatos y la página. */
+/** One query per request, shared by the metadata and the page. */
 const readResult = cache((id: string) => getPublicResult(getDb(), id));
 
 export async function generateMetadata({ params }: ResultPageProps): Promise<Metadata> {

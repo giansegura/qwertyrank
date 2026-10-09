@@ -6,10 +6,10 @@ import { searchPlayers } from "@/server/moderation/queries";
 import { CELL, HEAD_ROW, ROW, STATUS_LABEL, TABLE, formatDate } from "../format";
 import { AdminNav } from "../nav";
 
-/** El título se calcula tras `requireAdmin()`: así la 404 para quien no es admin no lo delata. */
+/** The title is computed after `requireAdmin()`: that way the 404 for non-admins does not give it away. */
 export async function generateMetadata(): Promise<Metadata> {
   await requireAdmin();
-  return { title: "Jugadores · Moderación" };
+  return { title: "Players · Moderation" };
 }
 
 interface PlayersPageProps {
@@ -25,32 +25,32 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
   return (
     <>
       <AdminNav />
-      <h1 className="text-2xl font-semibold">Jugadores</h1>
+      <h1 className="text-2xl font-semibold">Players</h1>
       <form role="search" className="flex gap-2">
         <input
           name="q"
           defaultValue={query}
-          aria-label="Buscar jugador"
-          placeholder="Nick (empieza por…) o email exacto"
+          aria-label="Search player"
+          placeholder="Nick (starts with…) or exact email"
           data-testid="admin-search"
           className="w-full max-w-md rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
         />
         <button type="submit" className="rounded-md bg-zinc-900 px-4 py-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
-          Buscar
+          Search
         </button>
       </form>
       {query.trim() !== "" &&
         (players.length === 0 ? (
-          <p className="text-zinc-600 dark:text-zinc-400">Nadie coincide.</p>
+          <p className="text-zinc-600 dark:text-zinc-400">No one matches.</p>
         ) : (
           <table className={TABLE}>
             <thead>
               <tr className={HEAD_ROW}>
                 <th scope="col" className={CELL}>Nick</th>
                 <th scope="col" className={CELL}>Email</th>
-                <th scope="col" className={CELL}>Estado</th>
-                <th scope="col" className={CELL}>Rol</th>
-                <th scope="col" className={CELL}>Alta</th>
+                <th scope="col" className={CELL}>Status</th>
+                <th scope="col" className={CELL}>Role</th>
+                <th scope="col" className={CELL}>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -63,7 +63,7 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
                   </td>
                   <td className={CELL}>{player.email}</td>
                   <td className={CELL}>{STATUS_LABEL[player.status]}</td>
-                  <td className={CELL}>{player.role === "admin" ? "Admin" : "Jugador"}</td>
+                  <td className={CELL}>{player.role === "admin" ? "Admin" : "Player"}</td>
                   <td className={CELL}>{formatDate(player.createdAt)}</td>
                 </tr>
               ))}

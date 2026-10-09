@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { OwnResultFallback } from "@/components/result/own-result-fallback";
 import { Link } from "@/i18n/navigation";
 
-/** Resultado inexistente o no público. Si es la partida del propio jugador sancionado, se la enseña (spec 5d §5). */
+/** Nonexistent or non-public result. If it is the sanctioned player's own game, it is shown to them (spec 5d §5). */
 export default function ResultNotFound() {
   const t = useTranslations("Share");
   return (

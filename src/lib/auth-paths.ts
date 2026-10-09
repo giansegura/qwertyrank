@@ -1,7 +1,7 @@
 import { getPathname } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 
-/** Solo se vuelve a rutas propias del mismo idioma: evita redirecciones abiertas (`?next=https://…`). */
+/** Only returns to own routes in the same language: prevents open redirects (`?next=https://…`). */
 export function safeNext(locale: Locale, next: string | null | undefined): string {
   const home = `/${locale}`;
   if (!next || next.startsWith("//") || next.includes("\\")) return home;
@@ -13,12 +13,12 @@ export function loginPath(locale: Locale, next?: string): string {
   return next ? `${path}?next=${encodeURIComponent(next)}` : path;
 }
 
-/** Adonde va una cuenta recién creada: los ajustes, en modo bienvenida, y luego a `next`. */
+/** Where a newly created account goes: settings, in welcome mode, and then to `next`. */
 export function welcomePath(locale: Locale, next: string): string {
   return `${getPathname({ locale, href: "/settings" })}?welcome=1&next=${encodeURIComponent(next)}`;
 }
 
-/** Enlace a entrar que vuelve a la página actual (`pathname` de `usePathname()` de `next/navigation`). */
+/** Sign-in link that returns to the current page (`pathname` from `usePathname()` of `next/navigation`). */
 export function loginHref(pathname: string | null) {
   return pathname ? { pathname: "/login" as const, query: { next: pathname } } : ("/login" as const);
 }

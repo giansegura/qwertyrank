@@ -9,8 +9,8 @@ type Speed = (typeof SPEEDS)[number];
 const BUTTON = "rounded-md border border-zinc-300 px-3 py-1.5 font-medium dark:border-zinc-700";
 
 /*
- * Las letras se pintan aquí y no con `Word` de la prueba: si el panel importara código de la portada,
- * Next lo movería a trozos compartidos y crecería el JS de la portada (≤ 30 KB). Mismos estados y colores.
+ * The letters are rendered here and not with the test's `Word`: if the panel imported home page code,
+ * Next would move it into shared chunks and the home page's JS would grow (≤ 30 KB). Same states and colors.
  */
 type WordState = "done" | "active" | "pending";
 type LetterStatus = "pending" | "correct" | "incorrect" | "extra" | "missed";
@@ -54,16 +54,16 @@ const ReplayWord = memo(function ReplayWord({ index, target, typed, state }: { i
 });
 
 /**
- * Reproducción de una partida (spec 4b §6.2): las letras aparecen con sus tiempos reales (`t`), los
- * errores en rojo. Play/pausa y velocidad ×1, ×2 y ×4. Los fotogramas vienen ya calculados del servidor
- * (`compactFrames`). Sin `words` (registros anteriores a la 4b), solo lo tecleado.
+ * Replay of a game (spec 4b §6.2): the letters appear with their real timings (`t`), the errors in
+ * red. Play/pause and speed ×1, ×2 and ×4. The frames come already computed from the server
+ * (`compactFrames`). Without `words` (logs from before 4b), only what was typed.
  */
 export function Replay({ words, frames }: { words: string[] | null; frames: FrameDelta[] }) {
   const end = frames.at(-1)?.t ?? 0;
   const [elapsed, setElapsed] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
-  // El tiempo que avanza la animación: se lee en cada fotograma, no durante el render.
+  // The time the animation advances: it is read on each frame, not during render.
   const elapsedRef = useRef(0);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function Replay({ words, frames }: { words: string[] | null; frames: Fram
   }, [playing, speed, end]);
 
   function toggle() {
-    // Al acabar, "Reproducir" vuelve a empezar.
+    // At the end, "Play" starts over.
     if (!playing && elapsedRef.current >= end) {
       elapsedRef.current = 0;
       setElapsed(0);
@@ -98,7 +98,7 @@ export function Replay({ words, frames }: { words: string[] | null; frames: Fram
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <button type="button" data-testid="replay-play" onClick={toggle} className={BUTTON}>
-          {playing ? "Pausa" : "Reproducir"}
+          {playing ? "Pause" : "Play"}
         </button>
         {SPEEDS.map((value) => (
           <button

@@ -1,6 +1,6 @@
 import type { TypingEvent } from "@/lib/scoring/types";
 
-/** Helpers para construir partidas en los tests del anti-trampas. */
+/** Helpers to build games in the anti-cheat tests. */
 
 export function typed(text: string, { start = 0, every = 150, hold = 60, code = true } = {}): TypingEvent[] {
   const events: TypingEvent[] = [];

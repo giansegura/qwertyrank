@@ -9,7 +9,7 @@ const input = (t: number, inserted: string, deleted = 0): TypingEvent => ({
 describe("replay", () => {
   const words = ["hola", "mundo", "azul"];
 
-  it("calcula PPM, PPM brutas y precisión al final de la partida", () => {
+  it("computes WPM, raw WPM and accuracy at the end of the game", () => {
     const events = [input(0, "hola "), input(1000, "mumdo "), input(2000, "az")];
     const result = replay(words, events, 30_000);
     expect(result.correctChars).toBe(7);
@@ -20,7 +20,7 @@ describe("replay", () => {
     expect(result.mistakes).toEqual({ n: 1 });
   });
 
-  it("ignora eventos de teclado y eventos fuera de la partida", () => {
+  it("ignores keyboard events and events outside the game", () => {
     const events: TypingEvent[] = [
       { t: 0, type: "down", key: "h", code: "KeyH", trusted: true },
       input(-5, "xxx"),
@@ -31,12 +31,12 @@ describe("replay", () => {
     expect(result.correctChars).toBe(5);
   });
 
-  it("ordena los eventos por tiempo antes de reproducirlos", () => {
+  it("sorts the events by time before replaying them", () => {
     const result = replay(words, [input(500, "la "), input(100, "ho")], 15_000);
     expect(result.correctChars).toBe(5);
   });
 
-  it("da una PPM por segundo, acumulada", () => {
+  it("gives one cumulative WPM per second", () => {
     const events = [input(500, "hola "), input(1000, "mundo "), input(2500, "azul ")];
     const result = replay(words, events, 3000);
     expect(result.perSecond).toEqual([
@@ -46,7 +46,7 @@ describe("replay", () => {
     ]);
   });
 
-  it("ignora eventos con forma inválida (datos no confiables)", () => {
+  it("ignores events with an invalid shape (untrusted data)", () => {
     const events = [
       input(0, "hola "),
       { t: Number.NaN, type: "input", deleted: 0, inserted: "x", trusted: true },
@@ -58,7 +58,7 @@ describe("replay", () => {
     expect(replay(words, events, 15_000).correctChars).toBe(5);
   });
 
-  it("una partida sin pulsaciones da 0 en todo", () => {
+  it("a game without keystrokes gives 0 in everything", () => {
     const result = replay(words, [], 15_000);
     expect(result).toMatchObject({ wpm: 0, rawWpm: 0, accuracy: 0, correctChars: 0 });
     expect(result.perSecond).toHaveLength(15);

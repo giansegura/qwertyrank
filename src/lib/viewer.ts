@@ -1,11 +1,11 @@
 import type { PendingVerification } from "./verification";
 
-/** Evento para volver a pedir la sesión, p. ej. tras cambiar el nick. */
+/** Event to fetch the session again, e.g. after changing the nick. */
 export const SESSION_CHANGED_EVENT = "qr:session-changed";
 
 /**
- * Evento para volver a pedir los récords pendientes de verificar: un récord ha quedado en `review`, o una
- * verificación se ha superado, ha fallado o ya no existe. Lo escucha el aviso del menú de usuario.
+ * Event to fetch the records pending verification again: a record has ended up in `review`, or a
+ * verification has passed, failed or no longer exists. The user menu's notice listens to it.
  */
 export const VERIFICATION_CHANGED_EVENT = "qr:verification-changed";
 
@@ -14,8 +14,8 @@ export type Viewer = { nick: string } | null;
 let pending: Promise<Viewer> | null = null;
 
 /**
- * Quién mira la página: una sola petición a `/api/auth/get-session`, compartida por la cabecera y
- * el ranking. Sin el cliente de Better Auth: en la portada cada KB cuenta (spec §7.5).
+ * Who is viewing the page: a single request to `/api/auth/get-session`, shared by the header and
+ * the ranking. Without the Better Auth client: on the home page every KB counts (spec §7.5).
  */
 export function getViewer(): Promise<Viewer> {
   pending ??= fetch("/api/auth/get-session", { cache: "no-store" })
@@ -28,16 +28,16 @@ export function getViewer(): Promise<Viewer> {
   return pending;
 }
 
-/** Olvida la sesión ya pedida: la siguiente llamada vuelve a preguntar. */
+/** Forgets the already fetched session: the next call asks again. */
 export function forgetViewer(): void {
   pending = null;
 }
 
 /**
- * Récords del jugador pendientes de verificar (`GET /api/verification`, spec 4b §4.3), para el aviso de
- * la cabecera. Ante cualquier fallo (sin sesión porque se cerró en otra pestaña, servidor caído, red),
- * ninguno: el aviso no sale. Aquí y no en un módulo propio: cada módulo de la portada suma bytes. Por lo
- * mismo, cada pendiente no se valida aquí sino en el aviso, que se descarga aparte.
+ * The player's records pending verification (`GET /api/verification`, spec 4b §4.3), for the header's
+ * notice. On any failure (no session because it was closed in another tab, server down, network),
+ * none: the notice does not show. Here and not in its own module: every home page module adds bytes. For
+ * the same reason, each pending one is not validated here but in the notice, which is downloaded separately.
  */
 export async function fetchPendingVerifications(): Promise<PendingVerification[]> {
   try {

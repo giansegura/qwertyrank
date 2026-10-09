@@ -27,7 +27,7 @@ export default async function SettingsPage({ params, searchParams }: SettingsPag
   if (!user) redirect(loginPath(locale, getPathname({ locale, href: "/settings" })));
 
   const t = await getTranslations("Settings");
-  // Bienvenida: justo después de crear la cuenta (spec §3.6). Solo el perfil y un botón para seguir.
+  // Welcome: right after creating the account (spec §3.6). Only the profile and a button to continue.
   const welcome = firstParam(query.welcome) === "1";
 
   return (

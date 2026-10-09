@@ -4,7 +4,7 @@ import { getDb } from "@/server/db/client";
 import { jsonError } from "@/server/http";
 import { pendingVerifications } from "@/server/verification/pending";
 
-/** Récords del jugador pendientes de verificar (spec 4b §4.3), sin caché: lo pide el menú en cada página. */
+/** The player's records pending verification (spec 4b §4.3), without cache: the menu requests it on every page. */
 export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser(request.headers);

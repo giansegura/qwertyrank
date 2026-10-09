@@ -1,8 +1,8 @@
 import type { Instrumentation } from "next";
 
 /**
- * Sentry solo en el servidor (spec 5a §6.1): se inicia en el runtime de Node, sin `withSentryConfig` ni nada
- * en el navegador. Los imports son dinámicos para que el runtime Edge no cargue el SDK.
+ * Sentry only on the server (spec 5a §6.1): it starts in the Node runtime, with no `withSentryConfig` and nothing
+ * in the browser. The imports are dynamic so the Edge runtime does not load the SDK.
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;

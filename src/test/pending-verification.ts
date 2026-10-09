@@ -7,8 +7,8 @@ import { insertGame } from "@/server/game/persist";
 import { openPendingVerification } from "@/server/verification/pending";
 
 /**
- * Una partida `review` de `userId` esperando su verificación, como la deja `finish` (spec 4b §2.2), sin
- * depender de quién más haya en los rankings de la base de datos de pruebas.
+ * A `review` game of `userId` awaiting its verification, as `finish` leaves it (spec 4b §2.2), without
+ * depending on who else is in the rankings of the test database.
  */
 export async function seedPendingVerification(
   db: Db,

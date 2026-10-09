@@ -8,11 +8,11 @@ function keys(value: unknown, prefix = ""): string[] {
   return Object.entries(value).flatMap(([key, child]) => keys(child, prefix ? `${prefix}.${key}` : key));
 }
 
-describe("mensajes", () => {
+describe("messages", () => {
   it.each([
     ["es", es],
     ["pt", pt],
-  ])("%s tiene exactamente las mismas claves que en", (_, messages) => {
+  ])("%s has exactly the same keys as en", (_, messages) => {
     expect(keys(messages).toSorted()).toEqual(keys(en).toSorted());
   });
 
@@ -20,7 +20,7 @@ describe("mensajes", () => {
     ["en", en],
     ["es", es],
     ["pt", pt],
-  ])("%s no tiene textos vacíos", (_, messages) => {
+  ])("%s has no empty texts", (_, messages) => {
     const empty = keys(messages).filter((path) => {
       const value = path.split(".").reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], messages);
       return typeof value !== "string" || value.trim() === "";
@@ -32,7 +32,7 @@ describe("mensajes", () => {
     ["en", en],
     ["es", es],
     ["pt", pt],
-  ])("%s llama \"Ranked\" al modo competitivo (mismo nombre en todos los idiomas)", (_, messages) => {
+  ])("%s calls the competitive mode \"Ranked\" (same name in every language)", (_, messages) => {
     expect(messages.Nav.home).toBe("Ranked");
   });
 });

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { breadcrumbStructuredData, homeStructuredData, serializeJsonLd } from "./structured-data";
 
-describe("datos estructurados", () => {
-  it("la portada declara la web, la organización y la aplicación", () => {
+describe("structured data", () => {
+  it("the home page declares the website, the organization and the application", () => {
     const data = homeStructuredData("es", "Desc");
     const graph = data["@graph"] as Record<string, unknown>[];
     expect(graph.map((node) => node["@type"])).toEqual(["WebSite", "Organization", "WebApplication"]);
@@ -15,7 +15,7 @@ describe("datos estructurados", () => {
     });
   });
 
-  it("las migas enlazan la portada y la página con URLs absolutas traducidas", () => {
+  it("the breadcrumbs link the home page and the page with translated absolute URLs", () => {
     expect(breadcrumbStructuredData("pt", "/leaderboard/touch", "Ranking")).toEqual({
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -26,7 +26,7 @@ describe("datos estructurados", () => {
     });
   });
 
-  it("escapa < para que un texto no pueda cerrar la etiqueta script", () => {
+  it("escapes < so that a text cannot close the script tag", () => {
     const json = serializeJsonLd({ name: "</script><script>alert(1)</script>" });
     expect(json).not.toContain("<");
     expect(JSON.parse(json)).toEqual({ name: "</script><script>alert(1)</script>" });

@@ -6,7 +6,7 @@ import { redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { leaderboardHref } from "@/lib/leaderboard/slugs";
 
-/** `/es/ranking`: el ranking del teclado del dispositivo (spec §5.1). */
+/** `/es/ranking`: the ranking of the device's keyboard (spec §5.1). */
 export default async function LeaderboardIndexPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();

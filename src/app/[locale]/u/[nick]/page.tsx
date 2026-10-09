@@ -8,7 +8,7 @@ import { routing } from "@/i18n/routing";
 import { getDb } from "@/server/db/client";
 import { getPublicProfile } from "@/server/profile/public";
 
-/** Como el ranking: se regenera cada 60 s y no se genera nada en el build. */
+/** Like the ranking: it is regenerated every 60 s and nothing is generated at build time. */
 export const revalidate = 60;
 
 export function generateStaticParams() {
@@ -21,7 +21,7 @@ interface ProfilePageProps {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { nick } = await params;
-  // Perfiles sin indexar en la v1 (spec §7.1).
+  // Profiles not indexed in v1 (spec §7.1).
   return { title: nick, robots: { index: false } };
 }
 

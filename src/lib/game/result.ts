@@ -1,7 +1,7 @@
 import type { TestLanguage } from "@/lib/words/languages";
 import type { InputType } from "./types";
 
-/** Una partida pública (spec 5d §2), tal como la pintan su página, su imagen y la 404 de su jugador. */
+/** A public game (spec 5d §2), as rendered by its page, its image and its player's 404. */
 export interface GameResult {
   id: string;
   language: TestLanguage;
@@ -9,11 +9,11 @@ export interface GameResult {
   wpm: number;
   accuracy: number;
   startsAt: Date;
-  /** `null` si la partida es anónima. */
+  /** `null` if the game is anonymous. */
   player: { nick: string; country: string | null } | null;
 }
 
-/** La partida tal como llega en JSON (`GET /api/game/{id}/result`): la fecha es texto. */
+/** The game as it arrives in JSON (`GET /api/game/{id}/result`): the date is text. */
 export type GameResultJson = Omit<GameResult, "startsAt"> & { startsAt: string };
 
 export function resultFromJson(data: GameResultJson): GameResult {
@@ -22,7 +22,7 @@ export function resultFromJson(data: GameResultJson): GameResult {
 
 const GAME_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** Si el texto puede ser el id de una partida (un UUID como los que genera el servidor): si no, ni se consulta. */
+/** Whether the text can be a game id (a UUID like the ones the server generates): if not, it is not even queried. */
 export function isGameId(value: string): boolean {
   return GAME_ID.test(value);
 }

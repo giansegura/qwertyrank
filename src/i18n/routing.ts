@@ -3,10 +3,10 @@ import { defineRouting } from "next-intl/routing";
 export const routing = defineRouting({
   locales: ["en", "es", "pt"],
   defaultLocale: "en",
-  // Por defecto es una cookie de sesión: la elección manual se perdería al cerrar el
-  // navegador, y el spec (§7.2) pide que siempre prevalezca.
+  // By default it is a session cookie: the manual choice would be lost when the browser
+  // is closed, and the spec (§7.2) asks for it to always prevail.
   localeCookie: { maxAge: 60 * 60 * 24 * 365 },
-  // Sin cabecera `Link` con alternativas: las pone el HTML de cada página (spec 5b §3.2), con su propio x-default.
+  // No `Link` header with alternates: each page's HTML sets them (spec 5b §3.2), with its own x-default.
   alternateLinks: false,
   pathnames: {
     "/": "/",
@@ -30,8 +30,8 @@ export const routing = defineRouting({
       es: "/ranking",
       pt: "/ranking",
     },
-    // Una ruta fija por ranking (spec §7.1); la página es leaderboard/[input], y el idioma del ranking es
-    // el de la página.
+    // One fixed route per ranking (spec §7.1); the page is leaderboard/[input], and the ranking's language is
+    // the page's.
     "/leaderboard/physical": {
       en: "/leaderboard/physical",
       es: "/ranking/fisico",
@@ -48,9 +48,9 @@ export const routing = defineRouting({
       pt: "/salvar/[gameId]",
     },
     "/u/[nick]": "/u/[nick]",
-    // Página de resultado de una partida (spec 5d §3.1).
+    // Result page of a game (spec 5d §3.1).
     "/r/[id]": "/r/[id]",
-    // Páginas legales (spec 5a §4.1).
+    // Legal pages (spec 5a §4.1).
     "/privacy": {
       en: "/privacy",
       es: "/privacidad",
@@ -61,7 +61,7 @@ export const routing = defineRouting({
       es: "/terminos",
       pt: "/termos",
     },
-    // Récords pendientes de verificar (spec 4b §4.3).
+    // Records pending verification (spec 4b §4.3).
     "/verify": {
       en: "/verify",
       es: "/verificar",

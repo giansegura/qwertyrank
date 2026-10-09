@@ -4,10 +4,10 @@ import { buildFrames, compactFrames, replayInputs, type InputStep } from "@/lib/
 import { typed } from "@/test/typing-events";
 import { Replay } from "./replay";
 
-/** "hxla " con una letra cada 200 ms: la x llega a los 201 ms; la última, a los 801 ms. */
+/** "hxla " with one letter every 200 ms: the x arrives at 201 ms; the last one, at 801 ms. */
 const STEPS = replayInputs(typed("hxla ", { every: 200 }));
 
-/** Los fotogramas como se los pasa la página, calculados en el servidor. */
+/** The frames as the page passes them, computed on the server. */
 const framesOf = (words: string[] | null, steps: InputStep[] = STEPS) => compactFrames(buildFrames(words, steps));
 
 const statuses = (index: number) =>
@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 describe("Replay", () => {
-  it("las letras aparecen con sus tiempos y los errores en rojo; al acabar, se para", async () => {
+  it("the letters appear with their timings and the errors in red; at the end, it stops", async () => {
     render(<Replay words={["hola", "sol"]} frames={framesOf(["hola", "sol"])} />);
     expect(statuses(0)).toEqual(["pending", "pending", "pending", "pending"]);
     expect(screen.getByTestId("replay-time")).toHaveTextContent("0.0 s / 0.8 s");
@@ -39,10 +39,10 @@ describe("Replay", () => {
     await advance(1_000);
     expect(statuses(0)).toEqual(["correct", "incorrect", "correct", "correct"]);
     expect(screen.getByTestId("replay-words").querySelector('[data-state="active"]')).toHaveAttribute("data-word", "sol");
-    expect(screen.getByTestId("replay-play")).toHaveTextContent("Reproducir");
+    expect(screen.getByTestId("replay-play")).toHaveTextContent("Play");
   });
 
-  it("a ×4 va cuatro veces más rápido, y la pausa la para", async () => {
+  it("at ×4 it goes four times faster, and pause stops it", async () => {
     render(<Replay words={["hola", "sol"]} frames={framesOf(["hola", "sol"])} />);
     fireEvent.click(screen.getByTestId("replay-speed-4"));
     fireEvent.click(screen.getByTestId("replay-play"));
@@ -53,7 +53,7 @@ describe("Replay", () => {
     expect(statuses(0).filter((status) => status !== "pending")).toHaveLength(3);
   });
 
-  it("sin palabras (registro anterior a la 4b) enseña lo tecleado; sin pulsaciones, no se rompe", async () => {
+  it("without words (log from before 4b) it shows what was typed; without keystrokes, it does not break", async () => {
     const { unmount } = render(<Replay words={null} frames={framesOf(null)} />);
     fireEvent.click(screen.getByTestId("replay-play"));
     await advance(1_000);

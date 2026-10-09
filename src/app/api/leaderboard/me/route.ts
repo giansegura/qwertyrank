@@ -11,7 +11,7 @@ const querySchema = z.object({
   input: z.enum(INPUT_TYPES),
 });
 
-/** Posición del jugador en el ranking de ese idioma y teclado; sin caché (spec §5.6). */
+/** The player's position in the ranking of that language and keyboard; without cache (spec §5.6). */
 export async function GET(request: NextRequest) {
   const query = querySchema.safeParse(Object.fromEntries(request.nextUrl.searchParams));
   if (!query.success) return jsonError("invalid_query", 400);

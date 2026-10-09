@@ -13,12 +13,12 @@ import { pendingVerifications } from "@/server/verification/pending";
 
 export const metadata: Metadata = { robots: { index: false } };
 
-/** Récords pendientes de verificar (spec 4b §4.3). Dinámica: depende de la sesión. */
+/** Records pending verification (spec 4b §4.3). Dynamic: it depends on the session. */
 export default async function VerifyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   const user = await getSessionUser(await headers());
-  // Sin sesión: a entrar y de vuelta aquí.
+  // No session: to sign in and back here.
   if (!user) redirect(loginPath(locale, getPathname({ locale, href: "/verify" })));
 
   const [t, pending] = await Promise.all([getTranslations("Verification"), pendingVerifications(getDb(), user.id)]);

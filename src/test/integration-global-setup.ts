@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
-/** Crea la base de datos de test si no existe y le aplica las migraciones. Requiere `docker compose up -d`. */
+/** Creates the test database if it does not exist and applies the migrations to it. Requires `docker compose up -d`. */
 export default async function setup() {
   loadEnvConfig(process.cwd());
   const url = new URL(process.env.DATABASE_URL!);

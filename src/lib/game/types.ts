@@ -4,7 +4,7 @@ import type { TypingEvent } from "@/lib/scoring/types";
 import type { GameMode, VerificationOutcome } from "@/lib/verification";
 import type { TestLanguage } from "@/lib/words/languages";
 
-/** Tipos del protocolo de una partida Ranked, compartidos por navegador y servidor. */
+/** Protocol types of a Ranked game, shared by browser and server. */
 
 export type InputType = "physical" | "touch";
 export type Verdict = "valid" | "review" | "rejected";
@@ -20,10 +20,10 @@ export type RejectReason =
   | "inhuman_burst"
   | "inhuman_speed";
 
-/** Lo único que ve el jugador del motivo de rechazo: la regla exacta solo se guarda en el servidor (spec §4.9). */
+/** All the player sees of the rejection reason: the exact rule is only stored on the server (spec §4.9). */
 export type PublicReason = "connection" | "unrecognized" | "letter_by_letter";
 
-/** Señales del navegador sobre el dispositivo. Son una declaración: el servidor no se fía solo de ellas. */
+/** Browser signals about the device. They are a claim: the server does not trust them alone. */
 export interface ClientEnv {
   coarse: boolean;
   touchPoints: number;
@@ -32,9 +32,9 @@ export interface ClientEnv {
 export interface StartRequest {
   language: TestLanguage;
   env: ClientEnv;
-  /** Solo al repetir `start` tras `needs_challenge` (spec 4a §2.1). */
+  /** Only when repeating `start` after `needs_challenge` (spec 4a §2.1). */
   turnstileToken?: string;
-  /** Por defecto `ranked`. Una partida de verificación necesita sesión y `verificationId` (spec 4b §3.1). */
+  /** Defaults to `ranked`. A verification game needs a session and `verificationId` (spec 4b §3.1). */
   mode?: GameMode;
   verificationId?: string;
 }
@@ -60,14 +60,14 @@ export interface FinishResponse extends TestResult {
   inputType: InputType;
   verdict: Verdict;
   reason: PublicReason | null;
-  /** Posición en el ranking (spec §3.4, §8.3). */
+  /** Position in the ranking (spec §3.4, §8.3). */
   ranking: GameRanking;
 }
 
-/** `finish` de una partida de verificación (spec 4b §3.3): en lugar de `ranking`, su resultado. */
+/** `finish` of a verification game (spec 4b §3.3): instead of `ranking`, its outcome. */
 export type VerificationFinishResponse = Omit<FinishResponse, "ranking"> & { verification: VerificationOutcome };
 
-/** `POST /api/game/{id}/claim`: la partida pasa a la cuenta y esta es su posición (spec §3.7). */
+/** `POST /api/game/{id}/claim`: the game moves to the account and this is its position (spec §3.7). */
 export interface ClaimResponse {
   ranking: GameRanking;
   language: TestLanguage;

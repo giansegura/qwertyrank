@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import sitemap from "./sitemap";
 
 describe("sitemap", () => {
-  it("lista portada, práctica y los dos rankings en cada idioma, con sus alternativas", () => {
+  it("lists home, practice and the two rankings in each language, with their alternates", () => {
     const entries = sitemap();
     expect(entries).toHaveLength(12);
     expect(entries.map((entry) => entry.url)).toContain("https://qwertyrank.com/es/ranking/fisico");

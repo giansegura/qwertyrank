@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { alternatesFor, pageMetadata, resultMetadata } from "./metadata";
 
 describe("alternatesFor", () => {
-  it("la portada apunta x-default a la raíz", () => {
+  it("the home page points x-default to the root", () => {
     expect(alternatesFor("es", "/")).toEqual({
       canonical: "/es",
       languages: { en: "/en", es: "/es", pt: "/pt", "x-default": "/" },
     });
   });
 
-  it("traduce la ruta en cada idioma y usa la inglesa como x-default", () => {
+  it("translates the route into each language and uses the English one as x-default", () => {
     expect(alternatesFor("pt", "/practice")).toEqual({
       canonical: "/pt/pratica",
       languages: { en: "/en/practice", es: "/es/practica", pt: "/pt/pratica", "x-default": "/en/practice" },
@@ -27,7 +27,7 @@ describe("alternatesFor", () => {
 });
 
 describe("pageMetadata", () => {
-  it("repite título, descripción y URL canónica en Open Graph y Twitter", () => {
+  it("repeats title, description and canonical URL in Open Graph and Twitter", () => {
     const meta = pageMetadata({ locale: "es", href: "/practice", title: "Práctica", description: "Desc" });
     expect(meta.title).toBe("Práctica");
     expect(meta.openGraph).toMatchObject({
@@ -46,14 +46,14 @@ describe("pageMetadata", () => {
     });
   });
 
-  it("sin descripción no pisa la del layout: no declara la clave", () => {
+  it("without a description it does not override the layout's: it does not declare the key", () => {
     const meta = pageMetadata({ locale: "es", href: "/privacy", title: "Política de privacidad" });
     expect("description" in meta).toBe(false);
     expect("description" in (meta.openGraph ?? {})).toBe(false);
     expect("description" in (meta.twitter ?? {})).toBe(false);
   });
 
-  it("en la portada el título es absoluto, sin la plantilla", () => {
+  it("on the home page the title is absolute, without the template", () => {
     const meta = pageMetadata({ locale: "pt", href: "/", title: "QwertyRank — Teste", description: "D" });
     expect(meta.title).toEqual({ absolute: "QwertyRank — Teste" });
     expect(meta.openGraph).toMatchObject({ title: "QwertyRank — Teste", url: "/pt", locale: "pt_BR" });
@@ -61,7 +61,7 @@ describe("pageMetadata", () => {
 });
 
 describe("resultMetadata", () => {
-  it("sin indexar, con la imagen de la partida y la URL de su página", () => {
+  it("not indexed, with the game's image and its page's URL", () => {
     const metadata = resultMetadata({
       locale: "es",
       id: "g1",

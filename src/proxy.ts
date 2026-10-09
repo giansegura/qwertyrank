@@ -7,12 +7,12 @@ const handleI18n = createMiddleware(routing);
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  // A una ruta que no existe: la 404 general, sin renderizar (ni guardar en caché) la página ISR.
+  // To a route that does not exist: the general 404, without rendering (or caching) the ISR page.
   if (isJunkPath(pathname)) return NextResponse.rewrite(new URL(`/${pathname.split("/")[1]}/404`, request.url));
   return handleI18n(request);
 }
 
 export const config = {
-  // Todo excepto /api, /admin (panel sin idiomas), /trpc, /_next, /_vercel y archivos con extensión.
+  // Everything except /api, /admin (panel without languages), /trpc, /_next, /_vercel and files with an extension.
   matcher: "/((?!api|admin|trpc|_next|_vercel|.*\\..*).*)",
 };

@@ -5,14 +5,14 @@ import { routing } from "@/i18n/routing";
 import { SITE_NAME } from "@/lib/site";
 
 /**
- * Imagen por defecto al compartir cualquier página (spec 5b §6); la de cada partida es de la 5d. Las páginas
- * con `pageMetadata` la nombran a mano (`/{locale}/opengraph-image`): mismo tamaño y `alt` que aquí.
+ * Default image when sharing any page (spec 5b §6); each game's one belongs to 5d. Pages with
+ * `pageMetadata` name it by hand (`/{locale}/opengraph-image`): same size and `alt` as here.
  */
 export const alt = SITE_NAME;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** Una imagen por idioma, generada en el build. */
+/** One image per language, generated at build time. */
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }

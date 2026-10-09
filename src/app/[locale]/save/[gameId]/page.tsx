@@ -20,7 +20,7 @@ export default async function SavePage({ params }: SavePageProps) {
   const { locale, gameId } = await params;
   if (!hasLocale(routing.locales, locale) || !z.uuid().safeParse(gameId).success) notFound();
   const user = await getSessionUser(await headers());
-  // Sin sesión: a entrar (o crear la cuenta) y de vuelta aquí, todavía dentro de los 10 minutos.
+  // No session: to sign in (or create the account) and back here, still within the 10 minutes.
   if (!user) {
     redirect(loginPath(locale, getPathname({ locale, href: { pathname: "/save/[gameId]", params: { gameId } } })));
   }

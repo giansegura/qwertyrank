@@ -1,15 +1,15 @@
-/** Caracteres de más que se aceptan al final de una palabra; el resto se ignora. */
+/** Extra characters accepted at the end of a word; the rest are ignored. */
 export const MAX_EXTRA_CHARS = 10;
 
 export interface EngineState {
   readonly words: readonly string[];
-  /** typed[i] = lo escrito para la palabra i. Siempre existe typed[current]. */
+  /** typed[i] = what was typed for word i. typed[current] always exists. */
   readonly typed: readonly string[];
-  /** Índice de la palabra activa; igual a words.length cuando se han escrito todas. */
+  /** Index of the active word; equal to words.length once all have been typed. */
   readonly current: number;
   readonly correctInserts: number;
   readonly totalInserts: number;
-  /** Carácter esperado → veces que se escribió otro en su lugar. */
+  /** Expected character → times another one was typed in its place. */
   readonly mistakes: Readonly<Record<string, number>>;
 }
 

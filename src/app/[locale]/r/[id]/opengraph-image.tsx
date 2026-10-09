@@ -9,18 +9,18 @@ import { getDb } from "@/server/db/client";
 import { getPublicResult } from "@/server/game/result";
 
 /**
- * Imagen de una partida al compartirla (spec 5d §4). La cifra sale de la base de datos: nadie puede hacer
- * con nuestro dominio una imagen con una puntuación falsa (spec §3.8). La página la nombra a mano con su
- * `alt`; el de aquí es el genérico.
+ * Image of a game when sharing it (spec 5d §4). The number comes from the database: nobody can make an
+ * image with a fake score on our domain (spec §3.8). The page names it by hand with its `alt`; the one
+ * here is the generic one.
  */
 export const alt = SITE_NAME;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** Como la página: si la partida deja de ser pública, la imagen también, en un minuto como mucho. */
+/** Like the page: if the game stops being public, so does the image, within a minute at most. */
 export const revalidate = 60;
 
-/** Nada en el build: cada imagen se genera en su primera petición y queda en caché (ISR), como la página. */
+/** Nothing at build time: each image is generated on its first request and stays cached (ISR), like the page. */
 export function generateStaticParams() {
   return [];
 }
@@ -55,7 +55,7 @@ export default async function ResultImage({ params }: { params: Promise<{ locale
         <div style={{ fontSize: 44 }}>
           {`${t("accuracy", { accuracy: displayAccuracy(result.accuracy) })} · ${tp("board", { language: result.language, input: result.inputType })}`}
         </div>
-        {/* Sin bandera: los emojis obligarían a descargar sus imágenes al generarla. */}
+        {/* No flag: emojis would force downloading their images when generating it. */}
         <div style={{ fontSize: 40, color: "#a1a1aa" }}>{result.player?.nick ?? t("anonymous")}</div>
       </div>
     ),

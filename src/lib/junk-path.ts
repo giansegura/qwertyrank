@@ -15,8 +15,8 @@ function decode(segment: string): string {
 }
 
 /**
- * URL de perfil o de ranking que no puede existir (spec 4a §6.4). El proxy la corta antes de renderizar:
- * si no, cada URL inventada dejaría su propia página de 404 en la caché de ISR.
+ * Profile or ranking URL that cannot exist (spec 4a §6.4). The proxy cuts it off before rendering:
+ * otherwise every made-up URL would leave its own 404 page in the ISR cache.
  */
 export function isJunkPath(pathname: string): boolean {
   const profile = PROFILE.exec(pathname);

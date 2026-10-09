@@ -2,11 +2,11 @@ import { applyInput, createEngine } from "../scoring/engine";
 import type { FrameDelta } from "./playback";
 
 /**
- * Reproducción de una partida en el panel (spec 4b §6.2), a partir de su registro de pulsaciones.
- * El registro no es de fiar (puede ser de una partida rechazada): todo se valida aquí.
+ * Replay of a game in the panel (spec 4b §6.2), from its keystroke log.
+ * The log is not trustworthy (it may be from a rejected game): everything is validated here.
  */
 
-/** Un cambio en el texto escrito, listo para reproducirlo. */
+/** A change in the typed text, ready to be replayed. */
 export interface InputStep {
   t: number;
   deleted: number;
@@ -14,8 +14,8 @@ export interface InputStep {
 }
 
 /**
- * Los eventos `input` del registro, en orden: se descarta lo que no tiene la forma esperada; un `t`
- * negativo cuenta como 0 y uno después de los 30 s se reproduce igual (la partida se ve tal cual llegó).
+ * The log's `input` events, in order: whatever lacks the expected shape is discarded; a negative `t`
+ * counts as 0 and one after the 30 s is replayed anyway (the game is shown exactly as it arrived).
  */
 export function replayInputs(events: readonly unknown[]): InputStep[] {
   const steps: InputStep[] = [];
@@ -29,7 +29,7 @@ export function replayInputs(events: readonly unknown[]): InputStep[] {
   return steps.toSorted((a, b) => a.t - b.t);
 }
 
-/** Lo escrito en un instante: lo tecleado en cada palabra y cuál es la activa. */
+/** What was typed at an instant: what was typed in each word and which one is active. */
 export interface ReplayFrame {
   t: number;
   typed: readonly string[];
@@ -38,7 +38,7 @@ export interface ReplayFrame {
 
 const WHITESPACE = /\s/u;
 
-/** Sin texto de referencia (registros anteriores a la 4b): solo lo tecleado, palabra a palabra. */
+/** Without reference text (logs from before 4b): only what was typed, word by word. */
 function typeFreely(typed: readonly string[], { deleted, inserted }: InputStep): string[] {
   const next = [...typed];
   let last = next.length - 1;
@@ -54,8 +54,8 @@ function typeFreely(typed: readonly string[], { deleted, inserted }: InputStep):
 }
 
 /**
- * Un fotograma tras cada pulsación, empezando por el texto vacío. Con las palabras de la partida, como
- * la puntuó el servidor (`applyInput`); sin ellas, solo lo tecleado.
+ * One frame after each keystroke, starting with the empty text. With the game's words, as the server
+ * scored it (`applyInput`); without them, only what was typed.
  */
 export function buildFrames(words: readonly string[] | null, steps: readonly InputStep[]): ReplayFrame[] {
   const frames: ReplayFrame[] = [{ t: 0, typed: [""], current: 0 }];
@@ -76,9 +76,9 @@ export function buildFrames(words: readonly string[] | null, steps: readonly Inp
 }
 
 /**
- * Los fotogramas para el navegador, en compacto (`typedAt` los reconstruye): cada uno lleva solo lo escrito
- * desde la palabra activa del anterior, porque las de antes ya no cambian. Así una partida de miles de
- * pulsaciones no manda miles de copias del texto.
+ * The frames for the browser, in compact form (`typedAt` rebuilds them): each one carries only what was typed
+ * from the previous one's active word on, because the earlier words no longer change. That way a game with
+ * thousands of keystrokes does not send thousands of copies of the text.
  */
 export function compactFrames(frames: readonly ReplayFrame[]): FrameDelta[] {
   let from = 0;
@@ -95,8 +95,8 @@ export interface RhythmPoint {
 }
 
 /**
- * Ritmo de la partida (spec 4b §6.2): el intervalo entre una letra y la anterior y, con teclado físico,
- * cuánto se mantuvo pulsada cada tecla (`keydown` → `keyup` de la misma tecla).
+ * Rhythm of the game (spec 4b §6.2): the interval between a letter and the previous one and, with a physical
+ * keyboard, how long each key was held down (`keydown` → `keyup` of the same key).
  */
 export function rhythm(events: readonly unknown[], inputType: "physical" | "touch"): { intervals: RhythmPoint[]; holds: RhythmPoint[] } {
   const letters = replayInputs(events).filter((step) => step.inserted !== "");

@@ -98,7 +98,11 @@ describe("RankedTest", () => {
     expect(finishGame).toHaveBeenCalledWith("g1", { lastSeq });
     expect(screen.getByTestId("result")).toBeInTheDocument();
     expect(screen.getByTestId("ranked-status")).toHaveTextContent("Valid game");
-    // Válida: se puede compartir (spec 5d §6).
+    // Valid: it can be shared (spec 5d §6). The button ships in the lazily loaded summary module: on a slow
+    // machine its `import()` may not have finished yet.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     expect(screen.getByTestId("share-result")).toBeInTheDocument();
   });
 

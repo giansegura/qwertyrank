@@ -87,6 +87,6 @@ The guide to opening the beta (accounts, variables and checks) is in [`docs/laun
 
 ## License
 
-The code is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). If you offer a modified version as a network service, you must publish its source code under the same license.
+The code is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). If you modify it and your version lets users interact with it remotely over a network, you must offer all of those users its corresponding source code, under this same license, at no charge through a network server (section 13).
 
 The license covers the code, not the brand: the name "QwertyRank", its logo and the `qwertyrank.com` domain may not be used to identify another service or a modified version.

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 type ShiftWindow = Window & { __cls: number };
 
-/** Suma los desplazamientos de layout que no siguen a una acción del usuario (CLS). */
+/** Sums the layout shifts that don't follow a user action (CLS). */
 async function trackLayoutShifts(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as ShiftWindow).__cls = 0;
@@ -16,7 +16,7 @@ async function trackLayoutShifts(page: Page) {
 
 const layoutShift = (page: Page) => page.evaluate(() => (window as unknown as ShiftWindow).__cls);
 
-test("el resultado no desplaza el contenido de la página (CLS)", async ({ page }) => {
+test("the result doesn't shift the page content (CLS)", async ({ page }) => {
   await trackLayoutShifts(page);
 
   await page.goto("/en/practice");
@@ -24,7 +24,7 @@ test("el resultado no desplaza el contenido de la página (CLS)", async ({ page 
   const areaTop = async () => (await area.boundingBox())!.y;
   const before = await areaTop();
 
-  // Peor caso: varias palabras mal escritas llenan la lista de teclas falladas.
+  // Worst case: several mistyped words fill the list of missed keys.
   const words = await page
     .getByTestId("word")
     .evaluateAll((elements) => elements.slice(0, 4).map((el) => el.getAttribute("data-word") ?? ""));
@@ -36,11 +36,11 @@ test("el resultado no desplaza el contenido de la página (CLS)", async ({ page 
   expect(await layoutShift(page)).toBeLessThan(0.001);
 });
 
-test("la cabecera no se mueve cuando llega la sesión (CLS)", async ({ page }, testInfo) => {
+test("the header doesn't move when the session arrives (CLS)", async ({ page }, testInfo) => {
   if (testInfo.project.name === "mobile") await page.setViewportSize({ width: 360, height: 640 });
   await trackLayoutShifts(page);
-  // Sesión simulada y con algo de latencia, como en la red real: lo que importa es el hueco
-  // de la cabecera, no quién es el jugador.
+  // Fake session with some latency, as on the real network: what matters is the header's slot,
+  // not who the player is.
   await page.route("**/api/auth/get-session", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1_000));
     await route.fulfill({ json: { session: { id: "s" }, user: { nick: "gian_42" } } });
@@ -52,10 +52,10 @@ test("la cabecera no se mueve cuando llega la sesión (CLS)", async ({ page }, t
   expect(await layoutShift(page)).toBeLessThan(0.001);
 });
 
-test("el ranking no se mueve cuando llega tu posición (CLS)", async ({ page }, testInfo) => {
+test("the leaderboard doesn't move when your position arrives (CLS)", async ({ page }, testInfo) => {
   if (testInfo.project.name === "mobile") await page.setViewportSize({ width: 360, height: 780 });
   await trackLayoutShifts(page);
-  // Sin sesión y con algo de latencia, como un visitante anónimo en la red real.
+  // No session and some latency, like an anonymous visitor on the real network.
   await page.route("**/api/auth/get-session", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1_000));
     await route.fulfill({ json: null });
@@ -67,14 +67,14 @@ test("el ranking no se mueve cuando llega tu posición (CLS)", async ({ page }, 
   expect(await layoutShift(page)).toBeLessThan(0.001);
 });
 
-/** Sesión simulada: lo que importa es el aviso bajo el menú, no quién es el jugador. */
+/** Fake session: what matters is the notice under the menu, not who the player is. */
 async function fakeSession(page: Page) {
   await page.route("**/api/auth/get-session", (route) =>
     route.fulfill({ json: { session: { id: "s" }, user: { nick: "gian_42" } } }),
   );
 }
 
-test("el aviso de récord pendiente no mueve la cabecera ni la página (CLS)", async ({ page }, testInfo) => {
+test("the pending record notice moves neither the header nor the page (CLS)", async ({ page }, testInfo) => {
   if (testInfo.project.name === "mobile") await page.setViewportSize({ width: 360, height: 640 });
   await trackLayoutShifts(page);
   await fakeSession(page);
@@ -98,7 +98,7 @@ test("el aviso de récord pendiente no mueve la cabecera ni la página (CLS)", a
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(page.viewportSize()!.width);
 });
 
-test("si GET /api/verification falla, ni aviso ni salto en la cabecera", async ({ page }) => {
+test("if GET /api/verification fails, no notice and no jump in the header", async ({ page }) => {
   await trackLayoutShifts(page);
   await fakeSession(page);
   let asked = false;

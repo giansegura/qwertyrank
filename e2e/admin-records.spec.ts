@@ -14,7 +14,7 @@ import {
 
 test.describe.configure({ timeout: 120_000 });
 
-/** Jugadores (y admins) de cada prueba: se borran al acabar, con sus partidas y verificaciones. */
+/** Players (and admins) of each test: deleted at the end, with their games and verifications. */
 const created: string[] = [];
 
 async function newPlayer(nick = `e2e_o${crypto.randomUUID().slice(0, 8)}`): Promise<string> {
@@ -35,7 +35,7 @@ test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": randomClientIp() });
 });
 
-/** Una cuenta con rol de admin, ya en la portada. */
+/** An account with the admin role, already on the home page. */
 async function newAdmin(page: Page): Promise<void> {
   const email = await signUp(page, "en");
   created.push((await userIdByEmail(email))!);
@@ -44,7 +44,7 @@ async function newAdmin(page: Page): Promise<void> {
   await setRole(email, "admin");
 }
 
-test("un admin ve la cola de récords y reproduce la partida, con los errores en rojo", async ({ page }) => {
+test("an admin sees the record queue and replays the game, with errors in red", async ({ page }) => {
   const nick = `e2e_r${crypto.randomUUID().slice(0, 8)}`;
   const player = await newPlayer(nick);
   await seedVerifiedLevel(player, { language: "es", inputType: "physical", wpm: 72.5 });
@@ -60,17 +60,17 @@ test("un admin ve la cola de récords y reproduce la partida, con los errores en
 
   await page.getByTestId("replay-speed-4").click();
   await page.getByTestId("replay-play").click();
-  // "hxla mundo ", una letra cada 150 ms: 1,5 s de partida.
+  // "hxla mundo ", one letter every 150 ms: a 1.5 s game.
   await expect(page.getByTestId("replay-time")).toHaveText("1.5 s / 1.5 s", { timeout: 10_000 });
   const first = page.getByTestId("replay-words").getByTestId("word").first();
   await expect(first.locator('[data-status="incorrect"]')).toHaveCount(1);
   await expect(first.locator('[data-status="correct"]')).toHaveCount(3);
   await expect(page.getByTestId("rhythm-chart")).toBeVisible();
 
-  // La ficha del jugador: sus niveles verificados y cada partida, con su modo, enlazada a su reproducción.
+  // The player's page: their verified levels and every game, with its mode, linked to its replay.
   await page.getByTestId("admin-game-title").getByRole("link", { name: nick }).click();
   await expect(page.getByTestId("admin-player-nick")).toHaveText(nick);
-  await expect(page.getByTestId("admin-verified-levels")).toContainText("es · physical: 72.5 ppm");
+  await expect(page.getByTestId("admin-verified-levels")).toContainText("es · physical: 72.5 wpm");
   const link = page.getByTestId("admin-game-link");
   await expect(link).toHaveAttribute("href", `/admin/games/${gameId}`);
   await expect(page.getByRole("row").filter({ has: link })).toContainText("Ranked");
@@ -79,25 +79,25 @@ test("un admin ve la cola de récords y reproduce la partida, con los errores en
   await expect(page.getByTestId("admin-game-title")).toContainText(nick);
 });
 
-test("las partidas con registro antiguo, ilegible, borrado o con eventos raros se abren igual (nunca un 500)", async ({ page }) => {
+test("games with an old, unreadable, deleted or odd-event log still open (never a 500)", async ({ page }) => {
   const old = await seedPendingVerification(await newPlayer(), { log: "batches" });
   await newAdmin(page);
 
   expect((await page.goto(`/admin/games/${old.gameId}`))?.status()).toBe(200);
-  await expect(page.getByText("se reproduce sin el texto, solo lo tecleado")).toBeVisible();
+  await expect(page.getByText("it is replayed without the text, only what was typed")).toBeVisible();
   await page.getByTestId("replay-play").click();
   await expect(page.getByTestId("replay-words").getByTestId("word").first()).toHaveAttribute("data-word", "hxla", {
     timeout: 10_000,
   });
 
-  // Una sola verificación pendiente por jugador: cada una, de un jugador distinto.
+  // Only one pending verification per player: each one from a different player.
   for (const log of ["broken", "none"] as const) {
     const { gameId } = await seedPendingVerification(await newPlayer(), { log });
     expect((await page.goto(`/admin/games/${gameId}`))?.status()).toBe(200);
     await expect(page.getByTestId("admin-game-no-log")).toBeVisible();
   }
 
-  // Una partida rechazada con eventos raros: `t` negativo, más allá de los 30 s, sin `trusted` o mal formados.
+  // A rejected game with odd events: negative `t`, beyond 30 s, without `trusted` or malformed.
   const rejected = await seedRejectedGame(await newPlayer(), {
     words: ["hola", "mundo"],
     batches: [
@@ -113,7 +113,7 @@ test("las partidas con registro antiguo, ilegible, borrado o con eventos raros s
           { t: 31_500, type: "input", deleted: 0, inserted: "o", trusted: true },
         ],
       },
-      "basura",
+      "garbage",
     ],
   });
   expect((await page.goto(`/admin/games/${rejected}`))?.status()).toBe(200);
@@ -121,7 +121,7 @@ test("las partidas con registro antiguo, ilegible, borrado o con eventos raros s
   await expect(page.getByTestId("rhythm-chart")).toBeVisible();
 });
 
-test("sin rol de admin no existen; con él, una partida que no existe tampoco", async ({ page }) => {
+test("without the admin role they don't exist; with it, neither does a game that doesn't exist", async ({ page }) => {
   const { gameId } = await seedPendingVerification(await newPlayer());
   for (const path of ["/admin/records", `/admin/games/${gameId}`]) {
     expect((await page.request.get(path)).status(), path).toBe(404);

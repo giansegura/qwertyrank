@@ -4,7 +4,7 @@ import { expect, type Page } from "@playwright/test";
 import { Redis } from "@upstash/redis";
 import postgres from "postgres";
 
-// Mismas variables que el servidor de los E2E (.env.local): misma base de datos y mismo Redis.
+// Same variables as the E2E server (.env.local): same database and same Redis.
 loadEnvConfig(process.cwd());
 
 const redis = new Redis({
@@ -12,28 +12,28 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
   automaticDeserialization: false,
 });
-// Bajo demanda: varios archivos de E2E comparten este módulo en el mismo worker, y el `afterAll`
-// de uno cierra la conexión (closeDb) mientras otro aún la necesita.
+// On demand: several E2E files share this module in the same worker, and one file's `afterAll`
+// closes the connection (closeDb) while another still needs it.
 let client: postgres.Sql | null = null;
 const db = () => (client ??= postgres(process.env.DATABASE_URL!, { max: 1, onnotice: () => {} }));
 
 const LOGIN_PATH = { en: "/en/sign-in", es: "/es/entrar", pt: "/pt/entrar" } as const;
 
 /**
- * Cada usuario de los E2E con su propia base de nick (`e2e1a2b3c4d`, primera palabra del email):
- * con una base común, los registros en paralelo se disputan los mismos nicks libres.
+ * Each E2E user with its own nick base (`e2e1a2b3c4d`, first word of the email):
+ * with a shared base, parallel sign-ups compete for the same free nicks.
  */
 export const uniqueEmail = () => `e2e${crypto.randomUUID().replaceAll("-", "").slice(0, 8)}@example.com`;
 
 /**
- * En producción (`pnpm start`) Better Auth limita los enlaces por IP (5 por minuto). Todos los
- * tests salen de 127.0.0.1: cada uno se presenta con una IP propia para no agotar el límite.
+ * In production (`pnpm start`) Better Auth rate-limits links per IP (5 per minute). Every
+ * test comes from 127.0.0.1: each one presents its own IP so as not to use up the limit.
  */
 export function randomClientIp(): string {
   return `10.${[0, 0, 0].map(() => Math.floor(Math.random() * 250) + 1).join(".")}`;
 }
 
-/** Último enlace para entrar enviado a ese email (sin Resend, los emails van al buzón de Redis). */
+/** Last sign-in link sent to that email (without Resend, emails go to the Redis outbox). */
 export async function magicLinkFor(email: string): Promise<string> {
   const key = `${process.env.REDIS_KEY_PREFIX ?? "qr:"}outbox:${email.toLowerCase()}`;
   let link: string | undefined;
@@ -50,7 +50,7 @@ export async function magicLinkFor(email: string): Promise<string> {
   return link!;
 }
 
-/** Ya en la página de entrar: crea una cuenta con el enlace por email y llega a la bienvenida. */
+/** Already on the sign-in page: creates an account with the email link and reaches the welcome page. */
 export async function signUpOnLoginPage(page: Page): Promise<string> {
   const email = uniqueEmail();
   await page.getByTestId("login-email").fill(email);
@@ -61,7 +61,7 @@ export async function signUpOnLoginPage(page: Page): Promise<string> {
   return email;
 }
 
-/** Crea una cuenta con el enlace por email. La página se queda en la bienvenida. */
+/** Creates an account with the email link. The page stays on the welcome page. */
 export async function signUp(page: Page, locale: keyof typeof LOGIN_PATH = "es"): Promise<string> {
   await page.goto(LOGIN_PATH[locale]);
   return signUpOnLoginPage(page);
@@ -77,19 +77,19 @@ export async function verdictsOf(userId: string): Promise<string[]> {
   return rows.map((row) => row.verdict);
 }
 
-/** Cambia el rol de una cuenta directamente en la base de datos. */
+/** Changes an account's role directly in the database. */
 export async function setRole(email: string, role: "user" | "admin"): Promise<void> {
   await db()`update users set role = ${role} where email = ${email}`;
 }
 
-/** Cambia el estado de una cuenta directamente en la base de datos (sin pasar por el panel). */
+/** Changes an account's status directly in the database (without going through the panel). */
 export async function setStatus(email: string, status: "active" | "shadowbanned" | "banned"): Promise<void> {
   await db()`update users set status = ${status} where email = ${email}`;
 }
 
 /**
- * Un jugador con la mejor marca en inglés y teclado físico, sin jugar: el top de un ranking se lee de
- * PostgreSQL, así que basta con su partida y su fila de `bests`.
+ * A player with the best in English and physical keyboard, without playing: a leaderboard's top is read
+ * from PostgreSQL, so their game and their `bests` row are enough.
  */
 export async function seedRankedPlayer(nick: string): Promise<string> {
   const [user] = await db()<{ id: string }[]>`
@@ -105,7 +105,7 @@ export async function seedRankedPlayer(nick: string): Promise<string> {
   return user.id;
 }
 
-/** Una partida Ranked válida en español con teclado físico, anónima o de `userId`. Devuelve su id. */
+/** A valid Ranked game in Spanish with a physical keyboard, anonymous or by `userId`. Returns its id. */
 export async function seedGame(userId: string | null): Promise<string> {
   const gameId = crypto.randomUUID();
   const now = new Date();
@@ -115,7 +115,7 @@ export async function seedGame(userId: string | null): Promise<string> {
   return gameId;
 }
 
-/** Eventos de teclear `text` letra a letra, una cada 150 ms, como los guarda el servidor. */
+/** Events for typing `text` letter by letter, one every 150 ms, as the server stores them. */
 function typingEvents(text: string) {
   return [...text].flatMap((char, i) => {
     const code = char === " " ? "Space" : `Key${char.toUpperCase()}`;
@@ -127,12 +127,12 @@ function typingEvents(text: string) {
   });
 }
 
-/** Cómo es el registro de pulsaciones de una partida sembrada: el de la 4b, el anterior, uno roto o ninguno. */
+/** What a seeded game's keystroke log looks like: the 4b one, the previous one, a broken one or none. */
 export type SeededLog = "words" | "batches" | "broken" | "none";
 
 /**
- * Una partida de `userId` esperando verificación (como la deja `finish`, spec 4b §2.2), en inglés y
- * teclado físico, con el registro de pulsaciones que se pida. Devuelve la partida y la verificación.
+ * A game by `userId` awaiting verification (as `finish` leaves it, spec 4b §2.2), in English with a
+ * physical keyboard, with the requested keystroke log. Returns the game and the verification.
  */
 export async function seedPendingVerification(
   userId: string,
@@ -147,7 +147,7 @@ export async function seedPendingVerification(
   const events = {
     words: gzipSync(JSON.stringify({ words: ["hola", "mundo", "azul"], batches })),
     batches: gzipSync(JSON.stringify(batches)),
-    broken: Buffer.from("no es gzip"),
+    broken: Buffer.from("not gzip"),
     none: null,
   }[log];
   if (events) await db()`insert into keystroke_logs (game_id, events) values (${gameId}, ${events})`;
@@ -159,10 +159,10 @@ export async function seedPendingVerification(
 }
 
 /**
- * Borra la cuenta con sus partidas y la saca de Redis: las marcas de una prueba no deben quitarle a la
- * siguiente el top 10. Al contrario que al borrarla desde ajustes, también se van sus partidas y, en
- * cascada, sus registros de pulsaciones y sus verificaciones: así no se acumulan. Antes que las
- * partidas, sus mejores marcas (`bests`), que las referencian sin cascada.
+ * Deletes the account with its games and removes it from Redis: one test's records must not take the
+ * top 10 from the next. Unlike deleting it from settings, its games also go and, by cascade, their
+ * keystroke logs and verifications: so they don't pile up. Before the games, its bests (`bests`),
+ * which reference them without cascade.
  */
 export async function deleteAccount(userId: string): Promise<void> {
   const match = `${process.env.REDIS_KEY_PREFIX ?? "qr:"}lb:*`;
@@ -181,14 +181,14 @@ export async function deleteAccount(userId: string): Promise<void> {
   await db()`delete from users where id = ${userId}`;
 }
 
-/** Un jugador sin cuenta de verdad (sin email que abrir), solo en la base de datos. */
+/** A player without a real account (no email to open), only in the database. */
 export async function seedPlayer(nick: string): Promise<string> {
   const [user] = await db()<{ id: string }[]>`
     insert into users (name, email, nick) values ('', ${`${nick}@example.com`}, ${nick}) returning id`;
   return user.id;
 }
 
-/** Le da a un jugador un nivel verificado (spec 4b §5.1) sin jugar su verificación. */
+/** Gives a player a verified level (spec 4b §5.1) without playing its verification. */
 export async function seedVerifiedLevel(
   userId: string,
   { language, inputType, wpm }: { language: "en" | "es" | "pt"; inputType: "physical" | "touch"; wpm: number },
@@ -199,8 +199,8 @@ export async function seedVerifiedLevel(
 }
 
 /**
- * Una partida rechazada de `userId`, en inglés y teclado físico, con el registro de pulsaciones `log` tal
- * cual: sin validar, como uno que mandó un tramposo. Devuelve su id.
+ * A rejected game by `userId`, in English with a physical keyboard, with the keystroke log `log` as is:
+ * unvalidated, like one sent by a cheater. Returns its id.
  */
 export async function seedRejectedGame(userId: string, log: unknown): Promise<string> {
   const gameId = crypto.randomUUID();
@@ -213,8 +213,8 @@ export async function seedRejectedGame(userId: string, log: unknown): Promise<st
 }
 
 /**
- * Nivel verificado de 1.000 PPM en todos los idiomas y teclados (spec 4b §2.1): sus partidas nunca esperan
- * verificación, aunque entren en el top 10 de la base de datos de los E2E.
+ * Verified level of 1,000 WPM in every language and keyboard (spec 4b §2.1): their games never await
+ * verification, even if they enter the top 10 of the E2E database.
  */
 export async function seedVerifiedLevels(email: string): Promise<void> {
   await db()`

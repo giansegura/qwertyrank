@@ -2,12 +2,12 @@ import { createDb } from "@/server/db/client";
 import { setAdminRole } from "@/server/moderation/roles";
 import { loadScriptEnv } from "./env";
 
-/** `pnpm admin:grant <email> [--env <archivo>]` / `pnpm admin:revoke <email> [--env <archivo>]` (spec 4a §5.2). */
+/** `pnpm admin:grant <email> [--env <file>]` / `pnpm admin:revoke <email> [--env <file>]` (spec 4a §5.2). */
 async function main() {
   const { env, args } = loadScriptEnv(process.argv.slice(2));
   const [command, email] = args;
   if ((command !== "grant" && command !== "revoke") || !email) {
-    console.error("Uso: pnpm admin:grant <email> [--env <archivo>] | pnpm admin:revoke <email> [--env <archivo>]");
+    console.error("Usage: pnpm admin:grant <email> [--env <file>] | pnpm admin:revoke <email> [--env <file>]");
     process.exitCode = 1;
     return;
   }
@@ -15,11 +15,11 @@ async function main() {
   try {
     const changed = await setAdminRole(db, email, command === "grant" ? "admin" : "user");
     if (!changed) {
-      console.error(`No hay ninguna cuenta con el email ${email}.`);
+      console.error(`There is no account with the email ${email}.`);
       process.exitCode = 1;
       return;
     }
-    console.log(command === "grant" ? `${email} ya es admin.` : `${email} ya no es admin.`);
+    console.log(command === "grant" ? `${email} is now an admin.` : `${email} is no longer an admin.`);
   } finally {
     await db.$client.end();
   }

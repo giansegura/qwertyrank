@@ -1,8 +1,8 @@
-"""Presupuesto de JS de la portada (spec §7.5): lo que `/[locale]` carga además de lo que carga
-`/_not-found` (el JS común de la app), en gzip de nivel 9, como máximo 30,0 KB. Se mide tras `pnpm build`.
+"""Home page JS budget (spec §7.5): what `/[locale]` loads on top of what `/_not-found` loads
+(the app's shared JS), gzipped at level 9, at most 30.0 KB. Measured after `pnpm build`.
 
-En Python y no en Node: el zlib de Node comprime distinto (unos 120 B más en la portada) y el
-presupuesto se fijó con esta medida."""
+In Python rather than Node: Node's zlib compresses differently (about 120 B more on the home page) and
+the budget was set with this measurement."""
 
 import gzip
 import json
@@ -15,13 +15,13 @@ try:
     with open(".next/diagnostics/route-bundle-stats.json") as file:
         stats = {entry["route"]: entry["firstLoadChunkPaths"] for entry in json.load(file)}
 except FileNotFoundError:
-    sys.exit("No hay .next/diagnostics/route-bundle-stats.json: ejecuta antes `pnpm build`.")
+    sys.exit("No .next/diagnostics/route-bundle-stats.json: run `pnpm build` first.")
 
 base = set(stats["/_not-found"])
 
 
 def own_bytes(route):
-    """Bytes en gzip de los chunks de la ruta que no carga `/_not-found`."""
+    """Gzipped bytes of the route's chunks that `/_not-found` doesn't load."""
     total = 0
     for path in stats[route]:
         if path not in base:
@@ -40,5 +40,5 @@ for route in ROUTES:
 
 home = sizes["/[locale]"]
 if home > LIMIT_BYTES:
-    sys.exit(f"La portada pasa del presupuesto: {kb(home)} > {kb(LIMIT_BYTES)}.")
-print(f"Margen de la portada: {LIMIT_BYTES - home} B.")
+    sys.exit(f"The home page is over budget: {kb(home)} > {kb(LIMIT_BYTES)}.")
+print(f"Home page headroom: {LIMIT_BYTES - home} B.")

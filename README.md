@@ -82,3 +82,9 @@ La guía para abrir la beta (cuentas, variables y comprobaciones) está en [`doc
 - **Analítica:** Vercel Web Analytics y Speed Insights, solo en producción y sin JS propio en la portada.
 - **Beta:** nada se indexa mientras `INDEXABLE` (`src/lib/site.ts`) sea `false`.
 - **SEO:** cada página indexable construye sus metadatos con `pageMetadata` (`src/lib/seo/`): canonical, `hreflang` y Open Graph con las URLs de `SITE_URL` (producción), también en local. Además, `sitemap.xml`, `robots.txt`, JSON-LD y una imagen para compartir por idioma (`src/app/[locale]/opengraph-image.tsx`). Los mensajes ICU se compilan en el build (`next.config.ts`), así que el cliente no carga su parser.
+
+## Licencia
+
+El código está bajo la [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). Si ofreces una versión modificada como servicio en red, tienes que publicar su código fuente con la misma licencia.
+
+La licencia cubre el código, no la marca: el nombre «QwertyRank», su logotipo y el dominio `qwertyrank.com` no se pueden usar para identificar otro servicio ni una versión modificada.

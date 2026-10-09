@@ -15,23 +15,23 @@ const REQUIRED = {
 } as const;
 
 /**
- * Lanza un error que nombra la variable que falta o está vacía; los scripts no ven más que esto. Con un entorno de
- * vista previa (`VERCEL_ENV=preview`) el prefijo de Redis es obligatorio y no puede ser el de producción: el script no
- * sabe de qué PR es, y sin prefijo tocaría las claves de producción, que comparten la base de Upstash.
+ * Throws an error naming the variable that is missing or empty; scripts see nothing more than this. With a preview
+ * environment (`VERCEL_ENV=preview`) the Redis prefix is required and cannot be the production one: the script does
+ * not know which PR it is for, and without a prefix it would touch the production keys, which share the Upstash DB.
  */
 export function parseScriptEnv(raw: Record<string, string | undefined>, source: string): ScriptEnv {
   const value = (name: string) => raw[name]?.trim() ?? "";
   for (const name of Object.values(REQUIRED)) {
-    if (value(name) === "") throw new Error(`Falta ${name} en ${source}.`);
+    if (value(name) === "") throw new Error(`Missing ${name} in ${source}.`);
   }
   const prefix = value("REDIS_KEY_PREFIX");
   if (value("VERCEL_ENV") === "preview") {
     if (prefix === "") {
-      throw new Error(`Falta REDIS_KEY_PREFIX en ${source}: en una vista previa pon el de la vista (pr-<n>: o preview:).`);
+      throw new Error(`Missing REDIS_KEY_PREFIX in ${source}: in a preview deployment set the deployment's one (pr-<n>: or preview:).`);
     }
     if (prefix === DEFAULT_REDIS_KEY_PREFIX) {
       throw new Error(
-        `REDIS_KEY_PREFIX no puede ser "${DEFAULT_REDIS_KEY_PREFIX}" en una vista previa: compartiría las claves de Redis con producción.`,
+        `REDIS_KEY_PREFIX cannot be "${DEFAULT_REDIS_KEY_PREFIX}" in a preview deployment: it would share the Redis keys with production.`,
       );
     }
   }
@@ -43,14 +43,14 @@ export function parseScriptEnv(raw: Record<string, string | undefined>, source: 
   };
 }
 
-/** Destinos legibles para mostrar antes de actuar: solo hosts, nunca usuario, contraseña ni token. */
+/** Readable targets to show before acting: hosts only, never user, password or token. */
 export function describeTargets(env: ScriptEnv): string {
   const host = (url: string) => {
     try {
       return new URL(url).host;
     } catch {
-      return "(URL no válida)";
+      return "(invalid URL)";
     }
   };
-  return `PostgreSQL: ${host(env.databaseUrl)} · Redis: ${host(env.redisUrl)} (prefijo ${env.redisKeyPrefix})`;
+  return `PostgreSQL: ${host(env.databaseUrl)} · Redis: ${host(env.redisUrl)} (prefix ${env.redisKeyPrefix})`;
 }

@@ -9,7 +9,7 @@ import type { VerifyTurnstile } from "./turnstile";
 
 const HOUR_MS = 60 * 60 * 1000;
 
-/** Spec 4a §2: partidas Ranked por hora, por cuenta (o anónimo) y por IP. */
+/** Spec 4a §2: Ranked games per hour, per account (or anonymous user) and per IP. */
 export const START_LIMITS = {
   owner: { max: 100, windowMs: HOUR_MS },
   ip: { max: 150, windowMs: HOUR_MS },
@@ -18,7 +18,7 @@ export const START_LIMITS = {
 export interface StartGateDeps {
   db: Db;
   limit: RateLimiter;
-  /** `null` sin claves de Turnstile (desarrollo local): no se exige el pase. */
+  /** `null` without Turnstile keys (local development): the pass is not required. */
   verifyTurnstile: VerifyTurnstile | null;
   passSecret: string;
   ipSecret: string;
@@ -30,12 +30,12 @@ export interface StartGateInput {
   anonId: string;
   userId: string | null;
   ip: string | null;
-  /** Valor de la cookie `qr_human`. */
+  /** Value of the `qr_human` cookie. */
   pass: string | undefined;
   turnstileToken: string | undefined;
 }
 
-/** `newPass`: pase recién ganado con el token; la ruta lo pone en la cookie aunque luego no se juegue. */
+/** `newPass`: pass just earned with the token; the route sets it in the cookie even if no game is played. */
 export type StartGateOutcome =
   | { kind: "needs_challenge" }
   | { kind: "ok" | "banned"; newPass: string | null }
@@ -43,17 +43,17 @@ export type StartGateOutcome =
 
 export type StartGate = (input: StartGateInput) => Promise<StartGateOutcome>;
 
-/** Clave de la IP en los límites: HMAC con clave fija (no la sal diaria de §6: la clave vive una hora). */
+/** IP key for the limits: HMAC with a fixed key (not the daily salt of §6: the key lives for an hour). */
 export function ipLimitKey(ip: string, secret: string): string {
   return createHmac("sha256", `rate-limit:${secret}`).update(ip).digest("hex");
 }
 
-/** Antes de crear una partida Ranked (spec 4a §2): pase humano, cuenta no baneada y límites. */
+/** Before creating a Ranked game (spec 4a §2): human pass, account not banned, and limits. */
 export function createStartGate(deps: StartGateDeps): StartGate {
   const limits = deps.limits ?? START_LIMITS;
   const now = deps.now ?? (() => new Date());
 
-  /** `null`: hace falta el reto. Lanza `TurnstileUnavailableError` si Cloudflare no responde. */
+  /** `null`: the challenge is needed. Throws `TurnstileUnavailableError` if Cloudflare does not respond. */
   async function humanPass(input: StartGateInput): Promise<{ newPass: string | null } | null> {
     if (!deps.verifyTurnstile) return { newPass: null };
     if (isValidHumanPass(input.pass, input.anonId, deps.passSecret, now())) return { newPass: null };
@@ -67,7 +67,7 @@ export function createStartGate(deps: StartGateDeps): StartGate {
 
     if (input.userId) {
       const [row] = await deps.db.select({ status: users.status }).from(users).where(eq(users.id, input.userId));
-      // El shadow-ban juega como si nada: no debe notarse (spec §4.7).
+      // A shadow banned player plays as if nothing happened: it must not be noticeable (spec §4.7).
       if (row?.status === "banned") return { kind: "banned", newPass: pass.newPass };
     }
 

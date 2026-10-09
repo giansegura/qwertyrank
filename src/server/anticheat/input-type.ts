@@ -4,8 +4,8 @@ import type { KeyTypingEvent, TypingEvent } from "@/lib/scoring/types";
 import type { AnticheatConfig } from "./config";
 
 /**
- * Teclado físico o táctil, decidido por la forma de las pulsaciones (spec §4.5).
- * Heurística inicial: hay que calibrarla con partidas de dispositivos reales. Umbrales en `AnticheatConfig`.
+ * Physical or touch keyboard, decided by the shape of the keystrokes (spec §4.5).
+ * Initial heuristic: it needs calibrating with games from real devices. Thresholds in `AnticheatConfig`.
  */
 
 const IME_KEYS = new Set(["Unidentified", "Process"]);
@@ -14,7 +14,7 @@ function fromEnv(env: ClientEnv): InputType {
   return env.coarse && env.touchPoints > 0 ? "touch" : "physical";
 }
 
-/** Duración de cada pulsación: de un keydown al siguiente keyup de la misma tecla. */
+/** Duration of each keystroke: from a keydown to the next keyup of the same key. */
 function holdTimes(events: readonly TypingEvent[]): number[] {
   const pressed = new Map<string, number>();
   const holds: number[] = [];

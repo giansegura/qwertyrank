@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
-/** Identificador anónimo del jugador, en una cookie firmada con HMAC: `<id>.<firma>`. */
+/** Anonymous player identifier, in an HMAC-signed cookie: `<id>.<signature>`. */
 
 export const ANON_COOKIE = "qr_anon";
 export const ANON_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

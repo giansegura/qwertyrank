@@ -7,9 +7,9 @@ import { users } from "../db/schema";
 export const NICK_RESERVATION_SECONDS = 60;
 
 /**
- * ¿Está cogido el nick? Sí si ya es de alguien o si otro registro lo acaba de reservar. Si está libre,
- * lo reserva 60 s (spec 4a §6.5): dos registros a la vez nunca eligen el mismo, y el índice único
- * sobre `lower(nick)` ya no salta.
+ * Is the nick taken? Yes if it already belongs to someone or another sign-up just reserved it. If it is free,
+ * it reserves it for 60 s (spec 4a §6.5): two simultaneous sign-ups never pick the same one, and the unique
+ * index on `lower(nick)` no longer fires.
  */
 export function createNickAvailability(db: Db, redis: Redis, prefix: string) {
   return async function isNickTaken(nick: string): Promise<boolean> {

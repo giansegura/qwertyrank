@@ -6,7 +6,7 @@ import { revalidatePlayerPages } from "./cache";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 describe("revalidatePlayerPages", () => {
-  it("invalida perfiles, rankings, la portada (con su top 10) y los resultados", () => {
+  it("invalidates profiles, rankings, the home page (with its top 10) and the results", () => {
     revalidatePlayerPages();
     expect(vi.mocked(revalidatePath).mock.calls).toEqual([
       ["/[locale]/u/[nick]", "page"],

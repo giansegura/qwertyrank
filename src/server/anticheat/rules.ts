@@ -3,9 +3,9 @@ import type { InputType, RejectReason } from "@/lib/game/types";
 import type { InputTypingEvent, KeyTypingEvent, TypingEvent } from "@/lib/scoring/types";
 import type { AnticheatConfig } from "./config";
 
-/** Reglas que rechazan una partida (spec §4.2 y §4.3), con los umbrales de `AnticheatConfig`. */
+/** Rules that reject a game (spec §4.2 and §4.3), with the thresholds from `AnticheatConfig`. */
 
-/** Una tanda de eventos tal como la recibió el servidor, con la hora oficial de llegada. */
+/** A batch of events as the server received it, with the official arrival time. */
 export interface ReceivedBatch {
   seq: number;
   arrivedAt: number;
@@ -41,22 +41,22 @@ function insertions(events: readonly TypingEvent[]): InputTypingEvent[] {
   return events.filter((event): event is InputTypingEvent => event.type === "input" && event.inserted !== "");
 }
 
-/** Teclas que escriben sin coincidir con la letra: tecla muerta y teclados con IME. */
+/** Keys that write without matching the letter: dead key and IME keyboards. */
 const COMPOSING_KEYS = new Set(["Dead", "Process", "Unidentified"]);
 
 function writesText(key: string): boolean {
   return [...key].length === 1 || COMPOSING_KEYS.has(key);
 }
 
-/** Letra base sin tilde y en minúscula: "Á" → "a". */
+/** Base letter without accent, lowercased: "Á" → "a". */
 function baseChar(text: string): string {
   return text.normalize("NFD").charAt(0).toLowerCase();
 }
 
 /**
- * Cada inserción necesita su propia pulsación en el segundo anterior: de la misma tecla
- * (sin contar tildes) o de una tecla de composición. Cada keydown se usa una sola vez,
- * así que mantener una tecla pulsada no tapa texto inyectado. Lineal: ambas listas van ordenadas.
+ * Each insertion needs its own keystroke in the preceding second: of the same key
+ * (ignoring accents) or of a composing key. Each keydown is used only once,
+ * so holding a key down does not hide injected text. Linear: both lists are sorted.
  */
 function hasInjectedInput(
   events: readonly TypingEvent[],
@@ -70,7 +70,7 @@ function hasInjectedInput(
   const used = new Uint8Array(downs.length);
   let first = 0;
   for (const input of inputs.toSorted((a, b) => a.t - b.t)) {
-    // El inicio de la ventana salta las pulsaciones caducadas y las ya usadas.
+    // The window start skips expired and already used keystrokes.
     while (first < downs.length && (used[first] || downs[first].t < input.t - lookbackMs)) first++;
     const wanted = baseChar(input.inserted);
     let match = -1;

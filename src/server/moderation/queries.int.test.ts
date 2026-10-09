@@ -20,8 +20,8 @@ async function newUser(nick = `q_${randomUUID().slice(0, 8)}`, role: "user" | "a
   return { id: row.id, nick, email };
 }
 
-describe("consultas del panel", () => {
-  it("cola: denuncias abiertas por jugador, cuántas de cada motivo, primero los más denunciados", async () => {
+describe("panel queries", () => {
+  it("queue: open reports per player, how many of each reason, most reported first", async () => {
     const [a, b, first, second] = [await newUser(), await newUser(), await newUser(), await newUser()];
     await db.insert(reports).values([
       { reporterId: a.id, targetUserId: first.id, reason: "cheating" },
@@ -38,7 +38,7 @@ describe("consultas del panel", () => {
     expect(queue[0].latest).toBeInstanceOf(Date);
   });
 
-  it("busca por el principio del nick sin distinguir mayúsculas, o por el email exacto", async () => {
+  it("searches by the start of the nick case-insensitively, or by the exact email", async () => {
     const tag = randomUUID().slice(0, 6);
     const ana = await newUser(`Ana_${tag}`);
     expect((await searchPlayers(db, `ana_${tag.toUpperCase()}`)).map((player) => player.id)).toEqual([ana.id]);
@@ -46,7 +46,7 @@ describe("consultas del panel", () => {
     expect(await searchPlayers(db, "   ")).toEqual([]);
   });
 
-  it("busca el texto tal cual, sin comodines", async () => {
+  it("searches the text literally, without wildcards", async () => {
     const tag = randomUUID().slice(0, 6);
     const literal = await newUser(`ab_${tag}`);
     await newUser(`abx${tag}`);
@@ -54,7 +54,7 @@ describe("consultas del panel", () => {
     expect(await searchPlayers(db, `%${tag}`)).toEqual([]);
   });
 
-  it("ficha: datos, proveedores, récords, partidas, denuncias y acciones con sus nicks", async () => {
+  it("detail: data, providers, records, games, reports and actions with their nicks", async () => {
     const [admin, reporter, player] = [await newUser(), await newUser(), await newUser()];
     await db.insert(accounts).values({ userId: player.id, accountId: randomUUID(), providerId: "google" });
     const startsAt = new Date();
@@ -90,7 +90,7 @@ describe("consultas del panel", () => {
       reports: [expect.objectContaining({ reason: "cheating", status: "open", reporterNick: reporter.nick })],
       actions: [expect.objectContaining({ action: "shadowban", reason: "x", adminNick: admin.nick })],
     });
-    // Sus niveles verificados (los de `verifyEverywhere`).
+    // Their verified levels (the ones from `verifyEverywhere`).
     expect((await playerDetail(db, player.id))!.verifiedLevels).toContainEqual({
       language: "en",
       inputType: "physical",
@@ -100,7 +100,7 @@ describe("consultas del panel", () => {
     expect(await playerDetail(db, randomUUID())).toBeNull();
   });
 
-  it("solo es admin quien tiene el rol en la base de datos", async () => {
+  it("only whoever has the role in the database is an admin", async () => {
     expect(await isAdmin(db, (await newUser(undefined, "admin")).id)).toBe(true);
     expect(await isAdmin(db, (await newUser()).id)).toBe(false);
     expect(await isAdmin(db, randomUUID())).toBe(false);

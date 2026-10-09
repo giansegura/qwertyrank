@@ -24,8 +24,8 @@ const attemptsOf = async (id: string) =>
   (await db.select({ attempts: recordVerifications.attempts }).from(recordVerifications).where(eq(recordVerifications.id, id)))[0]
     .attempts;
 
-describe("intentos de verificación", () => {
-  it("cada inicio gasta uno y dice qué intento es y con qué teclado; después del tercero, ninguno", async () => {
+describe("verification attempts", () => {
+  it("each start spends one and says which attempt it is and with which keyboard; after the third, none", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId, { inputType: "touch" });
     const spend = () => spendAttempt(db, { verificationId: verification.id, userId, language: "en" });
@@ -36,7 +36,7 @@ describe("intentos de verificación", () => {
     expect(await attemptsOf(verification.id)).toBe(3);
   });
 
-  it("no vale la de otro jugador, ni en otro idioma, ni caducada, ni cerrada", async () => {
+  it("another player's does not work, nor one in another language, expired or closed", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     expect(await spendAttempt(db, { verificationId: verification.id, userId: await newUser(), language: "en" })).toBeNull();
@@ -57,7 +57,7 @@ describe("intentos de verificación", () => {
     expect(await attemptsOf(verification.id)).toBe(0);
   });
 
-  it("desde varios dispositivos a la vez nunca se gastan más de 3", async () => {
+  it("from several devices at once no more than 3 are ever spent", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     const spent = await Promise.all(

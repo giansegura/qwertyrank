@@ -8,9 +8,9 @@ import { TOP_SIZE } from "./ranking";
 import type { Board } from "./store";
 
 /**
- * El top de un ranking, desde PostgreSQL y no desde Redis: así la página se puede regenerar cada
- * 60 s (el cliente de Upstash usa `fetch` sin caché y la haría dinámica). Lo ordena la misma
- * puntuación que Redis, y los jugadores con `status ≠ active` no aparecen (spec §4.7, §5.6).
+ * The top of a ranking, from PostgreSQL and not from Redis: that way the page can be regenerated every
+ * 60 s (the Upstash client uses uncached `fetch` and would make it dynamic). It is ordered by the same
+ * score as Redis, and players with `status ≠ active` don't appear (spec §4.7, §5.6).
  */
 export async function getTop(db: Db, board: Board, limit = TOP_SIZE): Promise<TopEntry[]> {
   const rows = await db

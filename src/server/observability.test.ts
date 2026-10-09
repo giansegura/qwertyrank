@@ -7,7 +7,7 @@ import { DrizzleQueryError } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { initSentry, reportRequestError, sentryOptions } from "./observability";
 
-/** Una sesión y una IP que no aparecen en el código: Sentry adjunta las líneas de código de cada error. */
+/** A session and an IP that do not appear in the code: Sentry attaches the code lines of each error. */
 const SESSION = randomUUID();
 const IP = `203.0.113.${randomInt(1, 255)}`;
 const REQUEST = {
@@ -17,12 +17,12 @@ const REQUEST = {
 };
 
 describe("sentryOptions", () => {
-  it("sin SENTRY_DSN, Sentry no se inicia", () => {
+  it("without SENTRY_DSN, Sentry does not start", () => {
     expect(sentryOptions({})).toBeNull();
     expect(sentryOptions({ SENTRY_DSN: "", VERCEL_ENV: "production" })).toBeNull();
   });
 
-  it("con DSN: solo errores, sin datos personales, y los console.error también", () => {
+  it("with a DSN: errors only, no personal data, and console.error too", () => {
     const options = sentryOptions({ SENTRY_DSN: "https://k@o1.ingest.sentry.io/2", VERCEL_ENV: "preview" });
     expect(options).toMatchObject({
       dsn: "https://k@o1.ingest.sentry.io/2",
@@ -30,7 +30,7 @@ describe("sentryOptions", () => {
       tracesSampleRate: 0,
       sendDefaultPii: false,
     });
-    // Sin migas de consola, pero sí las demás.
+    // No console breadcrumbs, but the others are kept.
     expect(options?.beforeBreadcrumb?.({ category: "console", message: "x" }, undefined)).toBeNull();
     const http = { category: "http", message: "x" };
     expect(options?.beforeBreadcrumb?.(http, undefined)).toBe(http);
@@ -42,8 +42,8 @@ describe("sentryOptions", () => {
   });
 });
 
-/** Un Sentry de mentira: guarda los eventos de cada envelope que recibe. */
-describe("Sentry contra un servidor local", () => {
+/** A fake Sentry: stores the events of every envelope it receives. */
+describe("Sentry against a local server", () => {
   const events: Record<string, unknown>[] = [];
   let server: Server;
   let consoleError: ReturnType<typeof vi.spyOn>;
@@ -62,7 +62,7 @@ describe("Sentry contra un servidor local", () => {
     const { port } = server.address() as AddressInfo;
     vi.stubEnv("SENTRY_DSN", `http://public@127.0.0.1:${port}/1`);
     vi.stubEnv("VERCEL_ENV", "preview");
-    // Antes de iniciar Sentry: así lo envuelve y la salida de los tests queda limpia.
+    // Before starting Sentry: that way it wraps it and the test output stays clean.
     consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     initSentry();
   });
@@ -74,7 +74,7 @@ describe("Sentry contra un servidor local", () => {
     await new Promise((resolve) => server.close(resolve));
   });
 
-  it("un error que el código registra con console.error llega, sin datos del usuario", async () => {
+  it("an error the code logs with console.error arrives, without user data", async () => {
     console.error("ranking failed", new Error("redis down"));
     await Sentry.flush(2_000);
     const event = events.find((sent) => JSON.stringify(sent).includes("redis down"));
@@ -82,9 +82,9 @@ describe("Sentry contra un servidor local", () => {
     expect(event?.user).toBeUndefined();
   });
 
-  it("un error no controlado de una petición llega con su ruta, y onRequestError espera al envío", async () => {
+  it("an unhandled request error arrives with its path, and onRequestError waits for the send", async () => {
     await reportRequestError(
-      new Error("boom en la tarea"),
+      new Error("boom in the job"),
       REQUEST,
       {
         routerKind: "App Router",
@@ -94,18 +94,18 @@ describe("Sentry contra un servidor local", () => {
         revalidateReason: undefined,
       },
     );
-    const event = events.find((sent) => JSON.stringify(sent).includes("boom en la tarea"));
+    const event = events.find((sent) => JSON.stringify(sent).includes("boom in the job"));
     expect(event).toMatchObject({
       contexts: { nextjs: { request_path: "/api/cron/daily", route_type: "route" } },
       request: { method: "GET" },
     });
-    // Ni cabeceras ni cookies: ni la sesión ni la IP salen hacia Sentry.
+    // No headers or cookies: neither the session nor the IP goes out to Sentry.
     expect(event?.request).toEqual({ method: "GET" });
     expect(JSON.stringify(event)).not.toContain(SESSION);
     expect(JSON.stringify(event)).not.toContain(IP);
   });
 
-  it("los parámetros de una consulta fallida no llegan a Sentry, ni por console.error ni por onRequestError", async () => {
+  it("the parameters of a failed query do not reach Sentry, neither through console.error nor through onRequestError", async () => {
     const EMAIL = `${randomUUID()}@example.com`;
     const failure = () =>
       new DrizzleQueryError('update "user" set "name" = $1 where "email" = $2', [`n-${EMAIL}`, EMAIL], new Error("connection refused"));
@@ -128,7 +128,7 @@ describe("Sentry contra un servidor local", () => {
     }
   });
 
-  it("ni el cuerpo ni la query string de una petición real llegan a Sentry", async () => {
+  it("neither the body nor the query string of a real request reaches Sentry", async () => {
     const BODY_SECRET = randomUUID();
     const QUERY_SECRET = randomUUID();
     const app = createServer((request, response) => {
@@ -136,9 +136,9 @@ describe("Sentry contra un servidor local", () => {
       request.on("data", (chunk) => (body += chunk));
       request.on("end", async () => {
         expect(body).toContain(BODY_SECRET);
-        console.error("handler failed", new Error("fallo con petición real"));
+        console.error("handler failed", new Error("failure with real request"));
         await reportRequestError(
-          new Error("boom con petición real"),
+          new Error("boom with real request"),
           { path: `/es/entrar?code=${QUERY_SECRET}`, method: "POST", headers: {} },
           {
             routerKind: "App Router",
@@ -163,7 +163,7 @@ describe("Sentry contra un servidor local", () => {
     } finally {
       await new Promise((resolve) => app.close(resolve));
     }
-    const mine = events.filter((sent) => JSON.stringify(sent).includes("petición real"));
+    const mine = events.filter((sent) => JSON.stringify(sent).includes("real request"));
     expect(mine.length).toBeGreaterThanOrEqual(2);
     for (const event of mine) {
       const serialized = JSON.stringify(event);
@@ -171,8 +171,8 @@ describe("Sentry contra un servidor local", () => {
       expect(serialized).not.toContain(QUERY_SECRET);
       expect(event.request).toEqual({ method: "POST" });
     }
-    // Sentry adjunta las líneas de código de cada error: se distingue por el valor de la excepción.
-    const reported = mine.find((event) => (event.exception as { values: { value: string }[] }).values[0].value === "boom con petición real");
+    // Sentry attaches the code lines of each error: tell them apart by the exception value.
+    const reported = mine.find((event) => (event.exception as { values: { value: string }[] }).values[0].value === "boom with real request");
     expect(reported).toMatchObject({
       contexts: { nextjs: { request_path: "/es/entrar", route_type: "route" } },
     });

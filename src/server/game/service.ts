@@ -21,7 +21,7 @@ import type { PublishedGame, SaveVerificationGame, VerificationResult } from "..
 import type { GameRecord, SaveGame, SavedGame } from "./persist";
 import type { AppendStatus, GameStore, GameTimes, StartedVerification } from "./store";
 
-/** Categoría que se le enseña al jugador; el motivo exacto se queda en la base de datos. */
+/** Category shown to the player; the exact reason stays in the database. */
 const PUBLIC_REASON: Record<RejectReason, PublicReason> = {
   late: "connection",
   incomplete: "connection",
@@ -37,15 +37,15 @@ const PUBLIC_REASON: Record<RejectReason, PublicReason> = {
 export interface GameServiceDeps {
   store: GameStore;
   saveGame: SaveGame;
-  /** Guarda y juzga una partida de verificación (spec 4b §3.3). */
+  /** Saves and judges a verification game (spec 4b §3.3). */
   saveVerificationGame: SaveVerificationGame;
   loadWords: (language: TestLanguage) => Promise<readonly string[]>;
   random: () => number;
   newId: () => string;
   times: GameTimes;
-  /** Umbrales del anti-trampas: los de producción salen de `ANTICHEAT_CONFIG` (`src/server/anticheat/config.ts`). */
+  /** Anti-cheat thresholds: production ones come from `ANTICHEAT_CONFIG` (`src/server/anticheat/config.ts`). */
   anticheat: AnticheatConfig;
-  /** Publica las marcas y calcula su posición (spec §5.5–5.6); no lanza. */
+  /** Publishes the bests and computes their position (spec §5.5–5.6); does not throw. */
   rankGame: (game: RankGameInput) => Promise<GameRanking>;
 }
 
@@ -54,7 +54,7 @@ export type FinishOutcome =
   | { kind: "busy" | "closed" | "not_found" };
 
 export interface GameService {
-  /** Con `verification`, una partida de verificación de un intento ya gastado (spec 4b §3.1). */
+  /** With `verification`, a verification game for an attempt already spent (spec 4b §3.1). */
   start(
     input: Pick<StartRequest, "language" | "env"> & {
       owner: string;
@@ -69,7 +69,7 @@ export interface GameService {
 const rankInput = (game: PublishedGame): RankGameInput => ({ ...game, verdict: "valid" });
 
 export function createGameService(deps: GameServiceDeps): GameService {
-  /** Guarda la partida; si falla, la deja lista para repetir el final. */
+  /** Saves the game; if it fails, leaves it ready to retry the finish. */
   async function save<T>(gameId: string, write: () => Promise<T>): Promise<T> {
     try {
       return await write();
@@ -80,9 +80,9 @@ export function createGameService(deps: GameServiceDeps): GameService {
   }
 
   /**
-   * Tras publicar el récord (spec 4b §3.3), cada partida publicada pasa por el ranking como una partida
-   * más: ZADD de lo que mejora (salvo shadow-ban), autorreparado, relectura del estado y revalidación.
-   * La del récord va la última: su posición es la de la respuesta.
+   * After publishing the record (spec 4b §3.3), each published game goes through the ranking like any other
+   * game: ZADD of what improves (except shadow ban), self-repair, state re-read and revalidation.
+   * The record's game goes last: its position is the one in the response.
    */
   async function rankVerified({ target, published }: Extract<VerificationResult, { kind: "verified" }>): Promise<GameRanking> {
     for (const game of published) {
@@ -163,7 +163,7 @@ export function createGameService(deps: GameServiceDeps): GameService {
         reason: reason ? PUBLIC_REASON[reason] : null,
       };
 
-      // Partida de verificación (spec 4b §3.3): en lugar de `ranking`, si ha superado la verificación.
+      // Verification game (spec 4b §3.3): instead of `ranking`, whether it passed the verification.
       const started = game.verification;
       if (started) {
         const outcome = await save(gameId, () => deps.saveVerificationGame(record, started));
@@ -175,8 +175,8 @@ export function createGameService(deps: GameServiceDeps): GameService {
       }
 
       const saved: SavedGame = await save(gameId, () => deps.saveGame(record));
-      // En `review` no se toca Redis: su posición ya sale de PostgreSQL (spec 4b §2.2). Si no, ya
-      // guardada: si el ranking falla, `rankGame` responde `unavailable` y la partida se da igual.
+      // In `review` Redis is not touched: its position already comes from PostgreSQL (spec 4b §2.2). Otherwise,
+      // already saved: if the ranking fails, `rankGame` answers `unavailable` and the game is returned anyway.
       const ranking: GameRanking = saved.review
         ? { kind: "review", ...saved.review }
         : await deps.rankGame({

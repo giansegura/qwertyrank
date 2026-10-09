@@ -45,7 +45,7 @@ async function newGame(userId: string | null, overrides: Partial<GameRecord> = {
 }
 
 describe("getPublicResult", () => {
-  it("una partida válida anónima, sin jugador", async () => {
+  it("a valid anonymous game, with no player", async () => {
     const id = await newGame(null);
     expect(await getPublicResult(db, id)).toEqual({
       id,
@@ -58,13 +58,13 @@ describe("getPublicResult", () => {
     });
   });
 
-  it("una partida válida de un jugador activo, con su nick y su país", async () => {
+  it("a valid game from an active player, with their nick and country", async () => {
     const user = await newUser();
     const id = await newGame(user.id);
     expect((await getPublicResult(db, id))?.player).toEqual({ nick: user.nick, country: "ES" });
   });
 
-  it("no existe en review, rechazada, de verificación, inexistente ni con id que no es UUID", async () => {
+  it("does not exist in review, rejected, verification, missing or with a non-UUID id", async () => {
     const user = await newUser();
     const ids = [
       await newGame(user.id, { verdict: "review" }),
@@ -76,7 +76,7 @@ describe("getPublicResult", () => {
     for (const id of ids) expect(await getPublicResult(db, id)).toBeNull();
   });
 
-  it("no existe para los demás si el jugador está en shadow-ban o baneado", async () => {
+  it("does not exist for others if the player is shadow banned or banned", async () => {
     for (const status of ["shadowbanned", "banned"] as const) {
       const user = await newUser(status);
       expect(await getPublicResult(db, await newGame(user.id))).toBeNull();
@@ -85,13 +85,13 @@ describe("getPublicResult", () => {
 });
 
 describe("getOwnResult", () => {
-  it("el jugador ve la suya aunque esté en shadow-ban", async () => {
+  it("the player sees their own even when shadow banned", async () => {
     const user = await newUser("shadowbanned");
     const id = await newGame(user.id);
     expect((await getOwnResult(db, user.id, id))?.player).toEqual({ nick: user.nick, country: "ES" });
   });
 
-  it("no la de otro jugador ni una rechazada ni un id que no es UUID", async () => {
+  it("not another player's, nor a rejected one, nor a non-UUID id", async () => {
     const owner = await newUser();
     const other = await newUser();
     expect(await getOwnResult(db, other.id, await newGame(owner.id))).toBeNull();

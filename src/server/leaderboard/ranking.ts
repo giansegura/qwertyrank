@@ -9,7 +9,7 @@ import { isBoard } from "./bests";
 import { RANKED_MIN_ACCURACY, encodeScore } from "./score";
 import type { Board, LeaderboardStore } from "./store";
 
-/** Cada ranking enseña su top 100 (spec §5.6). */
+/** Each ranking shows its top 100 (spec §5.6). */
 export const TOP_SIZE = 100;
 
 export interface RankGameInput {
@@ -20,14 +20,14 @@ export interface RankGameInput {
   wpm: number;
   accuracy: number;
   startsAt: Date;
-  /** Si la partida ha mejorado la marca del jugador (de `recordBest`). */
+  /** Whether the game improved the player's best (from `recordBest`). */
   improved: boolean;
 }
 
 export interface RankingDeps {
   db: Db;
   store: LeaderboardStore;
-  /** En producción, `revalidatePath` de la página de cada ranking que cambia. */
+  /** In production, `revalidatePath` of the page of each ranking that changes. */
   onTopChanged: (changes: Board[]) => void;
 }
 
@@ -37,7 +37,7 @@ export function createRanking(deps: RankingDeps) {
     return row?.status === "active";
   }
 
-  /** Puntuación de la marca del jugador en ese ranking, desde PostgreSQL (por clave primaria), o `null`. */
+  /** Score of the player's best in that ranking, from PostgreSQL (by primary key), or `null`. */
   async function bestScore(userId: string, board: Board): Promise<number | null> {
     const [row] = await deps.db
       .select({ score: bests.score })
@@ -54,19 +54,19 @@ export function createRanking(deps: RankingDeps) {
     const score = encodeScore({ wpm: game.wpm, accuracy: game.accuracy, achievedAt: game.startsAt });
 
     if (!game.userId) {
-      // Sin cuenta: la posición que tendría, sin escribir en el ranking.
+      // No account: the position it would have, without writing to the ranking.
       return { kind: "would_rank", rank: await deps.store.positionFor(board, score) };
     }
 
     const userId = game.userId;
     if (!(await isActive(userId))) {
-      // Shadow-ban (spec §4.7): ve una posición "como si estuviera", pero nadie más la ve.
+      // Shadow ban (spec §4.7): sees a position "as if they were there", but nobody else sees it.
       const rank = await deps.store.positionFor(board, (await bestScore(userId, board)) ?? score);
       return { kind: "ranked", rank, improved: game.improved };
     }
 
-    // Solo si ha mejorado su marca. Si a Redis le falta el jugador (perdió datos o falló una
-    // escritura), se repara con su marca de PostgreSQL, la fuente de verdad (spec §5.2).
+    // Only if their best improved. If Redis is missing the player (it lost data or a write
+    // failed), it is repaired with their best from PostgreSQL, the source of truth (spec §5.2).
     if (game.improved) await deps.store.add([{ board, userId, score }]);
     let listed = await deps.store.position(board, userId);
     if (listed === null) {
@@ -74,15 +74,15 @@ export function createRanking(deps: RankingDeps) {
       if (best !== null) await deps.store.add([{ board, userId, score: best }]);
       listed = await deps.store.position(board, userId);
     }
-    // Si le han sancionado o ha borrado la cuenta mientras tanto, se deshace lo escrito (spec 4a §3.5):
-    // si la sanción llegó antes de esta lectura, limpia la partida; si llega después, limpia la sanción.
+    // If they were sanctioned or deleted the account meanwhile, the write is undone (spec 4a §3.5):
+    // if the sanction came before this read, the game cleans up; if it comes after, the sanction does.
     if (!(await isActive(userId))) await deps.store.remove(userId, [board]);
     const rank = listed ?? (await deps.store.positionFor(board, score));
     if (game.improved && rank <= TOP_SIZE) {
       try {
         deps.onTopChanged([board]);
       } catch (error) {
-        // La página se regenera igual a los 60 s: no es motivo para perder la posición ya calculada.
+        // The page is regenerated after 60 s anyway: no reason to lose the already computed position.
         console.error("leaderboard revalidation failed", error);
       }
     }
@@ -90,9 +90,9 @@ export function createRanking(deps: RankingDeps) {
   }
 
   /**
-   * Publica la marca que ha mejorado la partida y calcula su posición en el ranking de su idioma y
-   * teclado (spec §5.5–5.6). No lanza: la partida ya está guardada, y si Redis falla se responde sin
-   * posición (`unavailable`).
+   * Publishes the best the game improved and computes its position in the ranking of its language and
+   * keyboard (spec §5.5–5.6). Does not throw: the game is already saved, and if Redis fails it responds
+   * without a position (`unavailable`).
    */
   async function rankGame(game: RankGameInput): Promise<GameRanking> {
     try {
@@ -103,7 +103,7 @@ export function createRanking(deps: RankingDeps) {
     }
   }
 
-  /** Posición del jugador en un ranking y su marca (`GET /api/leaderboard/me`). */
+  /** The player's position in a ranking and their best (`GET /api/leaderboard/me`). */
   async function myPosition(userId: string, board: Board): Promise<MyPositionResponse> {
     const [best] = await deps.db
       .select({ wpm: bests.wpm, accuracy: bests.accuracy, score: bests.score, status: users.status })
@@ -111,7 +111,7 @@ export function createRanking(deps: RankingDeps) {
       .innerJoin(users, eq(users.id, bests.userId))
       .where(and(eq(bests.userId, userId), isBoard(board)));
     if (!best) return { rank: null };
-    // En shadow-ban no está en Redis: su posición "como si estuviera" (spec §4.7).
+    // In shadow ban they are not in Redis: their position "as if they were there" (spec §4.7).
     const listed = best.status === "active" ? await deps.store.position(board, userId) : null;
     return { rank: listed ?? (await deps.store.positionFor(board, best.score)), wpm: best.wpm, accuracy: best.accuracy };
   }

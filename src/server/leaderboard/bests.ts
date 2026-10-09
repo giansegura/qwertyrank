@@ -14,14 +14,14 @@ export interface BestEntry {
   inputType: InputType;
   wpm: number;
   accuracy: number;
-  /** Hora de la partida: decide el desempate. */
+  /** Time of the game: breaks ties. */
   achievedAt: Date;
 }
 
 /**
- * Guarda la partida como mejor marca del jugador en su idioma y teclado, pero solo si supera a la
- * anterior (spec §5.5). A igualdad de PPM y precisión gana la que llegó antes: lo decide `score`.
- * Devuelve si ha entrado (mejora o primera marca); entonces su puntuación es la de la partida.
+ * Stores the game as the player's best in its language and keyboard, but only if it beats the
+ * previous one (spec §5.5). On equal wpm and accuracy the earlier one wins: `score` decides it.
+ * Returns whether it got in (improvement or first best); in that case its score is the game's.
  */
 export async function recordBest(db: DbExecutor, entry: BestEntry): Promise<boolean> {
   const rows = await db
@@ -51,12 +51,12 @@ export async function recordBest(db: DbExecutor, entry: BestEntry): Promise<bool
   return rows.length > 0;
 }
 
-/** Las filas de `bests` de un ranking: idioma y teclado. */
+/** The `bests` rows of a ranking: language and keyboard. */
 export function isBoard(board: Board): SQL {
   return and(eq(bests.language, board.language), eq(bests.inputType, board.inputType))!;
 }
 
-/** Rankings en los que tiene marca un jugador (todas sus `bests`, hasta 6), para sacarle de Redis. */
+/** Rankings where a player has a best (all their `bests`, up to 6), to remove them from Redis. */
 export async function userBoards(db: DbExecutor, userId: string): Promise<Board[]> {
   return db.select({ language: bests.language, inputType: bests.inputType }).from(bests).where(eq(bests.userId, userId));
 }

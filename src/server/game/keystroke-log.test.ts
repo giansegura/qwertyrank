@@ -9,24 +9,24 @@ const BATCHES = [
   { seq: 2, arrivedAt: 200, events: [{ ...EVENT, t: 150, inserted: "b" }] },
 ];
 
-describe("registro de pulsaciones", () => {
-  it("guarda las palabras junto a las tandas y lo lee igual", () => {
+describe("keystroke log", () => {
+  it("stores the words alongside the batches and reads it back the same", () => {
     expect(decodeKeystrokeLog(encodeKeystrokeLog({ words: ["ab", "cd"], batches: BATCHES }))).toEqual({
       words: ["ab", "cd"],
       events: [EVENT, { ...EVENT, t: 150, inserted: "b" }],
     });
   });
 
-  it("lee los registros anteriores a la 4b (solo tandas) sin palabras", () => {
+  it("reads pre-4b logs (batches only) without words", () => {
     expect(decodeKeystrokeLog(gzipSync(JSON.stringify(BATCHES)))).toEqual({
       words: null,
       events: [EVENT, { ...EVENT, t: 150, inserted: "b" }],
     });
   });
 
-  it("un registro roto no lanza", () => {
-    expect(decodeKeystrokeLog(Buffer.from("no es gzip"))).toBeNull();
-    expect(decodeKeystrokeLog(gzipSync("{no es json"))).toBeNull();
+  it("a broken log does not throw", () => {
+    expect(decodeKeystrokeLog(Buffer.from("not gzip"))).toBeNull();
+    expect(decodeKeystrokeLog(gzipSync("{not json"))).toBeNull();
     expect(decodeKeystrokeLog(gzipSync("42"))).toBeNull();
     expect(decodeKeystrokeLog(gzipSync(JSON.stringify({ words: [1, 2], batches: [null, { events: "x" }] })))).toEqual({
       words: null,

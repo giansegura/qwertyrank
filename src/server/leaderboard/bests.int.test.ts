@@ -46,7 +46,7 @@ function entry(userId: string, gameId: string, wpm: number, accuracy: number, ac
 const bestsOf = (userId: string) => db.select().from(bests).where(eq(bests.userId, userId));
 
 describe("recordBest (bests)", () => {
-  it("la primera partida es su marca en ese idioma y teclado", async () => {
+  it("the first game is their best in that language and keyboard", async () => {
     const userId = await newUser();
     const gameId = await newGame(userId);
     expect(await recordBest(db, entry(userId, gameId, 80, 97))).toBe(true);
@@ -55,7 +55,7 @@ describe("recordBest (bests)", () => {
     ]);
   });
 
-  it("una partida peor no cambia la marca", async () => {
+  it("a worse game does not change the best", async () => {
     const userId = await newUser();
     const first = await newGame(userId);
     await recordBest(db, entry(userId, first, 80, 97));
@@ -63,7 +63,7 @@ describe("recordBest (bests)", () => {
     expect((await bestsOf(userId)).map((row) => row.gameId)).toEqual([first]);
   });
 
-  it("a igualdad, se queda la que llegó antes, aunque sea de otro día", async () => {
+  it("on a tie, the earlier one stays, even if it is from another day", async () => {
     const userId = await newUser();
     const first = await newGame(userId);
     await recordBest(db, entry(userId, first, 80, 97, AT));
@@ -72,7 +72,7 @@ describe("recordBest (bests)", () => {
     expect((await bestsOf(userId)).map((row) => row.gameId)).toEqual([first]);
   });
 
-  it("una partida mejor sustituye a la anterior", async () => {
+  it("a better game replaces the previous one", async () => {
     const userId = await newUser();
     await recordBest(db, entry(userId, await newGame(userId), 80, 97));
     const better = await newGame(userId);
@@ -80,7 +80,7 @@ describe("recordBest (bests)", () => {
     expect(await bestsOf(userId)).toEqual([expect.objectContaining({ gameId: better, wpm: 85, accuracy: 96 })]);
   });
 
-  it("cada idioma y teclado tiene su propia marca", async () => {
+  it("each language and keyboard has its own best", async () => {
     const userId = await newUser();
     await recordBest(db, entry(userId, await newGame(userId), 80, 97));
     expect(await recordBest(db, { ...entry(userId, await newGame(userId), 60, 95), inputType: "touch" })).toBe(true);

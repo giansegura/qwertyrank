@@ -9,7 +9,7 @@ import { insertGame, type GameRecord } from "../game/persist";
 import type { StartedVerification } from "../game/store";
 import { recordBest } from "../leaderboard/bests";
 
-/** Una partida publicada al superar la verificación, lista para `rankGame`. */
+/** A game published on passing the verification, ready for `rankGame`. */
 export interface PublishedGame {
   gameId: string;
   userId: string;
@@ -18,14 +18,14 @@ export interface PublishedGame {
   wpm: number;
   accuracy: number;
   startsAt: Date;
-  /** Si mejora la marca del jugador (de `recordBest`). */
+  /** Whether it improves the player's best (from `recordBest`). */
   improved: boolean;
 }
 
 /**
- * - `failed`: no la ha superado; `attemptsLeft: 0` si ya no quedan intentos o la verificación está cerrada.
- * - `verified`: récord publicado. `published`, las partidas que acaban de pasar a `valid`, de la más antigua
- *   a la más nueva (vacío si otro dispositivo ya la había verificado); `target`, la del récord.
+ * - `failed`: not passed; `attemptsLeft: 0` if no attempts are left or the verification is closed.
+ * - `verified`: record published. `published`, the games that just became `valid`, from oldest
+ *   to newest (empty if another device had already verified it); `target`, the record's game.
  */
 export type VerificationResult =
   | { kind: "failed"; requiredWpm: number; attemptsLeft: number }
@@ -34,8 +34,8 @@ export type VerificationResult =
 export type SaveVerificationGame = (record: GameRecord, verification: StartedVerification) => Promise<VerificationResult>;
 
 /**
- * Spec 4b §3.3: se supera con una partida válida, con al menos un 90 % de precisión, del mismo teclado y
- * con al menos las PPM necesarias (en centésimas enteras, como `requiredWpm`).
+ * Spec 4b §3.3: passed with a valid game, with at least 90% accuracy, on the same keyboard and
+ * with at least the required WPM (in whole hundredths, like `requiredWpm`).
  */
 export function passesVerification(
   game: { verdict: Verdict; accuracy: number; inputType: InputType; wpm: number },
@@ -49,37 +49,37 @@ export function passesVerification(
   );
 }
 
-/** Tras un intento fallido: si era el tercero se cierra; si no, quedan los que no se han gastado. */
+/** After a failed attempt: if it was the third it is closed; otherwise, the unspent ones remain. */
 export function afterFailure(attempt: number, attemptsSpent: number): { close: boolean; attemptsLeft: number } {
   const close = attempt >= VERIFICATION_ATTEMPTS;
   return { close, attemptsLeft: close ? 0 : Math.max(0, VERIFICATION_ATTEMPTS - attemptsSpent) };
 }
 
-/** La cuenta se ha borrado a mitad de intento: no hay nada que verificar. */
+/** The account was deleted mid-attempt: there is nothing to verify. */
 const accountGone = (): VerificationResult => ({ kind: "failed", requiredWpm: 0, attemptsLeft: 0 });
 
 /**
- * Guarda una partida de verificación y la juzga, todo en una transacción (spec 4b §3.3): si falla algo,
- * `finish` se puede repetir. Se juzga contra el objetivo vigente al terminar, con la verificación
- * bloqueada: dos finales a la vez (dos dispositivos) se esperan. La caducidad no se mira: una partida
- * empezada a tiempo puede terminar después.
+ * Saves a verification game and judges it, all in one transaction (spec 4b §3.3): if anything fails,
+ * `finish` can be retried. It is judged against the target current at the finish, with the verification
+ * locked: two finishes at once (two devices) wait for each other. Expiry is not checked: a game
+ * started in time may finish later.
  */
 export function createSaveVerificationGame(db: Db): SaveVerificationGame {
   return (record, started) =>
     db.transaction(async (tx): Promise<VerificationResult> => {
-      // Primero el jugador (FOR KEY SHARE, el cerrojo que toma la clave ajena al insertar la partida) y
-      // después la verificación: el orden del borrado de la cuenta, que bloquea al usuario y después borra
-      // en cascada sus verificaciones. En el orden contrario, los dos se esperarían (deadlock). Si el
-      // jugador ya no existe, ha borrado la cuenta a mitad de intento y su verificación ha caído en
-      // cascada: no hay nada que verificar, y la partida no se guarda (su usuario ya no existe).
+      // First the player (FOR KEY SHARE, the lock the foreign key takes when inserting the game) and
+      // then the verification: the same order as account deletion, which locks the user and then
+      // cascade-deletes their verifications. In the opposite order, both would wait (deadlock). If the
+      // player no longer exists, they deleted the account mid-attempt and their verification was
+      // cascade-deleted: there is nothing to verify, and the game is not saved (its user no longer exists).
       const [player] = record.userId
         ? await tx.select({ id: users.id }).from(users).where(eq(users.id, record.userId)).for("key share")
         : [];
       if (!player) return accountGone();
 
-      // Después, la verificación sola. Con un JOIN a su partida, si mientras espera el cerrojo otra partida
-      // pasa a ser el objetivo, PostgreSQL vuelve a comprobar la fila contra la partida de antes y no
-      // devuelve nada.
+      // Then, the verification alone. With a JOIN to its game, if another game becomes the target while
+      // waiting for the lock, PostgreSQL rechecks the row against the previous game and returns
+      // nothing.
       const [current] = await tx
         .select({
           status: recordVerifications.status,
@@ -92,7 +92,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
         .where(eq(recordVerifications.id, started.id))
         .for("update");
       if (!current) return accountGone();
-      // Y su objetivo de ahora, ya con la verificación bloqueada.
+      // And its current target, with the verification already locked.
       const [targetGame] = await tx
         .select({ language: games.language, wpm: games.wpm, accuracy: games.accuracy, startsAt: games.startsAt })
         .from(games)
@@ -122,7 +122,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
         return { kind: "failed", requiredWpm: required, attemptsLeft };
       }
 
-      // 1. Todas las partidas `review` de la verificación pasan a `valid`…
+      // 1. All of the verification's `review` games become `valid`…
       const reviewed = await tx
         .update(games)
         .set({ verdict: "valid" })
@@ -135,7 +135,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
           accuracy: games.accuracy,
           startsAt: games.startsAt,
         });
-      // 2. …con sus marcas, cada una con su hora original, que decide el desempate.
+      // 2. …with their bests, each with its original time, which breaks ties.
       const published: PublishedGame[] = [];
       for (const game of reviewed.toSorted((a, b) => a.startsAt.getTime() - b.startsAt.getTime())) {
         const improved = await recordBest(tx, {
@@ -149,7 +149,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
         });
         published.push({ ...game, userId: current.userId, improved });
       }
-      // 3. El nivel verificado sube al del récord (nunca baja).
+      // 3. The verified level rises to the record's (it never drops).
       await tx
         .insert(verifiedLevels)
         .values({ userId: current.userId, language: target.language, inputType: current.inputType, wpm: target.wpm })
@@ -158,7 +158,7 @@ export function createSaveVerificationGame(db: Db): SaveVerificationGame {
           set: { wpm: sql`excluded.wpm`, verifiedAt: sql`now()` },
           setWhere: sql`excluded.wpm > ${verifiedLevels.wpm}`,
         });
-      // 4. Verificada.
+      // 4. Verified.
       await tx
         .update(recordVerifications)
         .set({ status: "verified", resolvedAt: sql`now()` })

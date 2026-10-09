@@ -5,11 +5,11 @@ import { activeBests } from "./live";
 import { boardKey, type BoardScore } from "./store";
 
 export interface RebuildReport {
-  /** Rankings que se escriben. */
+  /** Rankings that are written. */
   boards: number;
-  /** Marcas que se escriben. */
+  /** Bests that are written. */
   entries: number;
-  /** Claves `lb:*` que se borran: sin marcas, de los antiguos rankings por periodo o temporales de una ejecución interrumpida. */
+  /** `lb:*` keys that are deleted: without bests, from the old per-period rankings or temporary ones from an interrupted run. */
   removed: number;
 }
 
@@ -27,10 +27,10 @@ async function scanKeys(redis: Redis, match: string): Promise<string[]> {
 }
 
 /**
- * Rehace los rankings de Redis desde PostgreSQL (spec 4a §6.1). Sin `write`, solo cuenta. Cada ranking
- * se escribe en `<clave>:rebuild` y se renombra sobre el bueno: ninguno queda vacío a medias. Una
- * partida que termine durante la reconstrucción puede perderse en Redis hasta la siguiente del jugador
- * (el autorreparado de `rankGame` la recupera).
+ * Rebuilds the Redis rankings from PostgreSQL (spec 4a §6.1). Without `write`, it only counts. Each ranking
+ * is written to `<key>:rebuild` and renamed over the real one: none is left half-empty. A game that
+ * finishes during the rebuild may be lost in Redis until the player's next one (the self-repair in
+ * `rankGame` recovers it).
  */
 export async function rebuildLeaderboards(
   db: Db,

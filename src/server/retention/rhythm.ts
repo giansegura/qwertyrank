@@ -1,10 +1,10 @@
 import "server-only";
 
-/** El ritmo de una partida, sin texto ni teclas (spec 5a §3.3): lo único que se queda tras borrar sus pulsaciones. */
+/** A game's rhythm, without text or keys (spec 5a §3.3): the only thing kept after deleting its keystrokes. */
 export interface Rhythm {
-  /** Milisegundos entre cambios de texto consecutivos (eventos `input`). Existen con teclado físico y táctil. */
+  /** Milliseconds between consecutive text changes (`input` events). Present on physical and touch keyboards. */
   intervalsMs: number[];
-  /** Milisegundos de cada pulsación, de `down` a su `up` con el mismo `code` (los de `code` vacío no cuentan). Con teclado táctil suele faltar. */
+  /** Milliseconds of each keystroke, from `down` to its `up` with the same `code` (empty `code` does not count). Usually missing on touch. */
   holdsMs: number[];
 }
 
@@ -20,17 +20,17 @@ const isTimedEvent = (event: unknown): event is TimedEvent =>
   typeof (event as TimedEvent).type === "string" &&
   Number.isFinite((event as TimedEvent).t);
 
-/** Tope de un intervalo o una pulsación: el `t` del cliente no está acotado y la columna es `integer` (int32). */
+/** Cap for an interval or keystroke: the client's `t` is unbounded and the column is `integer` (int32). */
 export const MAX_RHYTHM_MS = 60_000;
 const capped = (ms: number) => Math.min(MAX_RHYTHM_MS, Math.max(0, ms));
 
-/** Un instante válido: entero y nunca antes del inicio de la partida (un `t` negativo cuenta como 0). */
+/** A valid instant: integer and never before the game start (a negative `t` counts as 0). */
 const at = (event: TimedEvent) => Math.max(0, Math.round(event.t));
 
 /**
- * El ritmo de unos eventos ya guardados, en orden de llegada. Son de un registro sin validar: se saltan
- * los que no tienen `type` o un `t` numérico, un `up` sin su `down`, y las repeticiones automáticas de una
- * tecla mantenida (cuenta el primer `down`), y los `down`/`up` con `code` vacío (no se pueden emparejar). Nunca da tiempos negativos.
+ * The rhythm of already stored events, in arrival order. They come from an unvalidated log: it skips
+ * those without `type` or a numeric `t`, an `up` without its `down`, the auto-repeats of a held key
+ * (the first `down` counts), and `down`/`up` with an empty `code` (they cannot be paired). Never gives negative times.
  */
 export function rhythmOf(events: readonly unknown[]): Rhythm {
   const intervalsMs: number[] = [];
@@ -58,7 +58,7 @@ export function rhythmOf(events: readonly unknown[]): Rhythm {
   return { intervalsMs, holdsMs };
 }
 
-/** El lunes (UTC) de la semana de una fecha, `AAAA-MM-DD`: el extracto no guarda el día (spec 5a §3.3). */
+/** The Monday (UTC) of a date's week, `YYYY-MM-DD`: the sample does not store the day (spec 5a §3.3). */
 export function weekOf(date: Date): string {
   const sinceMonday = (date.getUTCDay() + 6) % 7;
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - sinceMonday))

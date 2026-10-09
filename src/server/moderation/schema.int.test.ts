@@ -18,8 +18,8 @@ async function newUser(): Promise<string> {
   return row.id;
 }
 
-describe("tablas de moderación", () => {
-  it("una sola denuncia abierta por denunciante, denunciado y motivo; cerrada, se puede repetir", async () => {
+describe("moderation tables", () => {
+  it("only one open report per reporter, reported player and reason; once closed, it can be repeated", async () => {
     const [reporter, target] = [await newUser(), await newUser()];
     const report = { reporterId: reporter, targetUserId: target, reason: "cheating" as const };
     await db.insert(reports).values(report);
@@ -30,14 +30,14 @@ describe("tablas de moderación", () => {
     expect(await db.select().from(reports).where(eq(reports.targetUserId, target))).toHaveLength(3);
   });
 
-  it("al borrar al denunciado caen sus denuncias y acciones; al borrar al denunciante o al admin quedan sin él", async () => {
+  it("deleting the reported player drops their reports and actions; deleting the reporter or the admin leaves them without it", async () => {
     const [reporter, target, admin, other] = [await newUser(), await newUser(), await newUser(), await newUser()];
     await db.insert(reports).values({ reporterId: reporter, targetUserId: target, reason: "cheating" });
     await db.insert(moderationActions).values({ adminId: admin, targetUserId: target, action: "shadowban", reason: "bot" });
     await db.insert(reports).values({ reporterId: reporter, targetUserId: other, reason: "cheating", resolvedBy: admin });
     await db
       .insert(moderationActions)
-      .values({ adminId: admin, targetUserId: other, action: "reset_nick", reason: "ofensivo", details: { from: "a", to: "b" } });
+      .values({ adminId: admin, targetUserId: other, action: "reset_nick", reason: "offensive", details: { from: "a", to: "b" } });
 
     await db.delete(users).where(eq(users.id, target));
     expect(await db.select().from(reports).where(eq(reports.targetUserId, target))).toEqual([]);
@@ -51,7 +51,7 @@ describe("tablas de moderación", () => {
     expect(action).toMatchObject({ adminId: null, details: { from: "a", to: "b" } });
   });
 
-  it("una identidad baneada sobrevive al borrado de su usuario", async () => {
+  it("a banned identity survives the deletion of its user", async () => {
     const user = await newUser();
     const hash = randomUUID();
     await db.insert(bannedIdentities).values({ hash, kind: "email", userId: user });

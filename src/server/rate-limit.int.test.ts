@@ -7,7 +7,7 @@ const redis = createRedis(process.env.UPSTASH_REDIS_REST_URL!, process.env.UPSTA
 const prefix = `${process.env.REDIS_KEY_PREFIX}rl-test-${randomUUID().slice(0, 8)}:`;
 const HOUR = 3_600_000;
 const RULE = { max: 2, windowMs: HOUR };
-// Justo al empezar una ventana de una hora: así el tiempo transcurrido en ella es 0.
+// Right at the start of a one-hour window: that way the time elapsed in it is 0.
 const T0 = Date.UTC(2027, 0, 1, 10);
 let clock = T0;
 const limit = createRateLimiter(redis, prefix, () => clock);
@@ -17,16 +17,16 @@ afterAll(async () => {
   if (keys.length > 0) await redis.del(...keys);
 });
 
-describe("límite de ventana deslizante", () => {
-  it("deja pasar hasta el máximo y luego dice cuánto falta", async () => {
+describe("sliding window limit", () => {
+  it("lets through up to the maximum and then says how long is left", async () => {
     clock = T0;
     expect(await limit("start", "a", RULE)).toEqual({ ok: true });
     expect(await limit("start", "a", RULE)).toEqual({ ok: true });
-    // Ventana llena: hasta la siguiente (1 h) y 1 ms más, redondeado hacia arriba a segundos.
+    // Full window: until the next one (1 h) plus 1 ms, rounded up to seconds.
     expect(await limit("start", "a", RULE)).toEqual({ ok: false, retryAfterSeconds: 3_601 });
   });
 
-  it("cada identificador y cada nombre cuentan aparte", async () => {
+  it("each identifier and each name count separately", async () => {
     clock = T0;
     await limit("start", "b", RULE);
     await limit("start", "b", RULE);
@@ -34,15 +34,15 @@ describe("límite de ventana deslizante", () => {
     expect(await limit("reports", "b", RULE)).toEqual({ ok: true });
   });
 
-  it("en la ventana siguiente, la anterior aún pesa según lo que queda de ella", async () => {
+  it("in the next window, the previous one still weighs according to what is left of it", async () => {
     clock = T0;
     await limit("start", "c", RULE);
     await limit("start", "c", RULE);
-    // A un cuarto de la ventana siguiente: 2 · 0,75 = 1,5 < 2 → entra una; 1,5 + 1 ≥ 2 → la otra no.
+    // A quarter into the next window: 2 · 0.75 = 1.5 < 2 → one gets in; 1.5 + 1 ≥ 2 → the other does not.
     clock = T0 + HOUR + HOUR / 4;
     expect(await limit("start", "c", RULE)).toEqual({ ok: true });
     expect((await limit("start", "c", RULE)).ok).toBe(false);
-    // Dos ventanas después solo pesa la del medio (1): vuelve a entrar.
+    // Two windows later only the middle one weighs (1): it gets in again.
     clock = T0 + 2 * HOUR;
     expect(await limit("start", "c", RULE)).toEqual({ ok: true });
   });

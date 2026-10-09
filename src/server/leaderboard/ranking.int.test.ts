@@ -39,7 +39,7 @@ async function newUser(status: "active" | "shadowbanned" = "active"): Promise<st
   return row.id;
 }
 
-/** Guarda la partida (con sus marcas, si cuenta) y pide su ranking, como hace `finish`. */
+/** Saves the game (with its bests, if it counts) and asks for its ranking, as `finish` does. */
 async function play(
   userId: string | null,
   wpm: number,
@@ -74,16 +74,16 @@ async function play(
   });
 }
 
-describe("ranking de una partida", () => {
-  it("una partida no válida no tiene ranking", async () => {
+describe("ranking of a game", () => {
+  it("an invalid game has no ranking", async () => {
     expect(await play(await newUser(), 50, { verdict: "rejected" })).toEqual({ kind: "unranked" });
   });
 
-  it("por debajo del 90 % de precisión no entra", async () => {
+  it("below 90 % accuracy it does not get in", async () => {
     expect(await play(await newUser(), 50, { accuracy: 89.9 })).toEqual({ kind: "low_accuracy" });
   });
 
-  it("con cuenta: entra en el ranking y devuelve su posición", async () => {
+  it("with an account: gets into the ranking and returns its position", async () => {
     const fast = await newUser();
     await play(fast, 150);
     const slow = await newUser();
@@ -91,7 +91,7 @@ describe("ranking de una partida", () => {
     expect(await store.position(BOARD, fast)).toBe(1);
   });
 
-  it("sin mejorar, enseña la posición de su marca", async () => {
+  it("without improving, shows the position of their best", async () => {
     const player = await newUser();
     await play(player, 145);
     const result = await play(player, 60);
@@ -100,7 +100,7 @@ describe("ranking de una partida", () => {
     expect(result.rank).toBe(await store.position(BOARD, player));
   });
 
-  it("una marca de otro día sigue contando: no hay periodos", async () => {
+  it("a best from another day still counts: there are no periods", async () => {
     const player = await newUser();
     await play(player, 170, { startsAt: new Date(NOW.getTime() - 40 * 86_400_000) });
     const result = await play(player, 60);
@@ -109,25 +109,25 @@ describe("ranking de una partida", () => {
     expect(result.rank).toBe(await store.position(BOARD, player));
   });
 
-  it("anónima: la posición que tendría, sin escribir en el ranking", async () => {
+  it("anonymous: the position it would have, without writing to the ranking", async () => {
     const before = await redis.zcard(boardKey(prefix, BOARD));
     expect(await play(null, 500)).toEqual({ kind: "would_rank", rank: 1 });
     expect(await redis.zcard(boardKey(prefix, BOARD))).toBe(before);
   });
 
-  it("shadow-ban: ve su posición «como si estuviera», pero no entra en el ranking", async () => {
+  it("shadow ban: sees their position as if they were listed, but does not get into the ranking", async () => {
     const hidden = await newUser("shadowbanned");
     expect(await play(hidden, 400)).toEqual({ kind: "ranked", rank: 1, improved: true });
     expect(await store.position(BOARD, hidden)).toBeNull();
     expect(changes).toEqual([]);
   });
 
-  it("entrar en el top 100 revalida la página de ese ranking", async () => {
+  it("getting into the top 100 revalidates that ranking's page", async () => {
     await play(await newUser(), 130);
     expect(changes).toEqual([[BOARD]]);
   });
 
-  it("sin mejorar su marca no revalida nada", async () => {
+  it("without improving their best nothing is revalidated", async () => {
     const player = await newUser();
     await play(player, 125);
     changes.length = 0;
@@ -135,7 +135,7 @@ describe("ranking de una partida", () => {
     expect(changes).toEqual([]);
   });
 
-  it("fuera del top 100 no revalida la página, aunque mejore su marca", async () => {
+  it("outside the top 100 the page is not revalidated, even if their best improves", async () => {
     const player = await newUser();
     const outsideTop: LeaderboardStore = { ...store, position: async () => 101 };
     const outside = createRanking({ db, store: outsideTop, onTopChanged: (change) => changes.push(change) });
@@ -143,7 +143,7 @@ describe("ranking de una partida", () => {
     expect(changes).toEqual([]);
   });
 
-  it("posición propia: la de su marca en ese ranking, o null si no tiene", async () => {
+  it("own position: that of their best in that ranking, or null if they have none", async () => {
     const player = await newUser();
     await play(player, 120);
     expect(await ranking.myPosition(player, BOARD)).toEqual({
@@ -154,7 +154,7 @@ describe("ranking de una partida", () => {
     expect(await ranking.myPosition(await newUser(), BOARD)).toEqual({ rank: null });
   });
 
-  it("si Redis perdió la marca del jugador, la recupera desde PostgreSQL y la posición es la de su marca", async () => {
+  it("if Redis lost the player's best, it recovers it from PostgreSQL and the position is that of their best", async () => {
     const player = await newUser();
     await play(player, 200);
     await store.remove(player, [BOARD]);
@@ -166,7 +166,7 @@ describe("ranking de una partida", () => {
     expect(result.rank).toBe(position);
   });
 
-  it("si falla la revalidación de la página, la partida conserva su ranking", async () => {
+  it("if the page revalidation fails, the game keeps its ranking", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const failing = createRanking({
       db,
@@ -180,7 +180,7 @@ describe("ranking de una partida", () => {
     vi.mocked(console.error).mockRestore();
   });
 
-  it("con Redis caído responde sin posiciones, y la anónima se puede guardar igual", async () => {
+  it("with Redis down it responds without positions, and the anonymous one can still be saved", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const down = () => Promise.reject(new Error("redis down"));
     const broken = createRanking({
@@ -193,9 +193,9 @@ describe("ranking de una partida", () => {
     vi.mocked(console.error).mockRestore();
   });
 
-  it("si le sancionan mientras se escribe su partida, no se queda en Redis", async () => {
+  it("if they are sanctioned while their game is being written, they do not stay in Redis", async () => {
     const player = await newUser();
-    // La sanción llega justo después de escribir en Redis y antes de la comprobación final.
+    // The sanction arrives right after writing to Redis and before the final check.
     const sanctionedMidway: LeaderboardStore = {
       ...store,
       async add(entries) {

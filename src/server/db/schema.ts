@@ -27,8 +27,8 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
 });
 
 /**
- * Una fila por partida terminada (spec §5.2), Ranked o de verificación (spec 4b §5.1). Al borrar la
- * cuenta, `user_id` pasa a NULL; al caer su verificación, `verification_id` también.
+ * One row per finished game (spec §5.2), Ranked or verification (spec 4b §5.1). When the account is
+ * deleted, `user_id` becomes NULL; when its verification goes away, so does `verification_id`.
  */
 export const games = pgTable(
   "games",
@@ -50,13 +50,13 @@ export const games = pgTable(
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     mode: text("mode", { enum: GAME_MODES }).notNull().default("ranked"),
-    // `AnyPgColumn`: `games` y `record_verifications` se apuntan la una a la otra.
+    // `AnyPgColumn`: `games` and `record_verifications` point at each other.
     verificationId: uuid("verification_id").references((): AnyPgColumn => recordVerifications.id, {
       onDelete: "set null",
     }),
   },
   (table) => [
-    // Al verificar se publican todas las partidas `review` de una verificación (spec 4b §3.3).
+    // On verification, every `review` game of a verification is published (spec 4b §3.3).
     index("games_verification_idx").on(table.verificationId),
     check("games_language_check", sql`${table.language} in ('en', 'es', 'pt')`),
     check("games_input_type_check", sql`${table.inputType} in ('physical', 'touch')`),
@@ -65,7 +65,7 @@ export const games = pgTable(
   ],
 );
 
-/** Pulsaciones en bruto de cada partida, en JSON comprimido con gzip. Se borran a los 30 días (fase 5). */
+/** Raw keystrokes of each game, as gzip-compressed JSON. Deleted after 30 days (phase 5). */
 export const keystrokeLogs = pgTable("keystroke_logs", {
   gameId: uuid("game_id")
     .primaryKey()
@@ -75,8 +75,8 @@ export const keystrokeLogs = pgTable("keystroke_logs", {
 });
 
 /**
- * Mejor partida de cada jugador por idioma y teclado (spec §5.2): la fuente de verdad de los rankings.
- * `score` es la puntuación compuesta (§5.4): ordena el top y decide si una partida mejora.
+ * Each player's best game per language and keyboard (spec §5.2): the source of truth for the rankings.
+ * `score` is the composite score (§5.4): it orders the top and decides whether a game is an improvement.
  */
 export const bests = pgTable(
   "bests",
@@ -96,14 +96,14 @@ export const bests = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.language, table.inputType] }),
-    // El top de un ranking: filtra por idioma y teclado y recorre la puntuación de mayor a menor.
+    // A ranking's top: filters by language and keyboard and walks the score from highest to lowest.
     index("bests_board_idx").on(table.language, table.inputType, table.score.desc()),
   ],
 );
 
 /**
- * Extracto de ritmo de una partida cuyas pulsaciones se borran a los 30 días (spec 5a §3.3), para
- * calibrar la puntuación de riesgo (4c). Es anónimo: ni jugador, ni partida, ni IP, ni texto, ni teclas.
+ * Rhythm extract of a game whose keystrokes are deleted after 30 days (spec 5a §3.3), to calibrate
+ * the risk score (4c). It is anonymous: no player, no game, no IP, no text, no keys.
  */
 export const rhythmSamples = pgTable("rhythm_samples", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -114,13 +114,13 @@ export const rhythmSamples = pgTable("rhythm_samples", {
   rejectReason: text("reject_reason"),
   wpm: doublePrecision("wpm").notNull(),
   accuracy: doublePrecision("accuracy").notNull(),
-  /** Lunes (UTC) de la semana de la partida: no el día. */
+  /** Monday (UTC) of the game's week: not the day. */
   playedWeek: date("played_week").notNull(),
-  /** Estado del jugador al hacer el extracto (`anonymous` si la partida no tenía): la etiqueta para calibrar. */
+  /** Player status when the extract was made (`anonymous` if the game had none): the label for calibration. */
   playerStatus: text("player_status", { enum: [...USER_STATUSES, "anonymous"] }).notNull(),
-  /** Milisegundos entre cambios de texto consecutivos. */
+  /** Milliseconds between consecutive text changes. */
   intervalsMs: integer("intervals_ms").array().notNull(),
-  /** Milisegundos que dura cada pulsación (de `down` a su `up`). */
+  /** How long each keystroke lasts, in milliseconds (from `down` to its `up`). */
   holdsMs: integer("holds_ms").array().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -130,8 +130,8 @@ export const MODERATION_ACTIONS = ["shadowban", "ban", "restore", "reset_nick", 
 export const IDENTITY_KINDS = ["email", "google"] as const;
 
 /**
- * Denuncias de jugadores (spec 4a §4). Una sola abierta por denunciante, denunciado y motivo. Si el
- * denunciado borra su cuenta, sus denuncias desaparecen; si la borra el denunciante, quedan sin él.
+ * Player reports (spec 4a §4). Only one open per reporter, reported player and reason. If the reported
+ * player deletes their account, their reports disappear; if the reporter does, the reports stay without them.
  */
 export const reports = pgTable(
   "reports",
@@ -151,14 +151,14 @@ export const reports = pgTable(
     uniqueIndex("reports_open_unique_idx")
       .on(table.reporterId, table.targetUserId, table.reason)
       .where(sql`${table.status} = 'open'`),
-    // La cola del panel: denuncias abiertas agrupadas por denunciado.
+    // The panel queue: open reports grouped by reported player.
     index("reports_status_target_idx").on(table.status, table.targetUserId),
     check("reports_reason_check", sql`${table.reason} in ('cheating', 'offensive_nick')`),
     check("reports_status_check", sql`${table.status} in ('open', 'dismissed', 'actioned')`),
   ],
 );
 
-/** Registro de cada acción de moderación (spec §4.7). Sin `admin_id` cuando la hace un script. */
+/** Log of every moderation action (spec §4.7). No `admin_id` when a script performs it. */
 export const moderationActions = pgTable(
   "moderation_actions",
   {
@@ -182,8 +182,8 @@ export const moderationActions = pgTable(
 );
 
 /**
- * Identidades de cuentas baneadas (spec 4a §3.3): HMAC del email normalizado o de la cuenta de Google.
- * Sobreviven al borrado de la cuenta (`user_id` pasa a NULL): es lo que impide volver.
+ * Identities of banned accounts (spec 4a §3.3): HMAC of the normalized email or of the Google account.
+ * They survive account deletion (`user_id` becomes NULL): that is what prevents coming back.
  */
 export const bannedIdentities = pgTable(
   "banned_identities",
@@ -200,9 +200,9 @@ export const bannedIdentities = pgTable(
 );
 
 /**
- * Verificación de un récord (spec 4b §5.1): una sola `pending` por jugador, idioma y teclado. `game_id`
- * es la partida `review` con más PPM; si se borra, cae la verificación. Caduca a las 24 h (`expires_at`),
- * y eso se decide al leerla.
+ * Verification of a record (spec 4b §5.1): only one `pending` per player, language and keyboard. `game_id`
+ * is the `review` game with the highest wpm; if it is deleted, the verification goes too. It expires after
+ * 24 h (`expires_at`), and that is decided when reading it.
  */
 export const recordVerifications = pgTable(
   "record_verifications",
@@ -226,17 +226,17 @@ export const recordVerifications = pgTable(
     uniqueIndex("record_verifications_pending_idx")
       .on(table.userId, table.language, table.inputType)
       .where(sql`${table.status} = 'pending'`),
-    // Las listas del panel (spec 4b §6.1).
+    // The panel lists (spec 4b §6.1).
     index("record_verifications_status_created_idx").on(table.status, table.createdAt),
     check("record_verifications_language_check", sql`${table.language} in ('en', 'es', 'pt')`),
     check("record_verifications_input_type_check", sql`${table.inputType} in ('physical', 'touch')`),
     check("record_verifications_status_check", sql`${table.status} in ('pending', 'verified', 'failed')`),
-    // Red de seguridad del `UPDATE` atómico de `start` (spec 4b §3.1): nunca más de 3 intentos.
+    // Safety net for the atomic `UPDATE` in `start` (spec 4b §3.1): never more than 3 attempts.
     check("record_verifications_attempts_check", sql`${table.attempts} between 0 and 3`),
   ],
 );
 
-/** Nivel verificado de cada jugador por idioma y teclado (spec 4b §5.1): las PPM del último récord verificado. */
+/** Each player's verified level per language and keyboard (spec 4b §5.1): the wpm of the last verified record. */
 export const verifiedLevels = pgTable(
   "verified_levels",
   {

@@ -2,15 +2,15 @@ import "server-only";
 import { revalidatePath } from "next/cache";
 
 /**
- * Un jugador ha cambiado de nick o de país, o ha borrado su cuenta (cambios raros): se invalidan
- * en caché (ISR) todos los perfiles y rankings, la portada con su top 10 (spec 5b §7) y las páginas de
- * resultado (spec 5d §3.1), y cada página se regenera en su siguiente visita. Así ninguna sigue enseñando
- * el nick o la bandera de antes (spec §6).
+ * A player has changed nick or country, or has deleted their account (rare changes): every cached (ISR)
+ * profile and ranking, the home page with its top 10 (spec 5b §7) and the result pages (spec 5d §3.1)
+ * are invalidated, and each page is regenerated on its next visit. That way none of them keeps showing
+ * the old nick or flag (spec §6).
  */
 export function revalidatePlayerPages(): void {
   revalidatePath("/[locale]/u/[nick]", "page");
   revalidatePath("/[locale]/leaderboard/[input]", "page");
   revalidatePath("/[locale]", "page");
-  // `layout` y no `page`: así también caduca la imagen de cada partida, que cuelga de la ruta (spec 5d §4).
+  // `layout` and not `page`: that way each game's image, which hangs off the route, expires too (spec 5d §4).
   revalidatePath("/[locale]/r/[id]", "layout");
 }

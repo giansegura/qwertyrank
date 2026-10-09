@@ -5,12 +5,12 @@ import type { TestLanguage } from "@/lib/words/languages";
 import type { DbExecutor } from "../db/client";
 import { RANKED_MIN_ACCURACY, encodeScore } from "../leaderboard/score";
 
-/** Spec 4b §2.1: se verifica lo que entraría en el top 10 de su ranking. */
+/** Spec 4b §2.1: what would enter the top 10 of its ranking is verified. */
 export const REVIEW_TOP = 10;
-/** Spec 4b §2.1: sin verificar, un jugador puede llegar hasta el 110 % de su nivel verificado. */
+/** Spec 4b §2.1: unverified, a player can reach up to 110% of their verified level. */
 export const VERIFIED_LEVEL_PERCENT = 110;
 
-/** Lo que hace falta de una partida para decidir si queda en `review`. */
+/** What is needed from a game to decide whether it stays in `review`. */
 export interface ReviewCandidate {
   userId: string | null;
   language: TestLanguage;
@@ -21,24 +21,24 @@ export interface ReviewCandidate {
   startsAt: Date;
 }
 
-/** Cómo queda una partida en el ranking de su idioma y teclado. */
+/** Where a game stands in the ranking for its language and keyboard. */
 export interface Standing {
-  /** Puntuación de la marca que ya tiene el jugador en ese ranking, o `null`. */
+  /** Score of the best the player already has in that ranking, or `null`. */
   ownScore: number | null;
-  /** Otros jugadores activos con más puntuación que la mejor de las dos (la partida o su marca). */
+  /** Other active players scoring higher than the better of the two (the game or their best). */
   ahead: number;
   verifiedWpm: number | null;
 }
 
-/** ¿Supera su nivel verificado × 1,10? Sin nivel, cualquier PPM. En enteros: 100 × 1,1 da 110,00000000000001. */
+/** Does it exceed their verified level × 1.10? Without a level, any WPM. In integers: 100 × 1.1 gives 110.00000000000001. */
 export function exceedsVerifiedLevel(wpm: number, verifiedWpm: number | null): boolean {
   if (verifiedWpm === null) return true;
   return Math.round(wpm * 100) * 100 > Math.round(verifiedWpm * 100) * VERIFIED_LEVEL_PERCENT;
 }
 
 /**
- * Spec 4b §2.1, puntos 2 y 3: supera su nivel, mejora su marca y quedaría entre los 10 primeros de su
- * ranking. `score` es la puntuación compuesta de la partida.
+ * Spec 4b §2.1, points 2 and 3: exceeds their level, improves their best and would be in the top 10 of its
+ * ranking. `score` is the game's composite score.
  */
 export function shouldReview(score: number, wpm: number, standing: Standing): boolean {
   if (!exceedsVerifiedLevel(wpm, standing.verifiedWpm)) return false;
@@ -46,8 +46,8 @@ export function shouldReview(score: number, wpm: number, standing: Standing): bo
 }
 
 /**
- * Una sola consulta (spec 4b §9): su marca en el ranking de su idioma y teclado, cuántos jugadores
- * activos tiene por delante (contados en PostgreSQL con el índice de `bests`) y su nivel verificado.
+ * A single query (spec 4b §9): their best in the ranking for its language and keyboard, how many active
+ * players are ahead (counted in PostgreSQL with the `bests` index) and their verified level.
  */
 export async function boardStanding(
   db: DbExecutor,
@@ -76,8 +76,8 @@ export async function boardStanding(
 }
 
 /**
- * Spec 4b §2.1: ¿queda la partida en `review`? Si es así, con la posición que tendría. Sin cuenta, no
- * válida o con menos del 90 % no se consulta nada: sigue el camino de siempre.
+ * Spec 4b §2.1: does the game stay in `review`? If so, with the position it would have. Without an account,
+ * not valid or under 90% nothing is queried: it follows the usual path.
  */
 export async function decideReview(db: DbExecutor, game: ReviewCandidate): Promise<{ rank: number } | null> {
   if (game.userId === null || game.verdict !== "valid" || game.accuracy < RANKED_MIN_ACCURACY) return null;

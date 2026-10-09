@@ -48,12 +48,12 @@ async function playerWithGame(status: "active" | "banned"): Promise<string> {
 
 const BOARD = boardKey(prefix, { language: "en", inputType: "physical" });
 
-describe("reconstrucción de Redis", () => {
-  it("sin --yes solo cuenta; con --yes reescribe sin caducidad, quita fantasmas y borra las claves de periodo", async () => {
+describe("Redis rebuild", () => {
+  it("without --yes it only counts; with --yes it rewrites without expiry, removes ghosts and deletes the period keys", async () => {
     const player = await playerWithGame("active");
     const banned = await playerWithGame("banned");
     await redis.zadd(BOARD, { score: 1, member: "ghost" });
-    // Las claves de los antiguos rankings por periodo (`lb:{lang}:{input}:{period}:{key}`).
+    // The keys of the old per-period rankings (`lb:{lang}:{input}:{period}:{key}`).
     const day = `${prefix}lb:en:physical:day:2026-10-07`;
     const all = `${prefix}lb:en:physical:all:all`;
     for (const key of [day, all]) await redis.zadd(key, { score: 1, member: player });
@@ -72,7 +72,7 @@ describe("reconstrucción de Redis", () => {
     expect(await redis.exists(day, all)).toBe(0);
   });
 
-  it("borra las claves temporales que dejó una ejecución interrumpida", async () => {
+  it("deletes the temporary keys left by an interrupted run", async () => {
     await playerWithGame("active");
     const leftover = `${prefix}lb:pt:touch:rebuild`;
     await redis.zadd(leftover, { score: 1, member: "half" });

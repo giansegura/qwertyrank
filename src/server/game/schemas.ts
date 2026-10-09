@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { TEST_LANGUAGES } from "@/lib/words/languages";
 
-/** Validación de todo lo que llega a la API de partidas (spec §8.3). */
+/** Validation of everything that reaches the games API (spec §8.3). */
 
 const keyEvent = z.object({
   t: z.number(),
@@ -28,17 +28,17 @@ const startBase = {
     coarse: z.boolean(),
     touchPoints: z.number().int().min(0).max(32),
   }),
-  // Token del reto de Turnstile (spec 4a §2), solo al repetir `start` tras `needs_challenge`.
+  // Turnstile challenge token (spec 4a §2), only when retrying `start` after `needs_challenge`.
   turnstileToken: z.string().min(1).max(2_048).optional(),
 };
 
-/** Ranked (sin `mode`, como hasta la 4b) o verificación de un récord, que dice cuál (spec 4b §3.1). */
+/** Ranked (no `mode`, as before 4b) or a record verification, which says which one (spec 4b §3.1). */
 export const startBodySchema = z.union([
   z.object({ ...startBase, mode: z.literal("ranked").optional() }),
   z.object({ ...startBase, mode: z.literal("verification"), verificationId: z.uuid() }),
 ]);
 
-// Una partida honesta de 30 s son ~11 tandas de pocos cientos de eventos: los límites cortan abusos.
+// An honest 30 s game is ~11 batches of a few hundred events: the limits cut off abuse.
 export const keysBodySchema = z.object({
   seq: z.number().int().min(1).max(30),
   events: z.array(typingEventSchema).max(1_000),

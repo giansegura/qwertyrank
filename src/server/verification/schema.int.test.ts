@@ -46,8 +46,8 @@ const pending = (userId: string, gameId: string, inputType: "physical" | "touch"
   expiresAt: IN_A_DAY(),
 });
 
-describe("tablas de verificación de récords", () => {
-  it("una sola pendiente por jugador, idioma y teclado; cerrada, se puede abrir otra", async () => {
+describe("record verification tables", () => {
+  it("a single pending one per player, language and keyboard; once closed, another can be opened", async () => {
     const user = await newUser();
     const game = await newGame(user);
     const [first] = await db.insert(recordVerifications).values(pending(user, game)).returning();
@@ -60,7 +60,7 @@ describe("tablas de verificación de récords", () => {
     await db.insert(recordVerifications).values(pending(user, game));
   });
 
-  it("nunca más de 3 intentos", async () => {
+  it("never more than 3 attempts", async () => {
     const user = await newUser();
     const [row] = await db.insert(recordVerifications).values(pending(user, await newGame(user))).returning();
     await db.update(recordVerifications).set({ attempts: 3 }).where(eq(recordVerifications.id, row.id));
@@ -69,7 +69,7 @@ describe("tablas de verificación de récords", () => {
     ).rejects.toMatchObject({ cause: { constraint_name: "record_verifications_attempts_check" } });
   });
 
-  it("al borrar al jugador caen sus verificaciones y sus niveles; sus partidas quedan sin verificación", async () => {
+  it("deleting the player removes their verifications and levels; their games are left without a verification", async () => {
     const user = await newUser();
     const game = await newGame(user);
     const [row] = await db.insert(recordVerifications).values(pending(user, game)).returning();
@@ -84,7 +84,7 @@ describe("tablas de verificación de récords", () => {
     expect(after).toMatchObject({ userId: null, verificationId: null, wpm: 80 });
   });
 
-  it("al borrar la partida cae su verificación", async () => {
+  it("deleting the game removes its verification", async () => {
     const user = await newUser();
     const game = await newGame(user);
     const [row] = await db.insert(recordVerifications).values(pending(user, game)).returning();
@@ -92,7 +92,7 @@ describe("tablas de verificación de récords", () => {
     expect(await db.select().from(recordVerifications).where(eq(recordVerifications.id, row.id))).toEqual([]);
   });
 
-  it("una partida es Ranked salvo que se diga otra cosa, y solo hay dos modos", async () => {
+  it("a game is Ranked unless stated otherwise, and there are only two modes", async () => {
     const user = await newUser();
     const [ranked] = await db.select({ mode: games.mode }).from(games).where(eq(games.id, await newGame(user)));
     expect(ranked.mode).toBe("ranked");

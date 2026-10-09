@@ -3,7 +3,7 @@ import { createTranslator, hasLocale } from "next-intl";
 import { routing, type Locale } from "@/i18n/routing";
 import type { EmailMessage } from "./mailer";
 
-/** El email va en el idioma de la página desde la que se pidió: el primer segmento de `callbackURL`. */
+/** The email is in the language of the page it was requested from: the first segment of `callbackURL`. */
 export function magicLinkLocale(url: string): Locale {
   const callback = new URL(url).searchParams.get("callbackURL") ?? "/";
   const segment = new URL(callback, "http://localhost").pathname.split("/")[1] ?? "";

@@ -16,31 +16,31 @@ function androidIme(text: string): TypingEvent[] {
 }
 
 describe("classifyInputType", () => {
-  it("teclado físico: teclas reales mantenidas pulsadas", () => {
+  it("physical keyboard: real keys held down", () => {
     expect(classifyInputType(typed("hola mundo azul casa"), DESKTOP, C)).toBe("physical");
   });
 
-  it("teclado de Android: teclas 'Unidentified'", () => {
+  it("Android keyboard: 'Unidentified' keys", () => {
     expect(classifyInputType(androidIme("hola mundo azul"), PHONE, C)).toBe("touch");
   });
 
-  it("pulsaciones casi instantáneas (teclado virtual): táctil", () => {
+  it("near-instant keystrokes (virtual keyboard): touch", () => {
     expect(classifyInputType(typed("hola mundo azul casa", { hold: 3 }), PHONE, C)).toBe("touch");
   });
 
-  it("si dice ser táctil pero teclea como un teclado físico, es físico", () => {
+  it("if it claims touch but types like a physical keyboard, it is physical", () => {
     expect(classifyInputType(typed("hola mundo azul casa"), PHONE, C)).toBe("physical");
   });
 
-  it("con pocas pulsaciones decide por las señales del navegador", () => {
+  it("with few keystrokes it decides from the browser signals", () => {
     expect(classifyInputType(typed("hola"), PHONE, C)).toBe("touch");
     expect(classifyInputType(typed("hola"), DESKTOP, C)).toBe("physical");
     expect(classifyInputType(inputOnly("hola mundo azul casa"), PHONE, C)).toBe("touch");
   });
 });
 
-describe("configuración", () => {
-  it("el umbral de duración de pulsación sale de la configuración", () => {
+describe("configuration", () => {
+  it("the key hold threshold comes from the configuration", () => {
     const events = typed("hola mundo azul casa", { hold: 15 });
     expect(classifyInputType(events, PHONE, { ...C, physicalMinHoldMs: 10 })).toBe("physical");
     expect(classifyInputType(events, PHONE, { ...C, physicalMinHoldMs: 20 })).toBe("touch");

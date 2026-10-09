@@ -2,15 +2,15 @@ import "server-only";
 
 type Handler = (request: Request) => Promise<Response>;
 
-/** Solo rutas propias: un `errorCallbackURL` manipulado no puede sacar al jugador de la web. */
+/** Own paths only: a tampered `errorCallbackURL` cannot take the player off the site. */
 function isOwnPath(path: string | null): path is string {
   return !!path && path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
 }
 
 /**
- * Si al abrir el enlace del email falla la creación de la cuenta (p. ej. dos registros a la vez
- * con el mismo nick propuesto), Better Auth responde un 500 vacío y el enlace ya está gastado.
- * En su lugar se vuelve a la página de entrar con `error=failed`, desde donde se pide otro.
+ * If account creation fails when opening the email link (e.g. two sign-ups at once with the
+ * same proposed nick), Better Auth responds with an empty 500 and the link is already used up.
+ * Instead, go back to the sign-in page with `error=failed`, where another one can be requested.
  */
 export function withSignInFallback(handler: Handler): Handler {
   return async (request) => {

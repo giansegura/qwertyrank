@@ -24,7 +24,7 @@ async function newUser(): Promise<{ id: string; nick: string }> {
   return { id: row.id, nick };
 }
 
-/** Una verificación de un jugador nuevo, en el estado y con las fechas que se digan. */
+/** A verification of a new player, in the given state and with the given dates. */
 async function record(change: (id: string) => Promise<unknown> = async () => {}) {
   const user = await newUser();
   const { gameId, verification } = await seedPendingVerification(db, user.id, { wpm: 91.5 });
@@ -35,8 +35,8 @@ async function record(change: (id: string) => Promise<unknown> = async () => {})
 const set = (values: PgUpdateSetSource<typeof recordVerifications>) => (id: string) =>
   db.update(recordVerifications).set(values).where(eq(recordVerifications.id, id));
 
-describe("cola de récords del panel", () => {
-  it("pendientes, verificados y fallidos o caducados; los cerrados, solo de los últimos 7 días", async () => {
+describe("panel record queue", () => {
+  it("pending, verified and failed or expired; closed ones only from the last 7 days", async () => {
     const older = await record(set({ createdAt: sql`now() - interval '1 hour'` }));
     const pending = await record();
     const verified = await record(set({ status: "verified", resolvedAt: sql`now()` }));
@@ -67,7 +67,7 @@ describe("cola de récords del panel", () => {
     expect(queues.closed.find((row) => row.id === failed.verificationId)).toMatchObject({ state: "failed", attempts: 3 });
   });
 
-  it("como mucho `limit` filas en cada lista", async () => {
+  it("at most `limit` rows in each list", async () => {
     await record();
     await record();
     const queues = await recordQueues(db, 1);
@@ -76,7 +76,7 @@ describe("cola de récords del panel", () => {
 });
 
 
-describe("partida para el panel", () => {
+describe("game for the panel", () => {
   const EVENT = { t: 0, type: "input", deleted: 0, inserted: "h", trusted: true } as const;
 
   async function bareGame(userId: string | null) {
@@ -98,7 +98,7 @@ describe("partida para el panel", () => {
     return id;
   }
 
-  it("con el registro nuevo trae las palabras y los eventos, y el jugador", async () => {
+  it("with the new log it brings the words and the events, and the player", async () => {
     const user = await newUser();
     const id = randomUUID();
     const now = new Date();
@@ -131,11 +131,11 @@ describe("partida para el panel", () => {
     });
   });
 
-  it("un registro antiguo (sin palabras), uno ilegible y uno borrado no rompen nada", async () => {
+  it("an old log (without words), an unreadable one and a deleted one break nothing", async () => {
     const old = await bareGame((await newUser()).id);
     await db.insert(keystrokeLogs).values({ gameId: old, events: gzipSync(JSON.stringify([{ seq: 1, arrivedAt: 1, events: [EVENT] }])) });
     const broken = await bareGame(null);
-    await db.insert(keystrokeLogs).values({ gameId: broken, events: Buffer.from("no es gzip") });
+    await db.insert(keystrokeLogs).values({ gameId: broken, events: Buffer.from("not gzip") });
     const deleted = await bareGame(null);
 
     expect((await gameDetail(db, old))?.log).toEqual({ kind: "ok", words: null, events: [EVENT] });

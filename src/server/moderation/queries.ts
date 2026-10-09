@@ -14,7 +14,7 @@ export interface ReportedPlayer {
   latest: Date;
 }
 
-/** Cola del panel (spec 4a §5.1): denuncias abiertas agrupadas por jugador, primero los más denunciados. */
+/** Panel queue (spec 4a §5.1): open reports grouped by player, most reported first. */
 export async function openReportsByPlayer(db: Db, limit = 100): Promise<ReportedPlayer[]> {
   const latest = sql<Date>`max(${reports.createdAt})`;
   return db
@@ -43,12 +43,12 @@ export interface PlayerRow {
   createdAt: Date;
 }
 
-/** Patrón de LIKE para "empieza por `text`": `%`, `_` y `\` se buscan tal cual (`_` es habitual en los nicks). */
+/** LIKE pattern for "starts with `text`": `%`, `_` and `\` are matched literally (`_` is common in nicks). */
 export function likePrefix(text: string): string {
   return `${text.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
 }
 
-/** Búsqueda del panel: email exacto si hay `@`; si no, nick que empieza por el texto. Sin distinguir mayúsculas. */
+/** Panel search: exact email if there is an `@`; otherwise, nick starting with the text. Case-insensitive. */
 export async function searchPlayers(db: Db, query: string, limit = 50): Promise<PlayerRow[]> {
   const text = query.trim();
   if (!text) return [];
@@ -85,7 +85,7 @@ export interface PlayerDetail extends PlayerRow {
     rejectReason: string | null;
     mode: string;
   }[];
-  /** Nivel verificado por idioma y teclado (spec 4b §6.4). */
+  /** Verified level per language and keyboard (spec 4b §6.4). */
   verifiedLevels: { language: string; inputType: string; wpm: number; verifiedAt: Date }[];
   reports: { id: string; reason: string; status: string; createdAt: Date; reporterNick: string | null }[];
   actions: {
@@ -98,7 +98,7 @@ export interface PlayerDetail extends PlayerRow {
   }[];
 }
 
-/** Ficha de un jugador (spec 4a §5.1). */
+/** A player's detail page (spec 4a §5.1). */
 export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | null> {
   const [user] = await db
     .select({
@@ -194,7 +194,7 @@ export async function playerDetail(db: Db, id: string): Promise<PlayerDetail | n
   };
 }
 
-/** El rol se lee siempre de la base de datos: no sale en la sesión (spec §4.7). */
+/** The role is always read from the database: it is not in the session (spec §4.7). */
 export async function isAdmin(db: Db, userId: string): Promise<boolean> {
   const [row] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId));
   return row?.role === "admin";

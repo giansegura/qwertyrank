@@ -8,7 +8,7 @@ export interface SessionUser {
   country: string | null;
 }
 
-/** Usuario con sesión en esta petición, o `null` si no hay. */
+/** User with a session in this request, or `null` if there is none. */
 export async function getSessionUser(headers: Headers): Promise<SessionUser | null> {
   const session = await getAuth().api.getSession({ headers });
   if (!session) return null;

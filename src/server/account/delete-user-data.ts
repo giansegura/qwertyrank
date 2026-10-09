@@ -6,12 +6,12 @@ import { userBoards } from "../leaderboard/bests";
 import type { LeaderboardStore } from "../leaderboard/store";
 
 /**
- * Al borrar una cuenta (spec §6):
- * - el jugador sale de todos los rankings de Redis y los demás suben (sus `bests` caen en cascada
- *   al borrar la fila de `users`);
- * - se borran las pulsaciones de sus partidas y las partidas se anonimizan: sin usuario, sin
- *   `anon_id` y sin hash de IP. Las PPM se quedan para estadísticas.
- * Sesiones, cuentas y passkeys también caen en cascada.
+ * When an account is deleted (spec §6):
+ * - the player leaves every Redis ranking and everyone else moves up (their `bests` cascade
+ *   when the `users` row is deleted);
+ * - the keystrokes of their games are deleted and the games are anonymized: no user, no
+ *   `anon_id` and no IP hash. The wpm stay for statistics.
+ * Sessions, accounts and passkeys cascade too.
  */
 export function createDeleteUserData(db: Db, store: LeaderboardStore) {
   return async (userId: string): Promise<void> => {

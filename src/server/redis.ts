@@ -5,7 +5,7 @@ import { serverEnv } from "./env";
 let redis: Redis | null = null;
 
 export function createRedis(url: string, token: string): Redis {
-  // Sin deserialización automática: los scripts devuelven texto y lo interpretamos nosotros.
+  // No automatic deserialization: the scripts return text and we interpret it ourselves.
   return new Redis({ url, token, automaticDeserialization: false });
 }
 

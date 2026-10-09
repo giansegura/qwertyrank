@@ -58,7 +58,7 @@ const verificationOf = async (gameId: string) => {
 };
 
 describe("saveGame (PostgreSQL)", () => {
-  it("guarda la partida y su registro de pulsaciones comprimido, con las palabras", async () => {
+  it("saves the game and its compressed keystroke log, with the words", async () => {
     const input = record();
     await saveGame(input);
 
@@ -70,14 +70,14 @@ describe("saveGame (PostgreSQL)", () => {
     expect(decodeKeystrokeLog(log.events)).toEqual({ words: ["a", "casa"], events: input.batches[0].events });
   });
 
-  it("guarda también las partidas rechazadas con su motivo", async () => {
+  it("also saves rejected games with their reason", async () => {
     const input = record({ verdict: "rejected", rejectReason: "untrusted" });
     await saveGame(input);
     const [game] = await db.select().from(games).where(eq(games.id, input.id));
     expect(game.rejectReason).toBe("untrusted");
   });
 
-  it("no guarda dos veces la misma partida", async () => {
+  it("does not save the same game twice", async () => {
     const input = record();
     await saveGame(input);
     await expect(saveGame({ ...input, id: input.id })).rejects.toThrow();
@@ -85,25 +85,25 @@ describe("saveGame (PostgreSQL)", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("con usuario y al menos un 90 % de precisión, guarda su marca en la misma transacción", async () => {
+  it("with a user and at least 90% accuracy, saves their best in the same transaction", async () => {
     const input = record({ userId: await newUser() });
     expect(await saveGame(input)).toEqual({ improved: true, review: null });
     expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toHaveLength(1);
   });
 
-  it("sin usuario o por debajo del 90 % de precisión, no guarda marca", async () => {
+  it("without a user or below 90% accuracy, saves no best", async () => {
     expect((await saveGame(record())).improved).toBe(false);
     expect((await saveGame(record({ userId: await newUser(), accuracy: 89.9 }))).improved).toBe(false);
   });
 });
 
-describe("saveGame: récords en review (spec 4b §2)", () => {
-  // Cada test empieza con los rankings vacíos: cualquier partida sin nivel verificado entra en el top 10.
+describe("saveGame: records in review (spec 4b §2)", () => {
+  // Each test starts with empty rankings: any game without a verified level enters the top 10.
   beforeEach(async () => {
     await emptyBoards(db);
   });
 
-  it("sin nivel verificado y entre los 10 primeros: review, sin marca y con una verificación de 24 h", async () => {
+  it("without a verified level and in the top 10: review, no best and a 24 h verification", async () => {
     const input = record({ userId: await newUser({ verified: false }), wpm: 72.4 });
     const saved = await saveGame(input);
 
@@ -130,7 +130,7 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     });
   });
 
-  it("en shadow-ban, el mismo flujo: la sanción no se nota", async () => {
+  it("under shadow ban, the same flow: the sanction is not noticeable", async () => {
     const input = record({ userId: await newUser({ verified: false, status: "shadowbanned" }) });
     const saved = await saveGame(input);
 
@@ -142,13 +142,13 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toEqual([]);
   });
 
-  it("por debajo de su nivel × 1,10 se publica directamente", async () => {
+  it("below their level × 1.10 it is published directly", async () => {
     const input = record({ userId: await newUser() });
     expect(await saveGame(input)).toEqual({ improved: true, review: null });
     expect(await db.select().from(bests).where(eq(bests.gameId, input.id))).toHaveLength(1);
   });
 
-  it("una segunda partida en review mejor sustituye a la primera y renueva el plazo; los intentos se quedan", async () => {
+  it("a better second game in review replaces the first and renews the deadline; the attempts stay", async () => {
     const userId = await newUser({ verified: false });
     const first = record({ userId, wpm: 60 });
     const { review } = await saveGame(first);
@@ -169,7 +169,7 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     }
   });
 
-  it("una pendiente caducada se cierra como fallida y la partida nueva abre otra", async () => {
+  it("an expired pending one is closed as failed and the new game opens another", async () => {
     const userId = await newUser({ verified: false });
     const first = record({ userId });
     const { review } = await saveGame(first);
@@ -186,7 +186,7 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
     expect(closed).toMatchObject({ status: "failed", resolvedAt: expired.expiresAt });
   });
 
-  it("una pendiente sin intentos se cierra como fallida y la partida nueva abre otra con los 3", async () => {
+  it("a pending one with no attempts left is closed as failed and the new game opens another with all 3", async () => {
     const userId = await newUser({ verified: false });
     const first = record({ userId });
     const { review } = await saveGame(first);
@@ -201,18 +201,18 @@ describe("saveGame: récords en review (spec 4b §2)", () => {
       verdict: "review",
       verification: { id: saved.review!.verification.id, gameId: next.id, status: "pending", attempts: 0 },
     });
-    // Se cierra al guardar la partida nueva (el `now()` de su transacción), aunque aún no haya caducado.
+    // It is closed when the new game is saved (its transaction's `now()`), even though it has not expired yet.
     const closed = await verificationOf(first.id);
     expect(closed.verification).toMatchObject({ status: "failed", resolvedAt: opened.verification.createdAt });
     expect(closed.verification.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
-  it("dos partidas en review guardadas a la vez: el objetivo es la más rápida", async () => {
+  it("two games in review saved at once: the target is the fastest one", async () => {
     const userId = await newUser({ verified: false });
     const fast = record({ userId, wpm: 100 });
     const slow = record({ userId, wpm: 50 });
 
-    // A abre la verificación de la rápida y no confirma hasta que B está esperando por esa pendiente.
+    // A opens the verification for the fast one and does not commit until B is waiting on that pending one.
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
     let opened = () => {};

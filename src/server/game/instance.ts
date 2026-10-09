@@ -15,7 +15,7 @@ import { createStartGate, type StartGate } from "./start-gate";
 import { createGameStore } from "./store";
 import { createTurnstileVerifier } from "./turnstile";
 
-/** Cuenta atrás de 3 s, 30 s de partida y 3 s de margen para la latencia (spec §3.4 y §4.2). */
+/** 3 s countdown, 30 s game and 3 s of slack for latency (spec §3.4 and §4.2). */
 export const RANKED_TIMES = { countdownMs: 3_000, durationMs: OFFICIAL_DURATION_MS, graceMs: 3_000 };
 
 function secureRandom(): number {

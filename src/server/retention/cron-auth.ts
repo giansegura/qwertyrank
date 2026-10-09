@@ -2,8 +2,8 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 
 /**
- * ¿Viene de Vercel Cron? Vercel manda `Authorization: Bearer <CRON_SECRET>` (spec 5a §3.1). Sin secreto
- * configurado nunca: la tarea no se ejecuta por accidente. Comparación en tiempo constante.
+ * Does it come from Vercel Cron? Vercel sends `Authorization: Bearer <CRON_SECRET>` (spec 5a §3.1). Without a
+ * configured secret, never: the task does not run by accident. Constant-time comparison.
  */
 export function isCronAuthorized(authorization: string | null, secret: string | undefined): boolean {
   if (!secret || !authorization) return false;

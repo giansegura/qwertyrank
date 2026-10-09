@@ -8,7 +8,7 @@ import { games, recordVerifications } from "../db/schema";
 
 const EXPIRY = sql.raw(`now() + interval '${VERIFICATION_HOURS} hours'`);
 
-/** Una fila de `record_verifications` con las PPM de su partida objetivo, como la ve el jugador. */
+/** A `record_verifications` row with the WPM of its target game, as the player sees it. */
 export function toPending(row: {
   id: string;
   language: TestLanguage;
@@ -38,15 +38,15 @@ const PENDING_FIELDS = {
 };
 
 /**
- * Deja una partida `review` esperando su verificación (spec 4b §2.2), dentro de la transacción que la
- * guarda o la reclama. La partida ya debe existir: la verificación apunta a ella, y después ella a la
- * verificación (las dos tablas se apuntan).
- * - Una pendiente caducada se cierra como fallida, con `resolved_at = expires_at` (§5.1).
- * - Una pendiente sin intentos también, con `resolved_at = now()`: su último intento se abandonó (una
- *   partida nueva cierra la de verificación) y renovarla dejaría al jugador sin poder verificar nunca.
- * - Si no hay pendiente, se crea con 0 intentos y 24 h de plazo.
- * - Si la hay, apunta a la partida con más PPM de las dos (también si las dos se guardan a la vez) y
- *   el plazo vuelve a ser de 24 h; los intentos gastados se mantienen.
+ * Leaves a `review` game awaiting its verification (spec 4b §2.2), inside the transaction that saves
+ * or claims it. The game must already exist: the verification points to it, and then it to the
+ * verification (the two tables point to each other).
+ * - An expired pending one is closed as failed, with `resolved_at = expires_at` (§5.1).
+ * - A pending one with no attempts left too, with `resolved_at = now()`: its last attempt was abandoned (a
+ *   new game closes the verification one) and renewing it would leave the player never able to verify.
+ * - If there is no pending one, it is created with 0 attempts and a 24 h deadline.
+ * - If there is, it points to the game with the higher WPM of the two (also if both are saved at once) and
+ *   the deadline goes back to 24 h; the spent attempts are kept.
  */
 export async function openPendingVerification(
   tx: DbExecutor,
@@ -88,9 +88,9 @@ export async function openPendingVerification(
     })
     .returning({ id: recordVerifications.id });
 
-  // El objetivo cambia en otra sentencia. Si el upsert ha esperado a la pendiente que abría otra
-  // transacción, su instantánea no ve la partida de esa otra; una sentencia nueva sí (READ COMMITTED),
-  // y la fila ya es nuestra. A igualdad de PPM se queda la anterior.
+  // The target changes in a separate statement. If the upsert waited on the pending one another
+  // transaction was opening, its snapshot does not see that other transaction's game; a new statement does
+  // (READ COMMITTED), and the row is already ours. With equal WPM the previous one stays.
   await tx
     .update(recordVerifications)
     .set({ gameId: input.gameId })
@@ -109,7 +109,7 @@ export async function openPendingVerification(
   return toPending(pending);
 }
 
-/** La verificación, si sigue pendiente y sin caducar (para repetir el reclamo de una partida `review`). */
+/** The verification, if still pending and unexpired (for repeating the claim of a `review` game). */
 export async function findPendingVerification(db: DbExecutor, id: string): Promise<PendingVerification | null> {
   const [row] = await db
     .select(PENDING_FIELDS)
@@ -126,8 +126,8 @@ export async function findPendingVerification(db: DbExecutor, id: string): Promi
 }
 
 /**
- * Las verificaciones que el jugador aún puede hacer (spec 4b §4.3): pendientes, sin caducar y con algún
- * intento; la que antes caduca, primero. Las comparten `GET /api/verification` y `/verify`.
+ * The verifications the player can still do (spec 4b §4.3): pending, unexpired and with attempts
+ * left; the one expiring soonest first. Shared by `GET /api/verification` and `/verify`.
  */
 export async function pendingVerifications(db: DbExecutor, userId: string): Promise<PendingVerification[]> {
   const rows = await db

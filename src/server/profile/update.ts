@@ -14,13 +14,13 @@ export const profileBodySchema = z.object({
 export type ProfileInput = z.infer<typeof profileBodySchema>;
 export type ProfileError = "invalid_nick" | "profane_nick" | "nick_taken" | "invalid_country";
 
-/** El índice único sobre `lower(nick)` salta: otro usuario ya lo tiene, con cualquier mayúscula. */
+/** The unique index on `lower(nick)` fires: another user already has it, in any case. */
 function isNickTakenError(error: unknown): boolean {
   const cause = (error as { cause?: { code?: string; constraint_name?: string } } | null)?.cause;
   return cause?.code === "23505" && cause.constraint_name === "users_nick_lower_idx";
 }
 
-/** `onChanged`: tras guardar, sus páginas en caché cambian (nick y bandera); en producción, `revalidatePlayerPages`. */
+/** `onChanged`: after saving, their cached pages change (nick and flag); in production, `revalidatePlayerPages`. */
 export function createUpdateProfile(db: Db, onChanged: () => void) {
   return async (userId: string, input: ProfileInput): Promise<{ ok: true } | { ok: false; error: ProfileError }> => {
     const problem = checkNick(input.nick);

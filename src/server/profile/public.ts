@@ -6,7 +6,7 @@ import { bests, games, users } from "../db/schema";
 
 export type { ProfileGame, ProfileRecord, PublicProfile } from "@/lib/profile";
 
-/** Partidas recientes que enseña el perfil. */
+/** Recent games the profile shows. */
 export const PROFILE_HISTORY_SIZE = 20;
 
 async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
@@ -38,7 +38,7 @@ async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
         accuracy: games.accuracy,
       })
       .from(games)
-      // Las partidas de verificación no se enseñan (spec 4b §5.3).
+      // Verification games are not shown (spec 4b §5.3).
       .where(and(eq(games.userId, user.id), eq(games.verdict, "valid"), eq(games.mode, "ranked")))
       .orderBy(desc(games.startsAt))
       .limit(PROFILE_HISTORY_SIZE),
@@ -48,14 +48,14 @@ async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
 }
 
 /**
- * Perfil público (spec §3.6): récords de siempre por idioma y teclado, e historial de partidas
- * válidas. Los jugadores en shadow-ban o baneados no tienen perfil para los demás (spec §4.7).
+ * Public profile (spec §3.6): all-time records per language and keyboard, and history of valid
+ * games. Shadow-banned or banned players have no profile for everyone else (spec §4.7).
  */
 export function getPublicProfile(db: Db, nick: string): Promise<PublicProfile | null> {
   return loadProfile(db, and(sql`lower(${users.nick}) = lower(${nick})`, eq(users.status, "active"))!);
 }
 
-/** El perfil del propio jugador, sea cual sea su estado: con shadow-ban o ban lo sigue viendo (spec 4a §6.2). */
+/** The player's own profile, whatever their status: with a shadow ban or ban they still see it (spec 4a §6.2). */
 export function getOwnProfile(db: Db, userId: string): Promise<PublicProfile | null> {
   return loadProfile(db, eq(users.id, userId));
 }

@@ -10,21 +10,21 @@ import { findPendingVerification, openPendingVerification } from "../verificatio
 import { boardStanding, decideReview } from "../verification/review";
 import { recordGameBest, type ReviewedGame } from "./persist";
 
-/** Spec §3.7: una partida anónima se puede reclamar en los 10 minutos siguientes a terminarla. */
+/** Spec §3.7: an anonymous game can be claimed within 10 minutes of finishing it. */
 export const CLAIM_WINDOW_MINUTES = 10;
 
 export type ClaimOutcome = { kind: "ok"; claim: ClaimResponse } | { kind: "not_found" | "expired" };
 
 export interface ClaimDeps {
   db: Db;
-  /** No lanza: si Redis falla, devuelve `unavailable` (ver `createRanking`). */
+  /** Does not throw: if Redis fails, it returns `unavailable` (see `createRanking`). */
   rankGame: (game: RankGameInput) => Promise<GameRanking>;
 }
 
 type ClaimedGame = typeof games.$inferSelect;
 
 export function createClaimGame(deps: ClaimDeps) {
-  /** Repetir el reclamo de una partida en `review`: su verificación, si sigue pendiente (spec 4b §2.4). */
+  /** Repeating the claim of a game in `review`: its verification, if still pending (spec 4b §2.4). */
   async function reviewRanking(game: ClaimedGame & { userId: string }): Promise<GameRanking> {
     const verification = game.verificationId ? await findPendingVerification(deps.db, game.verificationId) : null;
     if (!verification) return { kind: "unranked" };
@@ -34,9 +34,9 @@ export function createClaimGame(deps: ClaimDeps) {
   }
 
   return async ({ gameId, anonId, userId }: { gameId: string; anonId: string; userId: string }): Promise<ClaimOutcome> => {
-    // Solo partidas válidas de este navegador, sin dueño y terminadas hace menos de 10 minutos
-    // (con el reloj de PostgreSQL). Al reclamarla, cuenta en el ranking de su idioma y teclado; si
-    // entraría en un top 10 sin verificar, queda en `review` (spec 4b §2.1).
+    // Only valid games from this browser, with no owner and finished less than 10 minutes ago
+    // (by the PostgreSQL clock). Once claimed, it counts in the ranking for its language and keyboard; if
+    // it would enter a top 10 unverified, it stays in `review` (spec 4b §2.1).
     const claimed = await deps.db.transaction(async (tx) => {
       const [game] = await tx
         .update(games)
@@ -76,14 +76,14 @@ export function createClaimGame(deps: ClaimDeps) {
         .select()
         .from(games)
         .where(and(eq(games.id, gameId), eq(games.anonId, anonId)));
-      // Ya es suya y espera verificación: repetir el reclamo (p. ej. al recargar) enseña lo mismo.
+      // Already theirs and awaiting verification: repeating the claim (e.g. on reload) shows the same.
       if (existing?.verdict === "review" && existing.userId === userId) {
         const ranking = await reviewRanking({ ...existing, userId });
         return { kind: "ok", claim: { ranking, language: existing.language, inputType: existing.inputType } };
       }
       if (existing?.verdict !== "valid") return { kind: "not_found" };
       if (existing.userId === null) return { kind: "expired" };
-      // Ya es suya: repetir el reclamo no cambia nada. Si es de otro, para este usuario no existe.
+      // Already theirs: repeating the claim changes nothing. If it is someone else's, it does not exist for this user.
       if (existing.userId !== userId) return { kind: "not_found" };
       game = existing;
     }

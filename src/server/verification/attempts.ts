@@ -6,7 +6,7 @@ import type { TestLanguage } from "@/lib/words/languages";
 import type { DbExecutor } from "../db/client";
 import { recordVerifications } from "../db/schema";
 
-/** Intento gastado: qué verificación, qué número de intento (1–3) y con qué teclado hay que jugarlo. */
+/** Spent attempt: which verification, which attempt number (1–3) and which keyboard it must be played on. */
 export interface SpentAttempt {
   id: string;
   attempt: number;
@@ -14,9 +14,9 @@ export interface SpentAttempt {
 }
 
 /**
- * Gasta un intento de una verificación del jugador (spec 4b §3.1) con un solo `UPDATE … RETURNING`:
- * dos pestañas o dos dispositivos a la vez no se saltan el límite de 3. `null` si no está pendiente, ha
- * caducado, ya no quedan intentos, no es suya o es de otro idioma.
+ * Spends an attempt of one of the player's verifications (spec 4b §3.1) with a single `UPDATE … RETURNING`:
+ * two tabs or two devices at once cannot get past the limit of 3. `null` if it is not pending, has
+ * expired, has no attempts left, is not theirs or is in another language.
  */
 export async function spendAttempt(
   db: DbExecutor,

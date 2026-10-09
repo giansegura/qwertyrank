@@ -3,7 +3,7 @@ import type { Redis } from "@upstash/redis";
 import type { InputType } from "@/lib/game/types";
 import type { TestLanguage } from "@/lib/words/languages";
 
-/** Un ranking: idioma × teclado (spec §5.1). Cuenta la mejor marca de cada jugador desde siempre. */
+/** A ranking: language × keyboard (spec §5.1). It counts each player's all-time best. */
 export interface Board {
   language: TestLanguage;
   inputType: InputType;
@@ -17,14 +17,14 @@ export interface BoardScore {
 
 export interface LeaderboardStore {
   add(entries: BoardScore[]): Promise<void>;
-  /** Posición del jugador (1 = el mejor), o `null` si no está. */
+  /** The player's position (1 = the best), or `null` if they are not there. */
   position(board: Board, userId: string): Promise<number | null>;
-  /** Posición que tendría esa puntuación, sin escribirla (spec §5.6: "Entrarías el #N"). */
+  /** Position that score would have, without writing it (spec §5.6: "You would enter at #N"). */
   positionFor(board: Board, score: number): Promise<number>;
   remove(userId: string, boards: Board[]): Promise<void>;
 }
 
-/** Una lista ordenada por ranking, sin caducidad (spec §5.4): `lb:es:physical`. */
+/** One sorted set per ranking, without expiry (spec §5.4): `lb:es:physical`. */
 export function boardKey(prefix: string, board: Board): string {
   return `${prefix}lb:${board.language}:${board.inputType}`;
 }
@@ -36,7 +36,7 @@ export function createLeaderboardStore(redis: Redis, prefix: string): Leaderboar
     async add(entries) {
       if (entries.length === 0) return;
       const pipeline = redis.pipeline();
-      // GT: la puntuación solo sube; un jugador nuevo se añade igualmente.
+      // GT: the score only goes up; a new player is added anyway.
       for (const { board, userId, score } of entries) pipeline.zadd(key(board), { gt: true }, { score, member: userId });
       await pipeline.exec();
     },

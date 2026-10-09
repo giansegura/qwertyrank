@@ -31,7 +31,7 @@ const deps = {
     playerChanges++;
   },
   sendEmail: async (message: EmailMessage) => {
-    if (emailProviderDown) throw new Error("proveedor de email caído");
+    if (emailProviderDown) throw new Error("email provider down");
     outbox.push(message);
   },
 };
@@ -45,17 +45,17 @@ const newEmail = () => `${randomUUID()}@example.com`;
 
 function linkSentTo(email: string): string {
   const message = outbox.findLast((m) => m.to === email);
-  if (!message) throw new Error(`no hay email para ${email}`);
+  if (!message) throw new Error(`no email for ${email}`);
   return message.text.match(/https?:\/\/\S+/)![0];
 }
 
-/** `qr.session_token=…` de la respuesta, listo para mandarlo en la cabecera `cookie`. */
+/** `qr.session_token=…` from the response, ready to send in the `cookie` header. */
 function sessionCookie(response: Response): string {
   const cookie = response.headers
     .getSetCookie()
     .map((header) => header.split(";")[0])
     .find((pair) => pair.startsWith("qr.session_token="));
-  if (!cookie) throw new Error("la respuesta no abre sesión");
+  if (!cookie) throw new Error("the response does not open a session");
   return cookie;
 }
 
@@ -74,8 +74,8 @@ async function signIn(email: string) {
   return { response, headers, user: session!.user };
 }
 
-describe("cuentas con Better Auth", () => {
-  it("el enlace por email crea la cuenta con un nick válido, abre sesión y no guarda la IP", async () => {
+describe("accounts with Better Auth", () => {
+  it("the email link creates the account with a valid nick, opens a session and does not store the IP", async () => {
     const email = newEmail();
     const { response, user } = await signIn(email);
     expect(response.status).toBe(302);
@@ -86,7 +86,7 @@ describe("cuentas con Better Auth", () => {
     expect(row.ip).toBeNull();
   });
 
-  it("el enlace solo funciona una vez", async () => {
+  it("the link only works once", async () => {
     const email = newEmail();
     await askForLink(email);
     const link = linkSentTo(email);
@@ -95,18 +95,18 @@ describe("cuentas con Better Auth", () => {
     expect(again.headers.get("location")).toMatch(/error=INVALID_TOKEN/);
   });
 
-  it("un email desechable no recibe enlace", async () => {
-    await expect(askForLink("alguien@mailinator.com")).rejects.toMatchObject({ body: { code: "DISPOSABLE_EMAIL" } });
-    expect(outbox.some((m) => m.to === "alguien@mailinator.com")).toBe(false);
+  it("a disposable email does not get a link", async () => {
+    await expect(askForLink("someone@mailinator.com")).rejects.toMatchObject({ body: { code: "DISPOSABLE_EMAIL" } });
+    expect(outbox.some((m) => m.to === "someone@mailinator.com")).toBe(false);
   });
 
-  it("solo manda un enlace por minuto al mismo email", async () => {
+  it("only sends one link per minute to the same email", async () => {
     const email = newEmail();
     await askForLink(email);
     await expect(askForLink(email)).rejects.toMatchObject({ body: { code: "EMAIL_THROTTLED" } });
   });
 
-  it("si el proveedor de email falla, se puede pedir otro enlace enseguida", async () => {
+  it("if the email provider fails, another link can be requested right away", async () => {
     const email = newEmail();
     emailProviderDown = true;
     try {
@@ -118,7 +118,7 @@ describe("cuentas con Better Auth", () => {
     expect(outbox.some((m) => m.to === email)).toBe(true);
   });
 
-  it("una petición inválida no gasta el envío del minuto (no sirve para bloquear a otro)", async () => {
+  it("an invalid request does not use up the minute's send (it cannot block someone else)", async () => {
     const email = newEmail();
     await expect(
       auth.api.signInMagicLink({ body: { email, name: 123 } as never, headers: new Headers() }),
@@ -127,7 +127,7 @@ describe("cuentas con Better Auth", () => {
     expect(outbox.some((m) => m.to === email)).toBe(true);
   });
 
-  it("si el proveedor de email falla, la petición falla (el jugador no ve 'enviado')", async () => {
+  it("if the email provider fails, the request fails (the player does not see 'sent')", async () => {
     emailProviderDown = true;
     try {
       await expect(askForLink(newEmail())).rejects.toThrow();
@@ -136,7 +136,7 @@ describe("cuentas con Better Auth", () => {
     }
   });
 
-  it("borrar la cuenta borra sus pulsaciones y anonimiza sus partidas", async () => {
+  it("deleting the account deletes its keystrokes and anonymizes its games", async () => {
     const { headers, user } = await signIn(newEmail());
     await verifyEverywhere(db, user.id);
     const gameId = randomUUID();
@@ -167,11 +167,11 @@ describe("cuentas con Better Auth", () => {
     expect(game).toMatchObject({ userId: null, anonId: null, ipHash: null, wpm: 60 });
   });
 
-  it("borrar la cuenta con una sesión de hace más de un día exige volver a entrar", async () => {
+  it("deleting the account with a session older than a day requires signing in again", async () => {
     const { headers, user } = await signIn(newEmail());
     await db
       .update(sessions)
-      // Se envejecen las dos fechas: la antigüedad de la sesión puede medirse con cualquiera de ellas.
+      // Both dates are aged: the session's age can be measured with either of them.
       .set({ createdAt: sql`now() - interval '2 days'`, updatedAt: sql`now() - interval '2 days'` })
       .where(eq(sessions.userId, user.id));
     await expect(auth.api.deleteUser({ body: {}, headers })).rejects.toMatchObject({
@@ -180,8 +180,8 @@ describe("cuentas con Better Auth", () => {
     expect(await db.select({ id: users.id }).from(users).where(eq(users.id, user.id))).toHaveLength(1);
   });
 
-  it("si falla la creación de la cuenta al abrir el enlace, vuelve a entrar con un error (no un 500 en blanco)", async () => {
-    // Con random() = 0 los candidatos son siempre base_00 y base_0000: si están ocupados, no hay nick libre.
+  it("if account creation fails when opening the link, it goes back to sign-in with an error (not a blank 500)", async () => {
+    // With random() = 0 the candidates are always base_00 and base_0000: if they are taken, there is no free nick.
     const base = `z${randomUUID().replaceAll("-", "").slice(0, 11)}`;
     for (const nick of [`${base}_00`, `${base}_0000`]) {
       await db.insert(users).values({ name: "", email: `${randomUUID()}@example.com`, nick });
@@ -195,7 +195,7 @@ describe("cuentas con Better Auth", () => {
       return new Request(linkSentTo(email));
     };
 
-    // Sin la red de seguridad, Better Auth responde un 500 vacío (y el enlace ya está gastado).
+    // Without the safety net, Better Auth responds with an empty 500 (and the link is already used up).
     expect((await unlucky.handler(await linkFor(`${base}@example.com`))).status).toBe(500);
 
     const response = await withSignInFallback(unlucky.handler)(await linkFor(`${base}+2@example.com`));
@@ -206,7 +206,7 @@ describe("cuentas con Better Auth", () => {
     expect(location.searchParams.get("next")).toBe("/es");
   });
 
-  it("borrar la cuenta la quita de todos los rankings (los demás suben)", async () => {
+  it("deleting the account removes it from every ranking (everyone else moves up)", async () => {
     const { headers, user } = await signIn(newEmail());
     await verifyEverywhere(db, user.id);
     const store = createLeaderboardStore(redis, process.env.REDIS_KEY_PREFIX!);
@@ -238,7 +238,7 @@ describe("cuentas con Better Auth", () => {
     expect(await db.select().from(bests).where(eq(bests.userId, user.id))).toEqual([]);
   });
 
-  it("la sesión que ve el navegador no incluye status ni role", async () => {
+  it("the session the browser sees includes neither status nor role", async () => {
     const { headers } = await signIn(newEmail());
     const response = await auth.handler(new Request("http://localhost:3000/api/auth/get-session", { headers }));
     const { user } = (await response.json()) as { user: Record<string, unknown> };
@@ -247,7 +247,7 @@ describe("cuentas con Better Auth", () => {
     expect(user).not.toHaveProperty("role");
   });
 
-  it("borrar la cuenta avisa de que cambian sus páginas en caché (perfil y rankings)", async () => {
+  it("deleting the account signals that its cached pages change (profile and rankings)", async () => {
     const { headers } = await signIn(newEmail());
     const before = playerChanges;
     await auth.api.deleteUser({ body: {}, headers });
@@ -258,20 +258,20 @@ describe("cuentas con Better Auth", () => {
     await db.insert(bannedIdentities).values({ hash: identityHash(kind, value, deps.identitySecret), kind });
   }
 
-  /** Olvida el "un enlace por minuto" de ese email, para volver a entrar en el mismo test. */
+  /** Forgets the "one link per minute" of that email, to sign in again in the same test. */
   async function forgetThrottle(email: string) {
     await redis.del(`${deps.keyPrefix}magic-link:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`);
   }
 
-  it("un email baneado (o un alias suyo) no puede pedir enlace para una cuenta nueva", async () => {
+  it("a banned email (or an alias of it) cannot request a link for a new account", async () => {
     const local = randomUUID().replaceAll("-", "").slice(0, 12);
     await ban("email", `${local}@gmail.com`);
-    const alias = `${local.slice(0, 4)}.${local.slice(4)}+otra@googlemail.com`;
+    const alias = `${local.slice(0, 4)}.${local.slice(4)}+other@googlemail.com`;
     await expect(askForLink(alias)).rejects.toMatchObject({ body: { code: "ACCOUNT_BLOCKED" } });
     expect(outbox.some((message) => message.to === alias)).toBe(false);
   });
 
-  it("un baneado que ya tiene cuenta sigue pudiendo entrar", async () => {
+  it("a banned player who already has an account can still sign in", async () => {
     const email = newEmail();
     await signIn(email);
     await ban("email", email);
@@ -280,7 +280,7 @@ describe("cuentas con Better Auth", () => {
     expect(user.email).toBe(email);
   });
 
-  it("si se banea el email entre pedir el enlace y abrirlo, vuelve con ACCOUNT_BLOCKED y no crea la cuenta", async () => {
+  it("if the email is banned between requesting the link and opening it, it returns ACCOUNT_BLOCKED and does not create the account", async () => {
     const email = newEmail();
     await askForLink(email);
     await ban("email", email);
@@ -290,7 +290,7 @@ describe("cuentas con Better Auth", () => {
     expect(await db.select().from(users).where(eq(users.email, email))).toEqual([]);
   });
 
-  it("una cuenta de Google baneada no crea el usuario (ni lo deja a medias)", async () => {
+  it("a banned Google account does not create the user (nor leave it half-done)", async () => {
     const googleId = randomUUID();
     await ban("google", googleId);
     const email = newEmail();

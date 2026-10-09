@@ -48,14 +48,16 @@ function game(userId: string, overrides: Partial<GameRecord> = {}): GameRecord {
 describe("perfil público", () => {
   it("se busca sin distinguir mayúsculas y trae récords de siempre e historial de partidas válidas", async () => {
     const user = await newUser();
-    await saveGame(game(user.id));
+    const valid = game(user.id);
+    await saveGame(valid);
     await saveGame(game(user.id, { verdict: "rejected", rejectReason: "untrusted" }));
     const profile = await getPublicProfile(db, user.nick.toLowerCase());
     expect(profile).toMatchObject({ nick: user.nick, country: "PT", memberSince: expect.any(Date) });
+    // Cada récord y cada partida llevan su id: enlazan a su página de resultado (spec 5d §7).
     expect(profile!.records).toEqual([
-      { language: "pt", inputType: "touch", wpm: 55, accuracy: 96 },
+      { gameId: valid.id, language: "pt", inputType: "touch", wpm: 55, accuracy: 96 },
     ]);
-    expect(profile!.history).toHaveLength(1);
+    expect(profile!.history).toEqual([expect.objectContaining({ id: valid.id })]);
   });
 
   it("no existe para un nick desconocido ni para un jugador en shadow-ban", async () => {

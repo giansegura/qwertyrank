@@ -179,6 +179,27 @@
     "reportSent": "Obrigado, vamos analisar.",
     "reportFailed": "Não conseguimos enviar a denúncia. Tente de novo."
   },
+  "Share": {
+    "metaTitle": "{nick}: {wpm} ppm em {language, select, en {inglês} es {espanhol} pt {português} other {}}",
+    "metaTitleAnonymous": "{wpm} ppm em {language, select, en {inglês} es {espanhol} pt {português} other {}}",
+    "metaDescription": "{accuracy}% de precisão no teste de digitação de 30 segundos. Você consegue superar?",
+    "imageAlt": "{wpm} ppm · {accuracy}%",
+    "wpm": "ppm",
+    "accuracy": "{accuracy}% de precisão",
+    "anonymous": "Anônimo",
+    "playedOn": "Jogada em {date}",
+    "challenge": "Você consegue superar?",
+    "takeTest": "Fazer o teste",
+    "viewLeaderboard": "Ver ranking",
+    "notFoundTitle": "Resultado não encontrado",
+    "notFoundText": "Esta partida não existe ou não é pública.",
+    "notFoundHome": "Voltar ao início",
+    "share": "Compartilhar",
+    "copied": "Link copiado!",
+    "shareText": "Fiz {wpm} ppm em {language, select, en {inglês} es {espanhol} pt {português} other {}} no QwertyRank. Você consegue superar?",
+    "copyManually": "Copie este link:",
+    "viewResult": "Ver resultado"
+  },
   "Email": {
     "magicLinkSubject": "Seu link para entrar no QwertyRank",
     "magicLinkIntro": "Use este link para entrar no QwertyRank. Ele expira em 10 minutos e só funciona uma vez.",

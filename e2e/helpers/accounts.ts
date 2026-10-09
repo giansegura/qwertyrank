@@ -105,6 +105,16 @@ export async function seedRankedPlayer(nick: string): Promise<string> {
   return user.id;
 }
 
+/** Una partida Ranked válida en español con teclado físico, anónima o de `userId`. Devuelve su id. */
+export async function seedGame(userId: string | null): Promise<string> {
+  const gameId = crypto.randomUUID();
+  const now = new Date();
+  await db()`
+    insert into games (id, user_id, anon_id, language, input_type, wpm, raw_wpm, accuracy, verdict, starts_at, finished_at)
+    values (${gameId}, ${userId}, ${crypto.randomUUID()}, 'es', 'physical', 72.4, 74, 96.8, 'valid', ${now}, ${now})`;
+  return gameId;
+}
+
 /** Eventos de teclear `text` letra a letra, una cada 150 ms, como los guarda el servidor. */
 function typingEvents(text: string) {
   return [...text].flatMap((char, i) => {

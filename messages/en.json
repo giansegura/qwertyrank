@@ -179,6 +179,27 @@
     "reportSent": "Thanks, we'll look into it.",
     "reportFailed": "We couldn't send the report. Try again."
   },
+  "Share": {
+    "metaTitle": "{nick}: {wpm} wpm in {language, select, en {English} es {Spanish} pt {Portuguese} other {}}",
+    "metaTitleAnonymous": "{wpm} wpm in {language, select, en {English} es {Spanish} pt {Portuguese} other {}}",
+    "metaDescription": "{accuracy}% accuracy on the 30-second typing test. Can you beat it?",
+    "imageAlt": "{wpm} wpm · {accuracy}%",
+    "wpm": "wpm",
+    "accuracy": "{accuracy}% accuracy",
+    "anonymous": "Anonymous",
+    "playedOn": "Played on {date}",
+    "challenge": "Can you beat it?",
+    "takeTest": "Take the test",
+    "viewLeaderboard": "View ranking",
+    "notFoundTitle": "Result not found",
+    "notFoundText": "This game doesn't exist or isn't public.",
+    "notFoundHome": "Back to the start",
+    "share": "Share",
+    "copied": "Link copied!",
+    "shareText": "I typed {wpm} wpm in {language, select, en {English} es {Spanish} pt {Portuguese} other {}} on QwertyRank. Can you beat me?",
+    "copyManually": "Copy this link:",
+    "viewResult": "View result"
+  },
   "Email": {
     "magicLinkSubject": "Your QwertyRank sign-in link",
     "magicLinkIntro": "Use this link to sign in to QwertyRank. It expires in 10 minutes and works only once.",

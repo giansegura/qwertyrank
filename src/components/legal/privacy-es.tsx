@@ -46,8 +46,8 @@ export function PrivacyEs() {
       <h2>Para qué y con qué base legal</h2>
       <ul>
         <li>
-          Darte el servicio (tu cuenta, tu perfil público y tu puesto en el ranking): es la ejecución del contrato que
-          aceptas al crear la cuenta.
+          Darte el servicio (tu cuenta, tu perfil público, tu puesto en el ranking y la página de cada partida válida,
+          que ve quien tenga su enlace): es la ejecución del contrato que aceptas al crear la cuenta.
         </li>
         <li>
           Validar las partidas y prevenir trampas y abusos (comprobar las pulsaciones, limitar partidas, verificar

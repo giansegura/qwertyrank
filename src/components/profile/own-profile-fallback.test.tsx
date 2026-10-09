@@ -5,14 +5,17 @@ import { renderWithIntl } from "@/test/render-with-intl";
 import { OwnProfileFallback } from "./own-profile-fallback";
 
 vi.mock("@/lib/viewer", () => ({ getViewer: vi.fn() }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/en/u/Gian" }));
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  usePathname: () => "/en/u/Gian",
+}));
 
 const PROFILE = {
   nick: "Gian",
   country: "ES",
   memberSince: "2026-10-01T00:00:00.000Z",
-  records: [{ language: "en", inputType: "physical", wpm: 80, accuracy: 97 }],
-  history: [{ startsAt: "2026-10-02T10:00:00.000Z", language: "en", inputType: "physical", wpm: 80, accuracy: 97 }],
+  records: [{ gameId: "3f6c1e2a-9b4d-4c8e-a1f2-0d9e8b7c6a5f", language: "en", inputType: "physical", wpm: 80, accuracy: 97 }],
+  history: [{ id: "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d", startsAt: "2026-10-02T10:00:00.000Z", language: "en", inputType: "physical", wpm: 80, accuracy: 97 }],
 };
 const fetchMock = vi.fn();
 

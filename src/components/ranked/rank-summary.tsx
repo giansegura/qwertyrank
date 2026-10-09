@@ -14,6 +14,8 @@ import { useNow } from "../use-now";
 // RankedTest descarga este módulo durante la partida y saca de él también la partida de verificación de
 // "Verificar ahora" (spec 4b §4.1): con un solo `import()`, la portada no paga otro.
 export { LazyVerificationGame } from "../verification/use-verification-module";
+// El botón «Compartir» (spec 5d §6) viaja en este mismo módulo: la portada no paga otro `import()`.
+export { ShareResult } from "./share-result";
 
 export interface RankSummaryProps {
   ranking: GameRanking;

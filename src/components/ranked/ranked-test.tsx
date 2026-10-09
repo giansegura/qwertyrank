@@ -187,6 +187,9 @@ export function RankedTest({ language }: { language: TestLanguage }) {
                 onVerify={setVerifying}
               />
             )}
+            {phase.name === "result" && summary && phase.response.verdict === "valid" && (
+              <summary.ShareResult gameId={phase.response.gameId} language={language} wpm={phase.response.wpm} />
+            )}
             <ResultView result={phase.name === "result" ? phase.response : phase.local} onRestart={start} />
           </div>
         )}

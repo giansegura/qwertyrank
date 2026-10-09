@@ -179,6 +179,27 @@
     "reportSent": "Gracias, lo revisaremos.",
     "reportFailed": "No hemos podido enviar la denuncia. Inténtalo de nuevo."
   },
+  "Share": {
+    "metaTitle": "{nick}: {wpm} ppm en {language, select, en {inglés} es {español} pt {portugués} other {}}",
+    "metaTitleAnonymous": "{wpm} ppm en {language, select, en {inglés} es {español} pt {portugués} other {}}",
+    "metaDescription": "{accuracy} % de precisión en el test de mecanografía de 30 segundos. ¿Puedes superarlo?",
+    "imageAlt": "{wpm} ppm · {accuracy} %",
+    "wpm": "ppm",
+    "accuracy": "{accuracy} % de precisión",
+    "anonymous": "Anónimo",
+    "playedOn": "Jugada el {date}",
+    "challenge": "¿Puedes superarlo?",
+    "takeTest": "Hacer el test",
+    "viewLeaderboard": "Ver ranking",
+    "notFoundTitle": "Resultado no encontrado",
+    "notFoundText": "Esta partida no existe o no es pública.",
+    "notFoundHome": "Volver al inicio",
+    "share": "Compartir",
+    "copied": "¡Enlace copiado!",
+    "shareText": "He hecho {wpm} ppm en {language, select, en {inglés} es {español} pt {portugués} other {}} en QwertyRank. ¿Puedes superarlo?",
+    "copyManually": "Copia este enlace:",
+    "viewResult": "Ver resultado"
+  },
   "Email": {
     "magicLinkSubject": "Tu enlace para entrar en QwertyRank",
     "magicLinkIntro": "Usa este enlace para entrar en QwertyRank. Caduca en 10 minutos y solo funciona una vez.",

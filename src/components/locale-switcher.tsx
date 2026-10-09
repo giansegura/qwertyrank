@@ -11,7 +11,7 @@ type Pathname = ReturnType<typeof usePathname>;
 
 /**
  * La misma página en otro idioma. Las rutas fijas (también los rankings) las traduce next-intl;
- * las que tienen parámetros (perfil, guardar) los conservan tal cual.
+ * las que tienen parámetros (perfil, guardar, resultado) los conservan tal cual.
  */
 export function localizedHref(pathname: Pathname, params: Record<string, string | string[] | undefined>): Href {
   switch (pathname) {
@@ -19,6 +19,8 @@ export function localizedHref(pathname: Pathname, params: Record<string, string 
       return { pathname, params: { nick: String(params.nick) } };
     case "/save/[gameId]":
       return { pathname, params: { gameId: String(params.gameId) } };
+    case "/r/[id]":
+      return { pathname, params: { id: String(params.id) } };
     default:
       return pathname;
   }

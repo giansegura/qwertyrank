@@ -46,8 +46,8 @@ export function PrivacyPt() {
       <h2>Para quê e com qual base legal</h2>
       <ul>
         <li>
-          Prestar o serviço (sua conta, seu perfil público e sua posição no ranking): execução do contrato que você
-          aceita ao criar a conta.
+          Prestar o serviço (sua conta, seu perfil público, sua posição no ranking e a página de cada partida válida,
+          que qualquer pessoa com o link pode ver): execução do contrato que você aceita ao criar a conta.
         </li>
         <li>
           Validar as partidas e prevenir trapaças e abusos (verificar as teclas, limitar partidas, verificar recordes,

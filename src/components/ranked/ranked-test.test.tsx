@@ -98,6 +98,8 @@ describe("RankedTest", () => {
     expect(finishGame).toHaveBeenCalledWith("g1", { lastSeq });
     expect(screen.getByTestId("result")).toBeInTheDocument();
     expect(screen.getByTestId("ranked-status")).toHaveTextContent("Valid game");
+    // Válida: se puede compartir (spec 5d §6).
+    expect(screen.getByTestId("share-result")).toBeInTheDocument();
   });
 
   it("muestra el motivo cuando el servidor rechaza la partida", async () => {
@@ -108,6 +110,7 @@ describe("RankedTest", () => {
       await vi.advanceTimersByTimeAsync(30_000);
     });
     expect(screen.getByTestId("ranked-status")).toHaveTextContent("type letter by letter");
+    expect(screen.queryByTestId("share-result")).toBeNull();
   });
 
   it("un final que llega tarde (p. ej. con la pestaña en segundo plano) se explica como problema de conexión", async () => {
@@ -276,6 +279,8 @@ describe("RankedTest: récord en review", () => {
       await vi.dynamicImportSettled();
     });
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1.");
+    // En `review` todavía no es válida: no se comparte.
+    expect(screen.queryByTestId("share-result")).toBeNull();
     // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
     expect(changed).toHaveBeenCalledOnce();
 

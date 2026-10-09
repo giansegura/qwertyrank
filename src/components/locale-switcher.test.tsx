@@ -7,8 +7,9 @@ describe("localizedHref", () => {
     expect(localizedHref("/leaderboard/touch", {})).toBe("/leaderboard/touch");
   });
 
-  it("el perfil y guardar conservan su parámetro", () => {
+  it("el perfil, guardar y el resultado conservan su parámetro", () => {
     expect(localizedHref("/u/[nick]", { nick: "gian_42" })).toEqual({ pathname: "/u/[nick]", params: { nick: "gian_42" } });
     expect(localizedHref("/save/[gameId]", { gameId: "g1" })).toEqual({ pathname: "/save/[gameId]", params: { gameId: "g1" } });
+    expect(localizedHref("/r/[id]", { id: "g1" })).toEqual({ pathname: "/r/[id]", params: { id: "g1" } });
   });
 });

@@ -6,12 +6,13 @@ import { revalidatePlayerPages } from "./cache";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 describe("revalidatePlayerPages", () => {
-  it("invalida perfiles, rankings y la portada, que enseña el top 10", () => {
+  it("invalida perfiles, rankings, la portada (con su top 10) y los resultados", () => {
     revalidatePlayerPages();
     expect(vi.mocked(revalidatePath).mock.calls).toEqual([
       ["/[locale]/u/[nick]", "page"],
       ["/[locale]/leaderboard/[input]", "page"],
       ["/[locale]", "page"],
+      ["/[locale]/r/[id]", "layout"],
     ]);
   });
 });

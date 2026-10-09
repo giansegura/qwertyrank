@@ -2,6 +2,8 @@ import type { InputType } from "./game/types";
 import type { TestLanguage } from "./words/languages";
 
 export interface ProfileRecord {
+  /** La partida de la marca: su página de resultado (spec 5d §7). */
+  gameId: string;
   language: TestLanguage;
   inputType: InputType;
   wpm: number;
@@ -9,6 +11,7 @@ export interface ProfileRecord {
 }
 
 export interface ProfileGame {
+  id: string;
   startsAt: Date;
   language: TestLanguage;
   inputType: InputType;

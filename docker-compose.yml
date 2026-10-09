@@ -1,4 +1,4 @@
-# Servicios locales para desarrollo y tests: PostgreSQL, Redis y SRH (emula la API HTTP de Upstash).
+# Local services for development and tests: PostgreSQL, Redis and SRH (emulates Upstash's HTTP API).
 name: qwertyrank
 
 services:

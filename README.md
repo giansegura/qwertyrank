@@ -1,92 +1,92 @@
 # QwertyRank
 
-Test de velocidad de escritura con un ranking por idioma (inglés, español y portugués) y tipo de teclado (físico o táctil), con la mejor marca de cada jugador desde siempre. Las partidas Ranked las valida el servidor.
+Typing speed test with a ranking per language (English, Spanish and Portuguese) and keyboard type (physical or touch), with each player's all-time best. Ranked games are validated by the server.
 
-## Desarrollo local
+## Local development
 
-Requisitos: Node 24 (`.nvmrc`), pnpm y Docker.
+Requirements: Node 24 (`.nvmrc`), pnpm and Docker.
 
 ```bash
 pnpm install
-docker compose up -d          # PostgreSQL, Redis y SRH (emula la API de Upstash)
-cp .env.example .env.local    # genera tus secretos con: openssl rand -base64 32
+docker compose up -d          # PostgreSQL, Redis and SRH (emulates the Upstash API)
+cp .env.example .env.local    # generate your secrets with: openssl rand -base64 32
 pnpm db:migrate
 pnpm dev                      # http://localhost:3000
 ```
 
-## Cuentas
+## Accounts
 
-- Better Auth necesita `BETTER_AUTH_SECRET` y `BETTER_AUTH_URL` en `.env.local` (ver `.env.example`).
-- **Enlace por email en local:** sin `RESEND_API_KEY`, el email no sale. El enlace aparece en la consola de `pnpm dev` (línea `[email] …`). Ábrelo en el mismo navegador.
-- **Google (opcional):**
-  1. En Google Cloud Console → APIs y servicios → Credenciales, crea un "ID de cliente de OAuth" de tipo aplicación web.
-  2. Añade los URI de redirección `http://localhost:3000/api/auth/callback/google` y `https://qwertyrank.com/api/auth/callback/google`.
-  3. Pon el ID y el secreto en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`.
+- Better Auth needs `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` in `.env.local` (see `.env.example`).
+- **Email link locally:** without `RESEND_API_KEY`, the email isn't sent. The link shows up in the `pnpm dev` console (`[email] …` line). Open it in the same browser.
+- **Google (optional):**
+  1. In Google Cloud Console → APIs & Services → Credentials, create an "OAuth client ID" of type web application.
+  2. Add the redirect URIs `http://localhost:3000/api/auth/callback/google` and `https://qwertyrank.com/api/auth/callback/google`.
+  3. Put the ID and the secret in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
-  Sin ellas, el botón de Google no aparece.
-- **Resend (producción):** verifica el dominio en Resend y define `RESEND_API_KEY` y `EMAIL_FROM`. En la producción de Vercel la clave es obligatoria.
-- **Passkeys:** se añaden en Ajustes, con una sesión de menos de un día, y sirven para entrar. No crean cuentas.
+  Without them, the Google button doesn't show up.
+- **Resend (production):** verify the domain in Resend and set `RESEND_API_KEY` and `EMAIL_FROM`. In Vercel production the key is required.
+- **Passkeys:** added in Settings, with a session less than a day old, and usable to sign in. They don't create accounts.
 
-## Rankings
+## Leaderboards
 
-- **Fuente de verdad:** `bests` en PostgreSQL, con la mejor partida de cada jugador por idioma y teclado: 6 rankings, sin periodos.
-- **Redis** guarda un ranking por idioma y teclado (`lb:{idioma}:{teclado}`, sin caducidad) y calcula las posiciones. `pnpm redis:rebuild --yes` lo rehace desde PostgreSQL y borra las claves que sobran.
-- **El top 100** de la pantalla de ranking se lee de PostgreSQL. La página se regenera cada 60 s, y al momento cuando alguien entra en el top.
-- **Partidas anónimas:** se pueden guardar en una cuenta en los 10 minutos siguientes ("Guárdalo").
+- **Source of truth:** `bests` in PostgreSQL, with each player's best game per language and keyboard: 6 leaderboards, no periods.
+- **Redis** keeps one leaderboard per language and keyboard (`lb:{language}:{keyboard}`, no expiry) and computes the positions. `pnpm redis:rebuild --yes` rebuilds it from PostgreSQL and deletes leftover keys.
+- **The top 100** on the leaderboard screen is read from PostgreSQL. The page is regenerated every 60 s, and right away when someone enters the top.
+- **Anonymous games:** can be saved to an account within the next 10 minutes ("Save it").
 
-## Moderación
+## Moderation
 
-- **Pase humano:** antes de una partida Ranked, Cloudflare Turnstile hace un reto invisible; superado, vale una hora. En local es opcional: sin `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` no se pide. En producción son obligatorias (widget "Managed" en el panel de Cloudflare). Los E2E usan las claves de prueba de Cloudflare, así que necesitan red.
-- **Umbrales del anti-trampas:** en producción salen de `ANTICHEAT_CONFIG` (JSON, `docs/launch.md` §6) y no están en el código, que es público. En local y en los tests se usan los de desarrollo de `src/server/anticheat/config.ts`.
-- **Límites:** 100 partidas Ranked por hora por cuenta (o navegador) y 150 por IP; 10 denuncias al día por jugador.
-- **Admins:** `pnpm admin:grant tu@email.com` da el rol (y `pnpm admin:revoke` lo quita). El panel está en `/admin`; para quien no es admin, no existe (404).
-- **Reconstruir Redis:** `pnpm redis:rebuild` dice lo que haría; `pnpm redis:rebuild --yes` lo hace.
-- **Contra producción:** `vercel env pull .env.vercel-prod --environment=production` y después `pnpm redis:rebuild --env .env.vercel-prod [--yes]` (o `pnpm admin:grant tu@email.com --env .env.vercel-prod`). Con `--env` el script lee solo ese archivo y muestra los hosts de PostgreSQL y Redis antes de actuar. Borra `.env.vercel-prod` al terminar. Con un archivo de una vista previa (`--environment=preview`), añade a mano `REDIS_KEY_PREFIX` con el de esa vista (`pr-<n>:`): sin él, o con `qr:`, el script se niega a actuar. No uses nunca `.env.production.local` en local: `next build`, `next start` y los E2E lo cargarían y actuarían contra producción.
+- **Human pass:** before a Ranked game, Cloudflare Turnstile runs an invisible challenge; once passed, it's valid for an hour. Locally it's optional: without `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` it isn't requested. In production they're required ("Managed" widget in the Cloudflare dashboard). The E2E tests use Cloudflare's test keys, so they need network access.
+- **Anti-cheat thresholds:** in production they come from `ANTICHEAT_CONFIG` (JSON, `docs/launch.md` §6) and aren't in the code, which is public. Locally and in tests the development ones from `src/server/anticheat/config.ts` are used.
+- **Limits:** 100 Ranked games per hour per account (or browser) and 150 per IP; 10 reports per day per player.
+- **Admins:** `pnpm admin:grant you@email.com` grants the role (and `pnpm admin:revoke` removes it). The panel is at `/admin`; for non-admins, it doesn't exist (404).
+- **Rebuild Redis:** `pnpm redis:rebuild` says what it would do; `pnpm redis:rebuild --yes` does it.
+- **Against production:** `vercel env pull .env.vercel-prod --environment=production` and then `pnpm redis:rebuild --env .env.vercel-prod [--yes]` (or `pnpm admin:grant you@email.com --env .env.vercel-prod`). With `--env` the script reads only that file and shows the PostgreSQL and Redis hosts before acting. Delete `.env.vercel-prod` when you're done. With a file from a preview deployment (`--environment=preview`), add `REDIS_KEY_PREFIX` by hand with that preview's prefix (`pr-<n>:`): without it, or with `qr:`, the script refuses to act. Never use `.env.production.local` locally: `next build`, `next start` and the E2E tests would load it and act against production.
 
-## Verificación de récords
+## Record verification
 
-- **Cuándo:** una partida con cuenta que entraría en el top 10 de su ranking (contado en PostgreSQL entre jugadores activos) queda en `review` si sus PPM pasan del 110 % del nivel verificado del jugador en ese idioma y teclado (sin nivel, siempre). No entra en los rankings hasta verificarla.
-- **Cómo:** una partida de 30 s con el texto dibujado en un `canvas`, con el mismo teclado, al menos un 90 % de precisión y el 85 % de las PPM del récord. Hasta 3 intentos en 24 h, desde el resultado ("Verificar ahora") o desde `/verify`. Al superarla se publican todas sus partidas en `review` (cada una con su hora original, que decide el desempate) y el nivel verificado sube al del récord.
-- **Caducidad:** se decide al leer, sin tarea programada. Las partidas de una verificación fallida o caducada se quedan en `review`, fuera de los rankings y del perfil.
-- **Panel:** `/admin/records` (pendientes, verificados y fallidos o caducados de los últimos 7 días) y `/admin/games/<id>` (reproducción y ritmo de cualquier partida). Es de consulta: se actúa con las sanciones de la ficha.
-- **E2E:** los jugadores de los E2E de ranking empiezan con un nivel verificado; los de `e2e/verification.spec.ts` juegan una partida de unas 140 PPM para entrar en el top 10 (la base de datos de `.env.local` no debe tener diez jugadores activos más rápidos en inglés que no sean de prueba) y se borran al acabar. Antes de cada ejecución, `e2e/global-setup.ts` borra las cuentas `@example.com` que dejaron ejecuciones anteriores, con sus marcas y sus partidas.
+- **When:** a signed-in game that would enter the top 10 of its leaderboard (counted in PostgreSQL among active players) stays in `review` if its WPM exceed 110% of the player's verified level in that language and keyboard (with no level, always). It doesn't enter the leaderboards until verified.
+- **How:** a 30 s game with the text drawn on a `canvas`, with the same keyboard, at least 90% accuracy and 85% of the record's WPM. Up to 3 attempts in 24 h, from the result ("Verify now") or from `/verify`. Passing it publishes all of the player's games in `review` (each with its original time, which breaks ties) and the verified level rises to the record's.
+- **Expiry:** decided on read, with no scheduled job. Games from a failed or expired verification stay in `review`, off the leaderboards and the profile.
+- **Panel:** `/admin/records` (pending, verified, and failed or expired in the last 7 days) and `/admin/games/<id>` (replay and rhythm of any game). It's read-only: action is taken with the sanctions on the player page.
+- **E2E:** players in the leaderboard E2E tests start with a verified level; those in `e2e/verification.spec.ts` play a game of about 140 WPM to enter the top 10 (the `.env.local` database must not have ten faster active non-test players in English) and are deleted at the end. Before each run, `e2e/global-setup.ts` deletes the `@example.com` accounts left by previous runs, with their records and games.
 
 ## Tests
 
-| Comando | Qué ejecuta | Necesita |
+| Command | What it runs | Needs |
 |---|---|---|
-| `pnpm test` | Tests unitarios (Vitest + jsdom) | — |
-| `pnpm test:int` | Tests de integración contra PostgreSQL y Redis reales | `docker compose up -d` |
-| `pnpm test:e2e` | Tests E2E con Playwright, en escritorio y móvil emulado | `docker compose up -d` y `.env.local` |
-| `pnpm lint` / `pnpm typecheck` | ESLint y TypeScript | — |
-| `pnpm budget` | JS propio de la portada (y de `/practice`) en gzip, por encima de `/_not-found`; falla si la portada pasa de 30,0 KB | `pnpm build` antes, y `python3` |
+| `pnpm test` | Unit tests (Vitest + jsdom) | — |
+| `pnpm test:int` | Integration tests against real PostgreSQL and Redis | `docker compose up -d` |
+| `pnpm test:e2e` | E2E tests with Playwright, on desktop and emulated mobile | `docker compose up -d` and `.env.local` |
+| `pnpm lint` / `pnpm typecheck` | ESLint and TypeScript | — |
+| `pnpm budget` | The home page's (and `/practice`'s) own gzipped JS, on top of `/_not-found`; fails if the home page exceeds 30.0 KB | `pnpm build` first, and `python3` |
 
-La CI (`.github/workflows/ci.yml`) lo ejecuta todo en cada PR y en `main`, en tres jobs: `checks` (lint, tipos y unitarios), `integration` (con PostgreSQL, Redis y SRH como servicios) y `e2e` (E2E y `pnpm budget` sobre su build). Además, `.github/workflows/pr-title.yml` comprueba que el título de cada PR siga Conventional Commits (`conventional-title`): con squash, ese título es el commit en `main`. Los cuatro deben pasar para integrar en `main`. CodeRabbit revisa cada PR con `.coderabbit.yaml` (comenta, no bloquea).
+CI (`.github/workflows/ci.yml`) runs all of it on every PR and on `main`, in three jobs: `checks` (lint, types and unit), `integration` (with PostgreSQL, Redis and SRH as services) and `e2e` (E2E and `pnpm budget` on its build). In addition, `.github/workflows/pr-title.yml` checks that each PR title follows Conventional Commits (`conventional-title`): with squash, that title is the commit on `main`. All four must pass to merge into `main`. CodeRabbit reviews every PR with `.coderabbit.yaml` (it comments, it doesn't block).
 
-## Base de datos
+## Database
 
-- El esquema está en `src/server/db/schema.ts`.
-- Si lo cambias, genera la migración con `pnpm db:generate --name <nombre>` y aplícala con `pnpm db:migrate`.
-- **En Vercel las migraciones se aplican en el build** (`vercel.json`: `pnpm db:migrate && pnpm build`), cada vista previa en su propia rama de Neon. Mientras se construye el despliegue nuevo, el anterior sigue sirviendo con la base ya migrada: una migración debe funcionar también con el código anterior. Primero se añade y, en otro despliegue, se quita lo que sobre.
+- The schema is in `src/server/db/schema.ts`.
+- If you change it, generate the migration with `pnpm db:generate --name <name>` and apply it with `pnpm db:migrate`.
+- **On Vercel migrations are applied in the build** (`vercel.json`: `pnpm db:migrate && pnpm build`), each preview deployment on its own Neon branch. While the new deployment builds, the previous one keeps serving with the already-migrated database: a migration must also work with the previous code. First add, and in a later deployment remove what's no longer needed.
 
-## Despliegue y operación
+## Deployment and operations
 
-La guía para abrir la beta (cuentas, variables y comprobaciones) está en [`docs/launch.md`](docs/launch.md).
+The guide to opening the beta (accounts, variables and checks) is in [`docs/launch.md`](docs/launch.md).
 
-- **Entornos:** producción en `qwertyrank.com` y una vista previa por PR, con su rama de Neon. En las vistas previas, `BETTER_AUTH_URL` sale de la URL de su rama y `REDIS_KEY_PREFIX` es `pr-<número de la PR>:`.
-- **Tarea diaria** (`GET /api/cron/daily`, Vercel Cron a las 04:00 UTC, con `CRON_SECRET`):
-  - borra las pulsaciones de más de 30 días, salvo las de las mejores marcas vigentes, y antes guarda de cada una un extracto de ritmo seudónimo (con PPM y precisión redondeadas) en `rhythm_samples`, para calibrar el riesgo;
-  - quita `anon_id` e `ip_hash` a todas las partidas de más de 30 días, con cuenta o sin ella.
+- **Environments:** production at `qwertyrank.com` and one preview deployment per PR, with its own Neon branch. In preview deployments, `BETTER_AUTH_URL` comes from its branch URL and `REDIS_KEY_PREFIX` is `pr-<PR number>:`.
+- **Daily job** (`GET /api/cron/daily`, Vercel Cron at 04:00 UTC, with `CRON_SECRET`):
+  - deletes keystrokes older than 30 days, except those of current bests, and first saves a pseudonymous rhythm extract of each (with rounded WPM and accuracy) in `rhythm_samples`, to calibrate risk;
+  - removes `anon_id` and `ip_hash` from every game older than 30 days, signed-in or not.
 
-  En local: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily`.
-- **Sentry**, solo en el servidor (`src/instrumentation.ts`). Sin `SENTRY_DSN` no se inicia. Solo conserva el método de la petición: ni URL con su query, ni cuerpo, ni cabeceras, ni cookies. Tampoco los parámetros de las consultas fallidas, los argumentos de `console.error` ni las migas de consola.
-- **Analítica:** Vercel Web Analytics y Speed Insights, solo en producción y sin JS propio en la portada.
-- **Beta:** nada se indexa mientras `INDEXABLE` (`src/lib/site.ts`) sea `false`.
-- **SEO:** cada página indexable construye sus metadatos con `pageMetadata` (`src/lib/seo/`): canonical, `hreflang` y Open Graph con las URLs de `SITE_URL` (producción), también en local. Además, `sitemap.xml`, `robots.txt`, JSON-LD y una imagen para compartir por idioma (`src/app/[locale]/opengraph-image.tsx`). Los mensajes ICU se compilan en el build (`next.config.ts`), así que el cliente no carga su parser.
-- **Compartir:** cada partida Ranked válida tiene su página `/{idioma}/r/{id}` (sin indexar) con su imagen generada desde la base de datos (`src/app/[locale]/r/[id]/`), y un botón «Compartir» al terminarla. Con shadow-ban o ban la página es una 404 para los demás; el propio jugador ve su partida.
+  Locally: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily`.
+- **Sentry**, server only (`src/instrumentation.ts`). Without `SENTRY_DSN` it doesn't start. It only keeps the request method: no URL with its query, no body, no headers, no cookies. Nor the parameters of failed queries, the arguments of `console.error` or console breadcrumbs.
+- **Analytics:** Vercel Web Analytics and Speed Insights, production only and with no JS of their own on the home page.
+- **Beta:** nothing is indexed while `INDEXABLE` (`src/lib/site.ts`) is `false`.
+- **SEO:** every indexable page builds its metadata with `pageMetadata` (`src/lib/seo/`): canonical, `hreflang` and Open Graph with the `SITE_URL` (production) URLs, locally too. Plus `sitemap.xml`, `robots.txt`, JSON-LD and a share image per language (`src/app/[locale]/opengraph-image.tsx`). ICU messages are compiled at build time (`next.config.ts`), so the client doesn't load their parser.
+- **Sharing:** every valid Ranked game has its page `/{language}/r/{id}` (not indexed) with its image generated from the database (`src/app/[locale]/r/[id]/`), and a "Share" button when it ends. Under shadow ban or ban the page is a 404 for everyone else; the player sees their own game.
 
-## Licencia
+## License
 
-El código está bajo la [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). Si ofreces una versión modificada como servicio en red, tienes que publicar su código fuente con la misma licencia.
+The code is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). If you offer a modified version as a network service, you must publish its source code under the same license.
 
-La licencia cubre el código, no la marca: el nombre «QwertyRank», su logotipo y el dominio `qwertyrank.com` no se pueden usar para identificar otro servicio ni una versión modificada.
+The license covers the code, not the brand: the name "QwertyRank", its logo and the `qwertyrank.com` domain may not be used to identify another service or a modified version.

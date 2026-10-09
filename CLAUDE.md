@@ -2,9 +2,9 @@
 
 ## Commits
 
-Todos los commits siguen [Conventional Commits](https://www.conventionalcommits.org/): `<tipo>(<ámbito opcional>): <descripción>`.
+All commits follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<optional scope>): <description>`.
 
-- Tipos: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `revert`.
-- Descripción en imperativo, en minúscula y sin punto final. Ejemplo: `feat(ranked): validate games on the server`.
-- Un cambio incompatible lleva `!` tras el tipo (`feat!: …`) o un pie `BREAKING CHANGE: …`.
-- Las PR solo se integran con squash y el título de la PR pasa a ser el commit en `main`: el título también sigue Conventional Commits.
+- Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `revert`.
+- Description in the imperative, lowercase and with no trailing period. Example: `feat(ranked): validate games on the server`.
+- A breaking change has `!` after the type (`feat!: …`) or a `BREAKING CHANGE: …` footer.
+- PRs are only merged with squash and the PR title becomes the commit on `main`: the title follows Conventional Commits too.

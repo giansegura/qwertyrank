@@ -1,206 +1,207 @@
-# Abrir la beta: guía de lanzamiento
+# Opening the beta: launch guide
 
-Paso a paso para poner QwertyRank en `qwertyrank.com` como beta pública pero discreta: sin indexar, con la
-etiqueta "beta" y sin invitaciones. El código ya está listo. Aquí solo hay cuentas, variables y comprobaciones.
-Sigue el orden, porque algunos pasos usan lo creado en los anteriores.
+Step by step to put QwertyRank on `qwertyrank.com` as a public but low-key beta: not indexed, with the "beta"
+badge and no invitations. The code is already ready. Here there are only accounts, variables and checks.
+Follow the order, because some steps use what was created in earlier ones.
 
-> Todas las variables de entorno se ponen en Vercel → *Settings* → *Environment Variables*, por separado para
-> **Production** y **Preview**. Las de Neon y Upstash las ponen sus integraciones.
+> All environment variables go in Vercel → *Settings* → *Environment Variables*, separately for
+> **Production** and **Preview**. The Neon and Upstash ones are set by their integrations.
 
-## 1. Dominio
+## 1. Domain
 
-1. Compra `qwertyrank.com`. Recomendado: Cloudflare Registrar (precio de coste y Email Routing gratis).
-2. Deja los DNS en Cloudflare. Vercel y Resend te pedirán registros más adelante.
+1. Buy `qwertyrank.com`. Recommended: Cloudflare Registrar (at-cost pricing and free Email Routing).
+2. Keep the DNS on Cloudflare. Vercel and Resend will ask you for records later on.
 
-## 2. Correo: `privacy@` y `feedback@`
+## 2. Email: `privacy@` and `feedback@`
 
-En Cloudflare → *Email* → *Email Routing*:
+In Cloudflare → *Email* → *Email Routing*:
 
-1. Activa Email Routing para `qwertyrank.com` y verifica tu buzón personal como destino.
-2. Crea dos direcciones personalizadas que reenvíen a tu buzón:
-   - `privacy@qwertyrank.com`, la que aparece en la política de privacidad y los términos;
-   - `feedback@qwertyrank.com`, la de la etiqueta "beta" y "Envíanos tus comentarios".
-3. **Comprueba:** manda un correo a cada una y mira que llegue.
+1. Enable Email Routing for `qwertyrank.com` and verify your personal mailbox as the destination.
+2. Create two custom addresses that forward to your mailbox:
+   - `privacy@qwertyrank.com`, the one shown in the privacy policy and the terms;
+   - `feedback@qwertyrank.com`, the one behind the "beta" badge and "Send us your feedback".
+3. **Check:** send an email to each one and make sure it arrives.
 
 ## 3. Vercel
 
-1. Crea la cuenta (plan Hobby) e importa el repositorio de GitHub. El framework se detecta solo. `vercel.json` ya
-   define el build (`pnpm db:migrate && pnpm build`), la tarea diaria y la región de las funciones (`fra1`, Fráncfort,
-   junto a Neon y Upstash).
+1. Create the account (Hobby plan) and import the GitHub repository. The framework is detected automatically.
+   `vercel.json` already defines the build (`pnpm db:migrate && pnpm build`), the daily job and the functions'
+   region (`fra1`, Frankfurt, next to Neon and Upstash).
 
-   El despliegue que Vercel lanza al importar el repositorio **falla** porque todavía no hay `DATABASE_URL`. Es lo
-   esperado: se vuelve a desplegar tras los pasos 4 a 6.
-2. *Settings* → *General* → *Node.js Version*: 24.x, la de `.nvmrc`.
+   The deployment Vercel triggers when importing the repository **fails** because there is no `DATABASE_URL` yet.
+   That's expected: it is redeployed after steps 4 to 6.
+2. *Settings* → *General* → *Node.js Version*: 24.x, the one in `.nvmrc`.
 3. *Settings* → *Domains*:
-   - añade `qwertyrank.com`;
-   - añade `www.qwertyrank.com` con redirección **308** a `qwertyrank.com`;
-   - crea en Cloudflare los registros DNS que te pida Vercel (con el proxy de Cloudflare **desactivado**: nube gris).
-4. *Analytics* → activa **Web Analytics**. *Speed Insights* → actívalo. La web ya carga sus scripts en producción.
-5. Deja activada la opción por defecto *Automatically expose System Environment Variables*: las vistas previas la
-   necesitan para su URL de Better Auth y su prefijo de Redis.
+   - add `qwertyrank.com`;
+   - add `www.qwertyrank.com` with a **308** redirect to `qwertyrank.com`;
+   - create in Cloudflare the DNS records Vercel asks for (with the Cloudflare proxy **off**: grey cloud).
+4. *Analytics* → enable **Web Analytics**. *Speed Insights* → enable it. The site already loads their scripts in
+   production.
+5. Leave the default option *Automatically expose System Environment Variables* enabled: preview deployments need it
+   for their Better Auth URL and their Redis prefix.
 
 ## 4. Neon (PostgreSQL)
 
-1. Crea la cuenta y un proyecto en la región **Frankfurt** (`aws-eu-central-1`).
-2. En Vercel → *Integrations*, instala **Neon**:
-   - conéctalo al proyecto;
-   - activa la creación de una rama por cada vista previa.
+1. Create the account and a project in the **Frankfurt** region (`aws-eu-central-1`).
+2. In Vercel → *Integrations*, install **Neon**:
+   - connect it to the project;
+   - enable creating a branch for each preview deployment.
 
-   La integración pone `DATABASE_URL` y `DATABASE_URL_UNPOOLED` en cada entorno.
-3. **Comprueba:** en *Environment Variables* aparecen las dos, en Production y en Preview.
-4. En la primera PR, comprueba en *Settings* → *Environment Variables* (o en el despliegue de la vista previa) que
-   el `DATABASE_URL` de Preview apunta a una rama `preview/<rama>` de Neon y no a `main`. Si apunta a `main`, el build
-   migraría la base de producción con el código de la PR.
+   The integration sets `DATABASE_URL` and `DATABASE_URL_UNPOOLED` in each environment.
+3. **Check:** both show up in *Environment Variables*, in Production and in Preview.
+4. On the first PR, check in *Settings* → *Environment Variables* (or in the preview deployment) that the Preview
+   `DATABASE_URL` points to a Neon `preview/<branch>` branch and not to `main`. If it points to `main`, the build
+   would migrate the production database with the PR's code.
 
 ## 5. Upstash (Redis)
 
-1. Crea la cuenta y una base Redis en **Frankfurt** (`eu-central-1`).
-2. En Vercel → *Integrations*, instala **Upstash** y conéctalo al proyecto. Pone `UPSTASH_REDIS_REST_URL` y
-   `UPSTASH_REDIS_REST_TOKEN`. La app lee justo esos dos nombres: si la integración crea variables con otro nombre
-   (por ejemplo `KV_REST_API_URL` y `KV_REST_API_TOKEN`), añade `UPSTASH_REDIS_REST_URL` y
-   `UPSTASH_REDIS_REST_TOKEN` a mano con los mismos valores.
-3. Añade `REDIS_KEY_PREFIX=qr:` **solo en Production**. En las vistas previas no la pongas: cada una usa su propio
-   prefijo, `pr-<número de la PR>:`.
-   Si `qr:` llega también a Preview, la vista previa se despliega en verde pero todas las peticiones fallan con un
-   500 cuyo error menciona `REDIS_KEY_PREFIX` (la validación del entorno es perezosa): quítala de Preview.
+1. Create the account and a Redis database in **Frankfurt** (`eu-central-1`).
+2. In Vercel → *Integrations*, install **Upstash** and connect it to the project. It sets `UPSTASH_REDIS_REST_URL`
+   and `UPSTASH_REDIS_REST_TOKEN`. The app reads exactly those two names: if the integration creates variables with
+   other names (for example `KV_REST_API_URL` and `KV_REST_API_TOKEN`), add `UPSTASH_REDIS_REST_URL` and
+   `UPSTASH_REDIS_REST_TOKEN` by hand with the same values.
+3. Add `REDIS_KEY_PREFIX=qr:` **in Production only**. Don't set it in preview deployments: each one uses its own
+   prefix, `pr-<PR number>:`.
+   If `qr:` also reaches Preview, the preview deployment goes green but every request fails with a 500 whose error
+   mentions `REDIS_KEY_PREFIX` (environment validation is lazy): remove it from Preview.
 
-## 6. Secretos
+## 6. Secrets
 
-Genera cada uno con `openssl rand -base64 32`, **distintos en Production y en Preview**:
+Generate each one with `openssl rand -base64 32`, **different in Production and in Preview**:
 
-| Variable | Para qué |
+| Variable | Purpose |
 |---|---|
-| `ANON_COOKIE_SECRET` | Firma la cookie anónima |
-| `IP_HASH_SECRET` | Hash diario de las IP y de las identidades baneadas |
-| `BETTER_AUTH_SECRET` | Sesiones de Better Auth |
-| `CRON_SECRET` | Protege la tarea diaria. Vercel Cron la manda en `Authorization` |
+| `ANON_COOKIE_SECRET` | Signs the anonymous cookie |
+| `IP_HASH_SECRET` | Daily hash of IPs and of banned identities |
+| `BETTER_AUTH_SECRET` | Better Auth sessions |
+| `CRON_SECRET` | Protects the daily job. Vercel Cron sends it in `Authorization` |
 
-Además, **solo en Production**: `BETTER_AUTH_URL=https://qwertyrank.com`. En las vistas previas no hace falta: sale
-de la URL de su rama.
+Also, **in Production only**: `BETTER_AUTH_URL=https://qwertyrank.com`. Preview deployments don't need it: it comes
+from their branch URL.
 
-### Umbrales del anti-trampas (`ANTICHEAT_CONFIG`)
+### Anti-cheat thresholds (`ANTICHEAT_CONFIG`)
 
-El código es público, así que los umbrales de producción solo están en esta variable, **solo en Production**. Es un
-JSON con los mismos campos que `DEV_ANTICHEAT_CONFIG` en `src/server/anticheat/config.ts`, en una línea:
+The code is public, so the production thresholds live only in this variable, **in Production only**. It's a JSON
+with the same fields as `DEV_ANTICHEAT_CONFIG` in `src/server/anticheat/config.ts`, on one line:
 
 ```
 {"timingToleranceMs":…,"burstWindow":…,"burstMedianMs":…,"keydownLookbackMs":…,"touchMultiInsertLimit":…,"wpmCeiling":{"physical":…,"touch":…},"minKeysForSignature":…,"unidentifiedRatio":…,"physicalMinHoldMs":…}
 ```
 
-- Los valores de desarrollo están en el código y en el historial del repositorio: producción tiene que usar otros. Si
-  son iguales, el servidor no arranca.
-- Si falta, tampoco arranca. Si el JSON está mal, el error dice qué campo falla, pero nunca enseña el valor.
-- Guárdalos fuera del repositorio (en tu gestor de contraseñas). Para cambiarlos, edita la variable y vuelve a
-  desplegar.
+- The development values are in the code and in the repository history: production has to use different ones. If
+  they are the same, the server doesn't start.
+- If it's missing, it doesn't start either. If the JSON is wrong, the error says which field fails, but never shows
+  the value.
+- Keep them outside the repository (in your password manager). To change them, edit the variable and redeploy.
 
 ## 7. Resend (emails)
 
-1. Crea la cuenta y añade el dominio `qwertyrank.com`. Crea en Cloudflare los registros DNS (SPF, DKIM) que te pida
-   y espera a que Resend lo marque como verificado.
-2. Crea una clave de API y ponla en `RESEND_API_KEY`, en Production y en Preview.
-3. `EMAIL_FROM=QwertyRank <noreply@qwertyrank.com>`, también en los dos.
+1. Create the account and add the `qwertyrank.com` domain. Create in Cloudflare the DNS records (SPF, DKIM) it asks
+   for and wait until Resend marks it as verified.
+2. Create an API key and put it in `RESEND_API_KEY`, in Production and in Preview.
+3. `EMAIL_FROM=QwertyRank <noreply@qwertyrank.com>`, also in both.
 
 ## 8. Cloudflare Turnstile
 
-1. En Cloudflare → *Turnstile*, crea un widget en modo **Managed** para el dominio `qwertyrank.com`.
-2. **Production:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` con las claves del widget.
-3. **Preview:** las claves de prueba de Cloudflare, que siempre aprueban:
+1. In Cloudflare → *Turnstile*, create a widget in **Managed** mode for the `qwertyrank.com` domain.
+2. **Production:** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` with the widget's keys.
+3. **Preview:** Cloudflare's test keys, which always pass:
    - `NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000BB`
    - `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`
 
 ## 9. Google OAuth
 
-1. En Google Cloud Console → *APIs y servicios* → *Credenciales*, usa (o crea) el ID de cliente de tipo aplicación
-   web y añade el URI de redirección `https://qwertyrank.com/api/auth/callback/google`.
-2. `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` **solo en Production**. En las vistas previas, que cambian de URL, se
-   entra con enlace por email o con passkey.
+1. In Google Cloud Console → *APIs & Services* → *Credentials*, use (or create) the web application client ID and
+   add the redirect URI `https://qwertyrank.com/api/auth/callback/google`.
+2. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` **in Production only**. In preview deployments, whose URL changes,
+   sign-in is with an email link or a passkey.
 
 ## 10. Sentry
 
-1. Crea la cuenta y elige la región de datos de la **UE** al crear la organización: después no se puede cambiar.
-   Crea un proyecto de tipo *Next.js*. De la configuración solo necesitas el DSN.
-2. `SENTRY_DSN` en Production y en Preview. Los eventos se distinguen por su `environment`.
+1. Create the account and pick the **EU** data region when creating the organization: it can't be changed later.
+   Create a *Next.js* project. From the setup you only need the DSN.
+2. `SENTRY_DSN` in Production and in Preview. Events are told apart by their `environment`.
 
-Sentry corre solo en el servidor. No hay que tocar el código ni subir source maps.
+Sentry runs on the server only. There's no need to touch the code or upload source maps.
 
-## 11. GitHub: proteger `main`
+## 11. GitHub: protect `main`
 
-En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main`:
+In GitHub → *Settings* → *Branches* (or *Rules*), add a rule for `main`:
 
-- exigir una PR para integrar;
-- exigir que pasen los checks **`checks`**, **`integration`**, **`e2e`** y **`conventional-title`** (aparecen tras
-  la primera ejecución de la CI);
-- exigir que la rama esté al día con `main`.
+- require a PR to merge;
+- require the **`checks`**, **`integration`**, **`e2e`** and **`conventional-title`** checks to pass (they show up
+  after the first CI run);
+- require the branch to be up to date with `main`.
 
-`conventional-title` (`.github/workflows/pr-title.yml`) comprueba que el título de la PR siga Conventional Commits:
-con squash, ese título es el commit en `main`. En *Settings* → *General* → *Pull Requests*, deja solo **Allow squash
-merging** con **Default commit message: Pull request title** (ya está así).
+`conventional-title` (`.github/workflows/pr-title.yml`) checks that the PR title follows Conventional Commits: with
+squash, that title is the commit on `main`. In *Settings* → *General* → *Pull Requests*, leave only **Allow squash
+merging** with **Default commit message: Pull request title** (it's already set that way).
 
-### CodeRabbit (revisión automática de PR)
+### CodeRabbit (automatic PR review)
 
-1. Instala la app de GitHub **CodeRabbit** desde [coderabbit.ai](https://coderabbit.ai) y dale acceso solo al
-   repositorio `qwertyrank`. Antes, mira en su página de precios qué incluye el plan gratuito para repositorios
-   privados.
-2. Lee la configuración del repositorio (`.coderabbit.yaml`): comenta cada PR en español, con un resumen, y tiene en
-   cuenta `AGENTS.md` y `CLAUDE.md`.
-3. No es un check obligatorio: sus comentarios no bloquean la integración.
+1. Install the **CodeRabbit** GitHub app from [coderabbit.ai](https://coderabbit.ai) and give it access only to the
+   `qwertyrank` repository. Before that, check its pricing page for what the free plan includes for private
+   repositories.
+2. It reads the repository's configuration (`.coderabbit.yaml`): it comments on every PR in English, with a
+   summary, and takes `AGENTS.md` and `CLAUDE.md` into account.
+3. It's not a required check: its comments don't block merging.
 
-## 12. Primer despliegue
+## 12. First deployment
 
-1. Integra en `main`. Vercel despliega producción y el build aplica todas las migraciones a la base vacía. No hace
-   falta `pnpm redis:rebuild`, porque no hay rankings que rehacer.
-2. Abre `https://qwertyrank.com`: debe cargar la portada.
-3. Vercel → *Settings* → *Cron Jobs*: aparece `/api/cron/daily` a las 04:00 UTC. Pulsa **Run** y mira en los logs
-   de la función (Vercel no muestra el cuerpo de la respuesta) la línea `daily retention` con
+1. Merge into `main`. Vercel deploys production and the build applies every migration to the empty database. No need
+   for `pnpm redis:rebuild`, because there are no leaderboards to rebuild.
+2. Open `https://qwertyrank.com`: the home page should load.
+3. Vercel → *Settings* → *Cron Jobs*: `/api/cron/daily` shows up at 04:00 UTC. Click **Run** and look in the
+   function logs (Vercel doesn't show the response body) for the `daily retention` line with
    `{ extracted: …, deletedLogs: …, anonymizedGames: …, done: true }`.
-   Como alternativa a **Run**, esta orden sí devuelve el JSON del informe. Usa el `CRON_SECRET` de Production, el de
-   la sección 6 (*Secretos*; cópialo de *Environment Variables*). Pega el valor y pulsa Enter (así no queda en el
-   historial del shell):
+   As an alternative to **Run**, this command does return the report JSON. Use the Production `CRON_SECRET`, the
+   one from section 6 (*Secrets*; copy it from *Environment Variables*). Paste the value and press Enter (that way
+   it doesn't stay in the shell history):
 
    ```bash
    read -rs CRON_SECRET
    curl -H "Authorization: Bearer $CRON_SECRET" https://qwertyrank.com/api/cron/daily
    ```
 
-   Si la variable está marcada como *Sensitive* en Vercel, no se puede volver a leer de *Environment Variables*:
-   guárdala al generarla (§6) o genera una nueva.
-4. Crea tu cuenta en la web. Después nómbrate admin desde tu máquina:
+   If the variable is marked as *Sensitive* in Vercel, it can't be read again from *Environment Variables*: save it
+   when you generate it (§6) or generate a new one.
+4. Create your account on the site. Then make yourself admin from your machine:
 
    ```bash
-   vercel login   # una vez
-   vercel link    # una vez
+   vercel login   # once
+   vercel link    # once
    vercel env pull .env.vercel-prod --environment=production
-   pnpm admin:grant <tu-email> --env .env.vercel-prod
+   pnpm admin:grant <your-email> --env .env.vercel-prod
    rm .env.vercel-prod
    ```
 
-## 13. Prueba de humo
+## 13. Smoke test
 
-- [ ] Una partida anónima, «Guárdalo» y crear la cuenta: la partida pasa a tu cuenta.
-- [ ] Entrar con el enlace por email, con una passkey y con Google.
-- [ ] Un récord que pida verificación, verificado desde un **Android** y un **iPhone** reales: al tocar el texto se
-      abre el teclado.
-- [ ] El ranking y tu perfil enseñan tu marca.
-- [ ] En las vistas previas, las passkeys solo funcionan en la URL de la rama (`*-git-<rama>-*.vercel.app`), no en
-      la URL única del despliegue.
-- [ ] El pie: "beta" y "Envíanos tus comentarios" abren un correo a `feedback@`; Privacidad y Términos cargan en los
-      tres idiomas.
-- [ ] `curl -sI https://qwertyrank.com/en | grep -i x-robots-tag` devuelve `noindex`.
-- [ ] Sentry recibe errores. En una vista previa:
-      1. pon un `UPSTASH_REDIS_REST_TOKEN` incorrecto solo en **Preview** y vuelve a desplegarla;
-      2. pulsa *Empezar* en Ranked: el fallo de Redis aparece en Sentry con `environment: preview`;
-      3. restaura la variable.
-- [ ] Web Analytics registra tus visitas al navegar entre páginas.
+- [ ] An anonymous game, "Save it" and create the account: the game moves to your account.
+- [ ] Sign in with the email link, with a passkey and with Google.
+- [ ] A record that asks for verification, verified from a real **Android** and a real **iPhone**: tapping the text
+      opens the keyboard.
+- [ ] The leaderboard and your profile show your record.
+- [ ] In preview deployments, passkeys only work on the branch URL (`*-git-<branch>-*.vercel.app`), not on the
+      deployment's unique URL.
+- [ ] The footer: "beta" and "Send us your feedback" open an email to `feedback@`; Privacy and Terms load in all
+      three languages.
+- [ ] `curl -sI https://qwertyrank.com/en | grep -i x-robots-tag` returns `noindex`.
+- [ ] Sentry receives errors. In a preview deployment:
+      1. set a wrong `UPSTASH_REDIS_REST_TOKEN` in **Preview** only and redeploy it;
+      2. click *Start* in Ranked: the Redis failure shows up in Sentry with `environment: preview`;
+      3. restore the variable.
+- [ ] Web Analytics records your visits when navigating between pages.
 
-## 14. Vigilancia semanal
+## 14. Weekly monitoring
 
-- Vercel → *Usage*: ejecuciones de funciones, peticiones y CPU frente a los límites de Hobby (spec general §8.7). Si
-  algo pasa del 60–70 %, toca plantearse el plan Pro.
-- Sentry: errores nuevos.
-- Neon y Upstash: almacenamiento y comandos frente a sus planes gratuitos.
+- Vercel → *Usage*: function invocations, requests and CPU against the Hobby limits (general spec §8.7). If anything
+  goes over 60–70%, it's time to consider the Pro plan.
+- Sentry: new errors.
+- Neon and Upstash: storage and commands against their free plans.
 
-## Cuando acabe la beta (fase 5)
+## When the beta ends (phase 5)
 
-- `INDEXABLE = true` en `src/lib/site.ts`: quita el `noindex`.
-- Después, envía `https://qwertyrank.com/sitemap.xml` a Google Search Console y a Bing Webmaster Tools.
-- Revisión de la política de privacidad y los términos por un abogado.
+- `INDEXABLE = true` in `src/lib/site.ts`: removes the `noindex`.
+- Then submit `https://qwertyrank.com/sitemap.xml` to Google Search Console and Bing Webmaster Tools.
+- Have a lawyer review the privacy policy and the terms.

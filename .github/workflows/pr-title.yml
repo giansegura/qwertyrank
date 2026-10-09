@@ -1,5 +1,5 @@
-# Las PR solo se integran con squash y su título pasa a ser el commit en main (CLAUDE.md): el título tiene que
-# seguir Conventional Commits. Se comprueba al abrir la PR, al cambiar el título y en cada push.
+# PRs are only merged with squash and their title becomes the commit on main (CLAUDE.md): the title has to
+# follow Conventional Commits. Checked when the PR is opened, when the title changes and on every push.
 name: PR title
 
 on:
@@ -19,7 +19,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Los tipos de CLAUDE.md; el ámbito es opcional y `!` marca un cambio incompatible.
+          # The types from CLAUDE.md; the scope is optional and `!` marks a breaking change.
           types: |
             feat
             fix
@@ -33,8 +33,8 @@ jobs:
             chore
             revert
           requireScope: false
-          # Descripción en minúscula y sin punto final.
+          # Lowercase description with no trailing period.
           subjectPattern: ^(?![A-Z]).*[^.]$
           subjectPatternError: |
-            La descripción "{subject}" del título "{title}" tiene que empezar en minúscula y no terminar en punto.
-            Ejemplo: feat(ranked): validate games on the server
+            The description "{subject}" of the title "{title}" has to start in lowercase and not end with a period.
+            Example: feat(ranked): validate games on the server

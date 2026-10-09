@@ -1,5 +1,5 @@
-# CI (spec 5a §7): lint, tipos, unitarios, integración, E2E y presupuesto de la portada, en cada PR y en main.
-# Los tres jobs son obligatorios para integrar en main (protección de rama, docs/launch.md).
+# CI (spec 5a §7): lint, types, unit, integration, E2E and the home page budget, on every PR and on main.
+# All three jobs are required to merge into main (branch protection, docs/launch.md).
 name: CI
 
 on:
@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
 
-# Un push nuevo a la misma PR cancela la ejecución anterior.
+# A new push to the same PR cancels the previous run.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -36,7 +36,7 @@ jobs:
     name: integration
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Los mismos servicios y puertos que docker-compose.yml: .env.test sirve tal cual.
+    # Same services and ports as docker-compose.yml: .env.test works as is.
     services:
       postgres:
         image: postgres:17-alpine
@@ -99,8 +99,8 @@ jobs:
           SRH_CONNECTION_STRING: redis://redis:6379
         ports:
           - 8079:80
-    # Lo que en local da .env.local. Los secretos son de relleno, solo valen aquí; las claves de Turnstile
-    # (de prueba) las pone playwright.config.ts.
+    # What .env.local provides locally. The secrets are placeholders, only valid here; the (test) Turnstile
+    # keys are set by playwright.config.ts.
     env:
       DATABASE_URL: postgres://qwertyrank:qwertyrank@localhost:54329/qwertyrank
       UPSTASH_REDIS_REST_URL: http://localhost:8079
@@ -118,9 +118,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      # Migra, compila con las claves de prueba de Turnstile, arranca y juega los E2E en escritorio y móvil.
+      # Migrates, builds with the Turnstile test keys, starts and plays the E2E tests on desktop and mobile.
       - run: pnpm test:e2e
-      # Sobre el build de los E2E: el JS propio de la portada no pasa de 30 KB (spec §7.5).
+      # On the E2E build: the home page's own JS doesn't exceed 30 KB (spec §7.5).
       - run: pnpm budget
       - if: failure()
         uses: actions/upload-artifact@v4

@@ -10,7 +10,7 @@ import { boardStanding, decideReview, type ReviewCandidate } from "./review";
 const db = createDb(process.env.DATABASE_URL!);
 const AT = new Date("2026-10-07T12:00:00Z");
 
-// Cada test empieza con los rankings vacíos.
+// Each test starts with empty rankings.
 beforeEach(async () => {
   await emptyBoards(db);
 });
@@ -27,7 +27,7 @@ async function newUser(status: "active" | "shadowbanned" = "active"): Promise<st
   return row.id;
 }
 
-/** La marca de un jugador en inglés (teclado táctil si no se dice otro), con su partida (`bests.game_id` es obligatorio). */
+/** A player's best in English (touch keyboard unless stated otherwise), with its game (`bests.game_id` is required). */
 async function seedBest(userId: string, wpm: number, inputType: InputType = "touch") {
   const gameId = randomUUID();
   await db.insert(games).values({
@@ -65,8 +65,8 @@ const candidate = (userId: string, wpm = 50): ReviewCandidate => ({
 });
 const scoreOf = (wpm: number) => encodeScore({ wpm, accuracy: 100, achievedAt: AT });
 
-describe("posición en el ranking (PostgreSQL)", () => {
-  it("cuenta solo a otros jugadores activos de ese idioma y teclado que van por delante", async () => {
+describe("ranking position (PostgreSQL)", () => {
+  it("counts only other active players of that language and keyboard who are ahead", async () => {
     const player = await newUser();
     const game = { ...candidate(player), userId: player };
     expect(await boardStanding(db, game, scoreOf(50))).toEqual({ ownScore: null, ahead: 0, verifiedWpm: null });
@@ -79,7 +79,7 @@ describe("posición en el ranking (PostgreSQL)", () => {
     expect(await boardStanding(db, game, scoreOf(50))).toMatchObject({ ahead: 3 });
   });
 
-  it("con marca propia mejor, cuenta desde su marca y la devuelve", async () => {
+  it("with a better own best, counts from that best and returns it", async () => {
     const player = await newUser();
     await seedBest(await newUser(), 60);
     await seedBest(player, 80);
@@ -90,7 +90,7 @@ describe("posición en el ranking (PostgreSQL)", () => {
     });
   });
 
-  it("devuelve su nivel verificado de ese idioma y teclado", async () => {
+  it("returns their verified level for that language and keyboard", async () => {
     const player = await newUser();
     await db.insert(verifiedLevels).values([
       { userId: player, language: "en", inputType: "touch", wpm: 72.5 },
@@ -101,24 +101,24 @@ describe("posición en el ranking (PostgreSQL)", () => {
 });
 
 describe("decideReview (PostgreSQL)", () => {
-  it("sin nivel y entre los 10 primeros: review, con la posición que tendría", async () => {
+  it("without a level and in the top 10: review, with the position it would have", async () => {
     for (let i = 0; i < 2; i++) await seedBest(await newUser(), 60);
     expect(await decideReview(db, candidate(await newUser()))).toEqual({ rank: 3 });
   });
 
-  it("con 10 jugadores activos por delante, no", async () => {
+  it("with 10 active players ahead, no", async () => {
     for (let i = 0; i < 10; i++) await seedBest(await newUser(), 60);
     expect(await decideReview(db, candidate(await newUser()))).toBeNull();
   });
 
-  it("por debajo de su nivel × 1,10, no", async () => {
+  it("below their level × 1.10, no", async () => {
     const player = await newUser();
     await db.insert(verifiedLevels).values({ userId: player, language: "en", inputType: "touch", wpm: 50 });
     expect(await decideReview(db, candidate(player, 55))).toBeNull();
     expect(await decideReview(db, candidate(player, 55.01))).not.toBeNull();
   });
 
-  it("si no mejora su marca, no", async () => {
+  it("if it does not improve their best, no", async () => {
     const player = await newUser("shadowbanned");
     await seedBest(player, 90);
     expect(await decideReview(db, candidate(player, 50))).toBeNull();

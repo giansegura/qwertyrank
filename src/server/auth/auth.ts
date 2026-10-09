@@ -22,7 +22,7 @@ import { getRedis } from "../redis";
 import { isDisposableEmail } from "./disposable";
 
 export const MAGIC_LINK_EXPIRES_SECONDS = 600;
-/** Un enlace por email cada 60 s como máximo: que el formulario no sirva para inundar el buzón de nadie. */
+/** At most one link per email every 60 s: the form must not be usable to flood anyone's inbox. */
 export const MAGIC_LINK_INTERVAL_SECONDS = 60;
 
 export interface AuthDeps {
@@ -31,13 +31,13 @@ export interface AuthDeps {
   keyPrefix: string;
   sendEmail: SendEmail;
   secret: string;
-  /** Clave de los hashes de identidades baneadas (spec 4a §3.3); en producción, `IP_HASH_SECRET`. */
+  /** Key for the hashes of banned identities (spec 4a §3.3); in production, `IP_HASH_SECRET`. */
   identitySecret: string;
   baseURL: string;
-  /** Orígenes aceptados además del de `baseURL` (la URL única de una vista previa, spec 5a §2.3). */
+  /** Origins accepted besides the `baseURL` one (the unique URL of a preview deployment, spec 5a §2.3). */
   trustedOrigins?: string[];
   google?: { clientId: string; clientSecret: string };
-  /** Han cambiado páginas en caché de un jugador (al borrar su cuenta); en producción, `revalidatePlayerPages`. */
+  /** A player's cached pages have changed (on account deletion); in production, `revalidatePlayerPages`. */
   onPlayerChanged?: () => void;
   random?: () => number;
 }
@@ -49,7 +49,7 @@ export function createAuth(deps: AuthDeps) {
 
   const isBannedEmail = (email: string) => isBannedIdentity(deps.db, identityHash("email", email, deps.identitySecret));
 
-  /** Solo para cuentas nuevas: un baneado con cuenta sigue pudiendo entrar (spec 4a §3.4). */
+  /** Only for new accounts: a banned player with an account can still sign in (spec 4a §3.4). */
   async function isBlockedSignUp(email: string): Promise<boolean> {
     if (!(await isBannedEmail(email))) return false;
     const existing = await deps.db
@@ -64,9 +64,9 @@ export function createAuth(deps: AuthDeps) {
     `${deps.keyPrefix}magic-link:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;
 
   /**
-   * Un enlace por email y minuto. Se comprueba al enviar, no al recibir la petición: así una
-   * petición inválida no gasta el envío del minuto (ni sirve para bloquear a otro), y si el
-   * proveedor falla se libera para que el jugador pueda reintentar enseguida.
+   * One link per email per minute. It is checked when sending, not when the request arrives: that way
+   * an invalid request does not use up the minute's send (nor can it be used to block someone else),
+   * and if the provider fails it is released so the player can retry right away.
    */
   async function sendMagicLinkThrottled(email: string, url: string): Promise<void> {
     const key = magicLinkKey(email);
@@ -95,11 +95,11 @@ export function createAuth(deps: AuthDeps) {
     advanced: { database: { generateId: "uuid" }, cookiePrefix: "qr" },
     session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
     user: {
-      // Mismos valores que USER_ROLES y USER_STATUSES del esquema; Better Auth necesita los literales.
+      // Same values as USER_ROLES and USER_STATUSES in the schema; Better Auth needs the literals.
       additionalFields: {
         nick: { type: "string", required: true, input: false },
         country: { type: "string", required: false, input: false },
-        // No salen en la sesión que ve el navegador: un shadow-ban no debe notarse (spec §4.7).
+        // Not included in the session the browser sees: a shadow ban must not be noticeable (spec §4.7).
         role: { type: ["user", "admin"], required: true, defaultValue: "user", input: false, returned: false },
         status: {
           type: ["active", "shadowbanned", "banned"],
@@ -114,7 +114,7 @@ export function createAuth(deps: AuthDeps) {
         beforeDelete: async (user) => {
           await deleteUserData(user.id);
         },
-        // Ya sin el usuario: sus páginas en caché (perfil y rankings) se regeneran sin él.
+        // With the user gone: their cached pages (profile and rankings) are regenerated without them.
         afterDelete: async () => {
           deps.onPlayerChanged?.();
         },
@@ -124,7 +124,7 @@ export function createAuth(deps: AuthDeps) {
     databaseHooks: {
       user: {
         create: {
-          // Toda cuenta nace con un nick válido y libre (spec §3.6); el jugador lo cambia en la bienvenida.
+          // Every account is born with a valid, free nick (spec §3.6); the player changes it on the welcome page.
           before: async (user) => {
             if (await isBannedEmail(user.email)) throw accountBlocked();
             return { data: { ...user, nick: await findFreeNick(nickBase(user.email, user.name), isNickTaken, random) } };
@@ -133,7 +133,7 @@ export function createAuth(deps: AuthDeps) {
       },
       account: {
         create: {
-          // Google crea el usuario y la cuenta en una transacción: si esto lanza, no queda nada a medias.
+          // Google creates the user and the account in one transaction: if this throws, nothing is left half-done.
           before: async (account) => {
             const banned =
               account.providerId === "google" &&
@@ -145,7 +145,7 @@ export function createAuth(deps: AuthDeps) {
       },
       session: {
         create: {
-          // La IP solo se guarda como hash (spec §6): en las sesiones no hace falta.
+          // The IP is only stored as a hash (spec §6): sessions don't need it.
           before: async (session) => ({ data: { ...session, ipAddress: null } }),
         },
       },
@@ -165,7 +165,7 @@ export function createAuth(deps: AuthDeps) {
         expiresIn: MAGIC_LINK_EXPIRES_SECONDS,
         sendMagicLink: ({ email, url }) => sendMagicLinkThrottled(email, url),
       }),
-      // rpID sale del host de baseURL. La passkey sirve para entrar; no crea cuentas.
+      // rpID comes from the baseURL host. The passkey is for signing in; it does not create accounts.
       passkey({ rpName: "QwertyRank" }),
     ],
   });

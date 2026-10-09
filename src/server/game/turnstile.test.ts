@@ -13,8 +13,8 @@ function fakeFetch(result: Response | Error) {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-describe("verificación de Turnstile", () => {
-  it("manda secreto, token e IP, y vale si Cloudflare responde success", async () => {
+describe("Turnstile verification", () => {
+  it("sends secret, token and IP, and passes if Cloudflare answers success", async () => {
     const fetch = fakeFetch(json({ success: true, action: "test" }));
     expect(await createTurnstileVerifier("secret", fetch)("token", "1.2.3.4")).toBe(true);
     const [url, init] = fetch.mock.calls[0];
@@ -24,13 +24,13 @@ describe("verificación de Turnstile", () => {
     expect(init?.signal).toBeDefined();
   });
 
-  it("un token rechazado o ya usado no vale", async () => {
+  it("a rejected or already used token does not pass", async () => {
     const fetch = fakeFetch(json({ success: false, "error-codes": ["timeout-or-duplicate"] }));
     expect(await createTurnstileVerifier("secret", fetch)("token", null)).toBe(false);
     expect(Object.fromEntries(fetch.mock.calls[0][1]?.body as URLSearchParams)).toEqual({ secret: "secret", response: "token" });
   });
 
-  it("si Cloudflare falla o no responde, lanza TurnstileUnavailableError", async () => {
+  it("if Cloudflare fails or does not respond, throws TurnstileUnavailableError", async () => {
     await expect(createTurnstileVerifier("s", fakeFetch(json({}, 500)))("t", null)).rejects.toBeInstanceOf(
       TurnstileUnavailableError,
     );

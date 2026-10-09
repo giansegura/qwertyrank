@@ -5,7 +5,7 @@ import { serverEnv } from "../env";
 import * as schema from "./schema";
 
 export function createDb(url: string) {
-  // prepare: false porque el pooler de Neon (PgBouncer en modo transacción) no admite sentencias preparadas.
+  // prepare: false because the Neon pooler (PgBouncer in transaction mode) does not support prepared statements.
   const client = postgres(url, { prepare: false, max: 5 });
   return drizzle({ client, schema });
 }
@@ -19,7 +19,7 @@ export function getDb(): Db {
   return db;
 }
 
-/** Transacción de Drizzle: lo que recibe el callback de `db.transaction`. */
+/** Drizzle transaction: what the `db.transaction` callback receives. */
 export type DbTx = Parameters<Parameters<Db["transaction"]>[0]>[0];
-/** Ejecuta consultas: la conexión o una transacción. */
+/** Runs queries: the connection or a transaction. */
 export type DbExecutor = Db | DbTx;

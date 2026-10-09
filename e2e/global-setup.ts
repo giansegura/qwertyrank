@@ -16,12 +16,12 @@ async function scanKeys(redis: Redis, match: string): Promise<string[]> {
 }
 
 /**
- * Antes de los E2E:
- * - se borran los límites de partidas (spec 4a §2): todos los tests salen de la misma máquina y varias
- *   ejecuciones seguidas agotarían los 150 inicios por hora de una IP;
- * - se borran las cuentas de pruebas anteriores (email `@example.com`: las de `uniqueEmail` y las de
- *   `seedPlayer`), con sus marcas y sus partidas, y se sacan de los rankings de Redis. Los rankings no se
- *   vacían nunca: sin esto, sus marcas acabarían quitándole el top 10 a la prueba de la verificación.
+ * Before the E2E tests:
+ * - the game limits are cleared (spec 4a §2): every test comes from the same machine and several
+ *   runs in a row would use up an IP's 150 starts per hour;
+ * - accounts from previous test runs (email `@example.com`: those from `uniqueEmail` and from
+ *   `seedPlayer`) are deleted, with their records and games, and removed from the Redis rankings. The
+ *   rankings are never emptied: without this, their records would end up taking the top 10 from the verification test.
  */
 export default async function globalSetup() {
   loadEnvConfig(process.cwd());
@@ -41,7 +41,7 @@ export default async function globalSetup() {
     for (const key of await scanKeys(redis, `${prefix}lb:*`)) {
       for (let start = 0; start < ids.length; start += BATCH) await redis.zrem(key, ...ids.slice(start, start + BATCH));
     }
-    // Como `deleteAccount`: primero sus marcas, que referencian sus partidas sin cascada.
+    // Like `deleteAccount`: first their bests, which reference their games without cascade.
     await sql`delete from bests where user_id in ${sql(ids)}`;
     await sql`delete from games where user_id in ${sql(ids)}`;
     await sql`delete from users where id in ${sql(ids)}`;

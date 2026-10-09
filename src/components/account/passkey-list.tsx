@@ -23,7 +23,7 @@ export function PasskeyList({ locale }: { locale: Locale }) {
     }
     const code = "code" in error ? error.code : undefined;
     if (code === "SESSION_NOT_FRESH" || error.status === 403) setStatus("reauth");
-    // Cerrar el diálogo del navegador no es un error que haya que enseñar.
+    // Closing the browser dialog is not an error worth showing.
     else if (code !== "ERROR_CEREMONY_ABORTED") setStatus("error");
   }
 

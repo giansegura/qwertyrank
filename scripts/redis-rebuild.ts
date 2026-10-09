@@ -3,7 +3,7 @@ import { rebuildLeaderboards } from "@/server/leaderboard/rebuild";
 import { createRedis } from "@/server/redis";
 import { loadScriptEnv } from "./env";
 
-/** `pnpm redis:rebuild [--env <archivo>] [--yes]`: rehace los rankings de Redis desde PostgreSQL (spec 4a §6.1). */
+/** `pnpm redis:rebuild [--env <file>] [--yes]`: rebuilds the Redis leaderboards from PostgreSQL (spec 4a §6.1). */
 async function main() {
   const { env, args } = loadScriptEnv(process.argv.slice(2));
   const write = args.includes("--yes");
@@ -13,8 +13,8 @@ async function main() {
     const report = await rebuildLeaderboards(db, redis, env.redisKeyPrefix, { write });
     console.log(
       write
-        ? `Reescritos ${report.boards} rankings (${report.entries} marcas); borradas ${report.removed} claves sobrantes.`
-        : `Se reescribirían ${report.boards} rankings (${report.entries} marcas) y se borrarían ${report.removed} claves sobrantes. Nada escrito: repite con --yes para aplicarlo.`,
+        ? `Rewrote ${report.boards} leaderboards (${report.entries} records); deleted ${report.removed} leftover keys.`
+        : `Would rewrite ${report.boards} leaderboards (${report.entries} records) and delete ${report.removed} leftover keys. Nothing written: run again with --yes to apply it.`,
     );
   } finally {
     await db.$client.end();

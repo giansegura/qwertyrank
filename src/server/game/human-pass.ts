@@ -2,8 +2,8 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 /**
- * Pase humano (spec 4a §2): tras superar Turnstile, la cookie `qr_human` = `<exp>.<firma>` vale una hora.
- * La firma cubre el `anon_id`: un pase no se puede repartir entre muchos clientes de un bot.
+ * Human pass (spec 4a §2): after passing Turnstile, the `qr_human` = `<exp>.<signature>` cookie is valid for an hour.
+ * The signature covers the `anon_id`: a pass cannot be shared among many clients of a bot.
  */
 export const HUMAN_COOKIE = "qr_human";
 export const HUMAN_PASS_SECONDS = 60 * 60;

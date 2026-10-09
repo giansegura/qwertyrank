@@ -2,7 +2,7 @@ import type { InputType } from "./game/types";
 import type { TestLanguage } from "./words/languages";
 
 export interface ProfileRecord {
-  /** La partida de la marca: su página de resultado (spec 5d §7). */
+  /** The record's game: its result page (spec 5d §7). */
   gameId: string;
   language: TestLanguage;
   inputType: InputType;
@@ -27,7 +27,7 @@ export interface PublicProfile {
   history: ProfileGame[];
 }
 
-/** El perfil tal como llega en JSON (`GET /api/profile`): las fechas son texto. */
+/** The profile as it arrives in JSON (`GET /api/profile`): the dates are text. */
 export type ProfileJson = Omit<PublicProfile, "memberSince" | "history"> & {
   memberSince: string;
   history: (Omit<ProfileGame, "startsAt"> & { startsAt: string })[];

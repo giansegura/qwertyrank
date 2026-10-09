@@ -8,12 +8,12 @@ export interface TestResult {
   accuracy: number;
   correctChars: number;
   typedChars: number;
-  /** PPM acumuladas al final de cada segundo (longitud = ceil(durationMs / 1000)). */
+  /** Cumulative WPM at the end of each second (length = ceil(durationMs / 1000)). */
   perSecond: number[];
   mistakes: Record<string, number>;
 }
 
-/** El servidor reproduce eventos que no son de fiar: se ignora todo lo que no tenga la forma esperada. */
+/** The server replays untrustworthy events: anything without the expected shape is ignored. */
 function isValidInput(event: unknown): event is InputTypingEvent {
   if (typeof event !== "object" || event === null) return false;
   const candidate = event as Record<string, unknown>;

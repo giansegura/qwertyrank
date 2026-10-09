@@ -3,14 +3,14 @@ import "server-only";
 export const SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 export const SITEVERIFY_TIMEOUT_MS = 3_000;
 
-/** Cloudflare no ha respondido (red, 5xx o tiempo agotado): `start` responde 503, no `needs_challenge`. */
+/** Cloudflare did not respond (network, 5xx or timeout): `start` answers 503, not `needs_challenge`. */
 export class TurnstileUnavailableError extends Error {}
 
 export type VerifyTurnstile = (token: string, ip: string | null) => Promise<boolean>;
 
 /**
- * Verifica el token del reto (spec 4a §2). Solo cuenta `success`: con las claves de prueba de
- * Cloudflare la acción es "test", y con un único widget comprobarla no añade nada.
+ * Verifies the challenge token (spec 4a §2). Only `success` counts: with Cloudflare's test keys
+ * the action is "test", and with a single widget checking it adds nothing.
  */
 export function createTurnstileVerifier(secret: string, fetchImpl: typeof fetch = fetch): VerifyTurnstile {
   return async (token, ip) => {

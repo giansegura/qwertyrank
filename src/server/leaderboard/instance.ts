@@ -19,12 +19,12 @@ export function getRanking(): Ranking {
   ranking ??= createRanking({
     db: getDb(),
     store: getLeaderboardStore(),
-    // Cada ranking se ve en la página del idioma de su test (spec §3.2). La clave de su caché es la
-    // ruta interna con el idioma delante (/es/leaderboard/physical), no la URL pública.
+    // Each ranking is shown on the page of its test's language (spec §3.2). Its cache key is the
+    // internal route with the language in front (/es/leaderboard/physical), not the public URL.
     onTopChanged: (boards) => {
       for (const { language, inputType } of boards) {
         revalidatePath(`/${language}${leaderboardHref(inputType)}`);
-        // La portada enseña el top 10 del teclado físico de su idioma (spec 5b §7).
+        // The home page shows the physical keyboard top 10 of its language (spec 5b §7).
         if (inputType === "physical") revalidatePath(`/${language}`);
       }
     },

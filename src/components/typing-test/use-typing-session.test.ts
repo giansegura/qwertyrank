@@ -20,13 +20,13 @@ describe("useTypingSession", () => {
     return { ...hook, nextWords };
   }
 
-  it("empieza en reposo", () => {
+  it("starts idle", () => {
     const { result } = setup();
     expect(result.current.status).toBe("idle");
     expect(result.current.endsAt).toBeNull();
   });
 
-  it("arranca con la primera entrada y fija la hora de fin", () => {
+  it("starts with the first input and sets the end time", () => {
     const { result } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "h" }, true);
@@ -36,7 +36,7 @@ describe("useTypingSession", () => {
     expect(result.current.engine.typed[0]).toBe("h");
   });
 
-  it("termina al agotarse el tiempo y calcula el resultado", () => {
+  it("finishes when time runs out and computes the result", () => {
     const { result } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "hola " }, true);
@@ -50,7 +50,7 @@ describe("useTypingSession", () => {
     expect(result.current.result?.wpm).toBe(4);
   });
 
-  it("ignora la entrada después de terminar", () => {
+  it("ignores input after finishing", () => {
     const { result } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "h" }, true);
@@ -64,7 +64,7 @@ describe("useTypingSession", () => {
     expect(result.current.engine.typed[0]).toBe("h");
   });
 
-  it("termina antes de tiempo si se escriben todas las palabras", () => {
+  it("finishes early if all the words are typed", () => {
     const { result } = setup(["fin"]);
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "fin " }, true);
@@ -72,7 +72,7 @@ describe("useTypingSession", () => {
     expect(result.current.status).toBe("finished");
   });
 
-  it("solo registra teclas mientras la partida está en marcha", () => {
+  it("only records keys while the game is running", () => {
     const { result } = setup(["ab"], 1000);
     act(() => {
       result.current.handleKey({ type: "down", key: "a", code: "KeyA", trusted: true });
@@ -91,7 +91,7 @@ describe("useTypingSession", () => {
     expect(result.current.getEvents()).toHaveLength(2);
   });
 
-  it("reiniciar pide palabras nuevas y vuelve al reposo", () => {
+  it("restarting requests new words and goes back to idle", () => {
     const { result, nextWords } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "ho" }, true);
@@ -109,7 +109,7 @@ describe("useTypingSession", () => {
     expect(result.current.status).toBe("idle");
   });
 
-  it("un espacio suelto o un borrado al empezar no arrancan el reloj", () => {
+  it("a lone space or a deletion at the start does not start the clock", () => {
     const { result } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: " " }, true);
@@ -119,7 +119,7 @@ describe("useTypingSession", () => {
     expect(result.current.getEvents()).toEqual([]);
   });
 
-  it("usa la hora del evento si se le pasa", () => {
+  it("uses the event time if given", () => {
     const { result } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "h" }, true, 1_000);
@@ -128,7 +128,7 @@ describe("useTypingSession", () => {
     expect(result.current.getEvents().map((event) => event.t)).toEqual([0, 80]);
   });
 
-  it("una entrada que llega después del tiempo termina la partida y no cuenta", () => {
+  it("an input arriving after the time is up finishes the game and does not count", () => {
     const { result } = setup(["hola", "mundo"], 1_000);
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "h" }, true);
@@ -141,7 +141,7 @@ describe("useTypingSession", () => {
     expect(result.current.engine.typed[0]).toBe("h");
   });
 
-  it("con autoStart desactivado ignora la entrada hasta llamar a begin()", () => {
+  it("with autoStart disabled ignores input until begin() is called", () => {
     const { result } = setup(["hola"], 15_000, { autoStart: false });
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "h" }, true);
@@ -160,7 +160,7 @@ describe("useTypingSession", () => {
     expect(result.current.getEvents()).toEqual([{ t: 200, type: "input", deleted: 0, inserted: "h", trusted: true }]);
   });
 
-  it("una pulsación justo antes de begin() cuenta como t = 0 y los tiempos nunca retroceden", () => {
+  it("a keystroke just before begin() counts as t = 0 and times never go backwards", () => {
     const { result } = setup(["hola"], 15_000, { autoStart: false });
     act(() => {
       result.current.begin();
@@ -174,7 +174,7 @@ describe("useTypingSession", () => {
     expect(result.current.getEvents().map((event) => event.t)).toEqual([0, 0, 300, 300]);
   });
 
-  it("load() pone un texto nuevo y vuelve al reposo", () => {
+  it("load() sets a new text and goes back to idle", () => {
     const { result } = setup();
     act(() => {
       result.current.handleInput({ deleted: 0, inserted: "ho" }, true);
@@ -187,7 +187,7 @@ describe("useTypingSession", () => {
     expect(result.current.getEvents()).toEqual([]);
   });
 
-  it("avisa con onFinish al terminar, con el resultado local", () => {
+  it("calls onFinish when finished, with the local result", () => {
     const onFinish = vi.fn();
     const { result } = setup(["fin"], 15_000, { onFinish });
     act(() => {

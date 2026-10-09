@@ -29,11 +29,11 @@ async function saveProfile(nick: string, country: string): Promise<SaveError | n
 }
 
 export interface ProfileFormProps {
-  /** Calculadas en el servidor con `countryOptions` (ver allí por qué). */
+  /** Computed on the server with `countryOptions` (see there for why). */
   countries: readonly CountryOption[];
   initialNick: string;
   initialCountry: CountryCode | null;
-  /** En la bienvenida: adónde ir después de guardar. */
+  /** On the welcome page: where to go after saving. */
   continueTo: string | null;
 }
 

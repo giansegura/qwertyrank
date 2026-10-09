@@ -3,7 +3,7 @@ import { CONTROLLER, PRIVACY_EMAIL } from "@/lib/site";
 
 const MAIL = `mailto:${PRIVACY_EMAIL}`;
 
-/** Política de privacidad en inglés (spec 5a §4.2). Borrador para la beta: pendiente de revisión legal. */
+/** Privacy policy in English (spec 5a §4.2). Draft for the beta: pending legal review. */
 export function PrivacyEn() {
   return (
     <>

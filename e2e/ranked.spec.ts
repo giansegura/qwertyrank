@@ -3,7 +3,7 @@ import { startRanked } from "./helpers/ranked";
 
 test.describe.configure({ timeout: 90_000 });
 
-test("el texto de Ranked no viene en el HTML: lo envía el servidor al empezar", async ({ page }) => {
+test("the Ranked text is not in the HTML: the server sends it on start", async ({ page }) => {
   const html = await (await page.request.get("/en")).text();
   expect(html).not.toContain('data-testid="word"');
   await page.goto("/en");
@@ -11,7 +11,7 @@ test("el texto de Ranked no viene en el HTML: lo envía el servidor al empezar",
   await expect(page.getByTestId("word")).toHaveCount(0);
 });
 
-test("partida Ranked completa: cuenta atrás, 30 s y veredicto válido del servidor", async ({ page }) => {
+test("full Ranked game: countdown, 30 s and a valid verdict from the server", async ({ page }) => {
   const words = await startRanked(page);
   await page.keyboard.type(`${words.join(" ")} `, { delay: 120 });
   await expect(page.getByTestId("result")).toBeVisible({ timeout: 40_000 });
@@ -19,7 +19,7 @@ test("partida Ranked completa: cuenta atrás, 30 s y veredicto válido del servi
   expect(Number(await page.getByTestId("result-wpm").textContent())).toBeGreaterThan(0);
 });
 
-test("texto inyectado por código: la partida no es válida", async ({ page }) => {
+test("text injected by code: the game is not valid", async ({ page }) => {
   const words = await startRanked(page);
   await page.evaluate((text) => {
     const input = document.querySelector<HTMLInputElement>('[data-testid="typing-input"]')!;
@@ -32,7 +32,7 @@ test("texto inyectado por código: la partida no es válida", async ({ page }) =
   await expect(page.getByTestId("ranked-status")).toHaveText(/Unrecognized activity/);
 });
 
-test("si el reto de Cloudflare no carga, lo dice y ofrece la práctica", async ({ page }) => {
+test("if the Cloudflare challenge doesn't load, it says so and offers practice", async ({ page }) => {
   await page.route("https://challenges.cloudflare.com/**", (route) => route.abort());
   await page.goto("/en");
   await page.getByTestId("ranked-start").click();

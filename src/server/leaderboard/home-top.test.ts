@@ -10,16 +10,16 @@ afterEach(() => {
 });
 
 describe("readHomeTop", () => {
-  it("devuelve el top", async () => {
+  it("returns the top", async () => {
     expect(await readHomeTop(async () => [ENTRY], undefined)).toEqual([ENTRY]);
   });
 
-  it("en ejecución relanza el error: Next sigue sirviendo la última portada buena", async () => {
+  it("at runtime rethrows the error: Next keeps serving the last good home page", async () => {
     const failure = new Error("db down");
     await expect(readHomeTop(() => Promise.reject(failure), undefined)).rejects.toBe(failure);
   });
 
-  it("en el build, sin top", async () => {
+  it("during the build, no top", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await readHomeTop(() => Promise.reject(new Error("db down")), PHASE_PRODUCTION_BUILD)).toBeNull();
   });

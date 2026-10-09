@@ -32,7 +32,7 @@ async function newUser(): Promise<string> {
   return row.id;
 }
 
-/** Guarda una partida válida: deja su marca en `bests`, sin tocar Redis (la posición sale de la puntuación). */
+/** Saves a valid game: leaves its record in `bests`, without touching Redis (the position comes from the score). */
 async function play(userId: string, wpm: number, accuracy: number) {
   const startsAt = new Date();
   await saveGame({
@@ -55,7 +55,7 @@ async function play(userId: string, wpm: number, accuracy: number) {
 }
 
 describe("GET /api/leaderboard/me", () => {
-  it("con un idioma o teclado inválido, 400 invalid_query", async () => {
+  it("with an invalid language or keyboard, 400 invalid_query", async () => {
     for (const query of ["lang=xx&input=touch", "lang=pt&input=gamepad", "lang=pt", ""]) {
       const response = await GET(request(query));
       expect(response.status).toBe(400);
@@ -63,14 +63,14 @@ describe("GET /api/leaderboard/me", () => {
     }
   });
 
-  it("sin sesión, 401 unauthorized", async () => {
+  it("without a session, 401 unauthorized", async () => {
     getSessionUser.mockResolvedValue(null);
     const response = await GET(request("lang=pt&input=touch"));
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "unauthorized" });
   });
 
-  it("con sesión y marca en ese ranking, su posición y su marca, sin caché", async () => {
+  it("with a session and a record in that ranking, their position and record, without cache", async () => {
     const userId = await newUser();
     await play(userId, 77, 96);
     getSessionUser.mockResolvedValue({ id: userId });
@@ -81,7 +81,7 @@ describe("GET /api/leaderboard/me", () => {
     expect(await response.json()).toEqual({ rank: expect.any(Number), wpm: 77, accuracy: 96 });
   });
 
-  it("con sesión y sin marca en ese ranking, rank null", async () => {
+  it("with a session and no record in that ranking, rank null", async () => {
     getSessionUser.mockResolvedValue({ id: await newUser() });
     const response = await GET(request("lang=pt&input=touch"));
     expect(response.status).toBe(200);
@@ -89,7 +89,7 @@ describe("GET /api/leaderboard/me", () => {
     expect(await response.json()).toEqual({ rank: null });
   });
 
-  it("un parámetro `period` sobrante se ignora", async () => {
+  it("a leftover `period` parameter is ignored", async () => {
     getSessionUser.mockResolvedValue({ id: await newUser() });
     const response = await GET(request("lang=pt&input=touch&period=day"));
     expect(response.status).toBe(200);

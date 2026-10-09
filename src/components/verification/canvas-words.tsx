@@ -17,7 +17,7 @@ import {
 
 type Palette = Record<LetterStatus | "caret", string>;
 
-// Los colores de `Word` (zinc, rojo y ámbar de Tailwind), en claro y en oscuro.
+// The colors of `Word` (Tailwind zinc, red and amber), in light and dark.
 const LIGHT: Palette = {
   pending: "#a1a1aa",
   missed: "#a1a1aa",
@@ -36,8 +36,8 @@ const DARK: Palette = {
 };
 
 /**
- * Espera a que la fuente esté cargada: medir con la de reserva y redibujar con la buena movería el
- * texto a mitad de partida. Sin `document.fonts` (navegadores antiguos, jsdom), al momento.
+ * Waits for the font to load: measuring with the fallback and redrawing with the real one would shift the
+ * text mid-game. Without `document.fonts` (old browsers, jsdom), immediately.
  */
 export async function fontReady(font: string): Promise<void> {
   const fonts = typeof document === "undefined" ? undefined : document.fonts;
@@ -46,7 +46,7 @@ export async function fontReady(font: string): Promise<void> {
   await fonts.ready;
 }
 
-/** Dibuja las tres líneas a la vista, con cada letra de su color y el cursor. */
+/** Draws the three lines in view, with each letter in its color and the cursor. */
 export function paintWords(
   context: CanvasRenderingContext2D,
   engine: EngineState,
@@ -79,8 +79,8 @@ export function paintWords(
 }
 
 /**
- * El texto de la partida de verificación dibujado en un `canvas` (spec 4b §3.2): no está en el DOM,
- * así que las extensiones que leen la página no lo ven. Se teclea en el mismo campo oculto de siempre.
+ * The verification game's text drawn in a `canvas` (spec 4b §3.2): it is not in the DOM,
+ * so extensions that read the page do not see it. Typing goes into the same hidden field as always.
  */
 export function CanvasWords({ engine }: { engine: EngineState }) {
   const t = useTranslations("Verification");
@@ -92,7 +92,7 @@ export function CanvasWords({ engine }: { engine: EngineState }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     let active = true;
-    // La familia de `font-mono` (Geist Mono y su reserva), la misma que el texto de Ranked.
+    // The `font-mono` family (Geist Mono and its fallback), the same as the Ranked text.
     const spec = `${FONT_SIZE}px ${getComputedStyle(canvas).fontFamily || "monospace"}`;
     void fontReady(spec).then(() => {
       if (active) setFont(spec);

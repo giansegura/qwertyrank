@@ -5,7 +5,7 @@ import { isCronAuthorized } from "./cron-auth";
 const SECRET = "s".repeat(32);
 
 describe("isCronAuthorized", () => {
-  it("solo con Authorization: Bearer y el secreto exacto", () => {
+  it("only with Authorization: Bearer and the exact secret", () => {
     expect(isCronAuthorized(`Bearer ${SECRET}`, SECRET)).toBe(true);
     expect(isCronAuthorized(`Bearer ${SECRET}x`, SECRET)).toBe(false);
     expect(isCronAuthorized(`Bearer ${"t".repeat(32)}`, SECRET)).toBe(false);
@@ -13,7 +13,7 @@ describe("isCronAuthorized", () => {
     expect(isCronAuthorized(null, SECRET)).toBe(false);
   });
 
-  it("sin secreto configurado, nunca", () => {
+  it("without a configured secret, never", () => {
     expect(isCronAuthorized("Bearer ", undefined)).toBe(false);
     expect(isCronAuthorized("Bearer undefined", undefined)).toBe(false);
     expect(isCronAuthorized("Bearer ", "")).toBe(false);

@@ -12,7 +12,7 @@ import { startRanked } from "./helpers/ranked";
 
 test.describe.configure({ timeout: 120_000 });
 
-/** Cuentas de cada prueba: se borran al acabar, para que sus marcas no ocupen el top 10 de la siguiente. */
+/** Accounts of each test: deleted at the end, so their records don't take the next one's top 10. */
 const created: string[] = [];
 
 test.afterEach(async () => {
@@ -28,8 +28,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 /**
- * Crea una cuenta en inglés, guarda la bienvenida y vuelve a la portada. Devuelve su id. La cuenta se
- * apunta para borrarla en cuanto existe: si falla la bienvenida, tampoco se queda en la base de datos.
+ * Creates an account in English, saves the welcome page and returns to the home page. Returns its id. The
+ * account is queued for deletion as soon as it exists: if the welcome page fails, it doesn't stay in the database either.
  */
 async function newAccount(page: Page, nick?: string): Promise<string> {
   const email = await signUp(page, "en");
@@ -41,12 +41,12 @@ async function newAccount(page: Page, nick?: string): Promise<string> {
   return userId;
 }
 
-test("sin sesión, /verify lleva a entrar y de vuelta", async ({ page }) => {
+test("without a session, /verify leads to sign-in and back", async ({ page }) => {
   await page.goto("/es/verificar");
   await expect(page).toHaveURL(/\/es\/entrar\?next=%2Fes%2Fverificar$/);
 });
 
-test("el aviso de récord pendiente lleva a /verify, que empieza su partida de verificación", async ({ page }) => {
+test("the pending record notice leads to /verify, which starts its verification game", async ({ page }) => {
   const userId = await newAccount(page);
   await seedPendingVerification(userId, { wpm: 80 });
   await page.reload();
@@ -64,9 +64,9 @@ test("el aviso de récord pendiente lleva a /verify, que empieza su partida de v
 });
 
 /**
- * Una partida Ranked que entra en el top 10: 60 palabras a una tecla cada ~55 ms en 30 s (unas 140 PPM),
- * más que cualquier otra partida de los E2E con cuenta (6 palabras, ~14 PPM; las de esta prueba se borran
- * al acabar, y las de ejecuciones anteriores, al empezar: `global-setup.ts`). Espera al resultado, en `review`.
+ * A Ranked game that enters the top 10: 60 words at one key every ~55 ms in 30 s (about 140 WPM),
+ * more than any other signed-in E2E game (6 words, ~14 WPM; this test's are deleted at the end, and
+ * those from previous runs at the start: `global-setup.ts`). Waits for the result, in `review`.
  */
 async function playRecord(page: Page): Promise<void> {
   const words = await startRanked(page, "en", 60);
@@ -74,7 +74,7 @@ async function playRecord(page: Page): Promise<void> {
   await expect(page.getByTestId("rank-summary")).toContainText("Your score would be #", { timeout: 40_000 });
 }
 
-/** Pulsa "Verificar ahora" y devuelve las palabras de la partida de verificación: el canvas no las enseña en el DOM. */
+/** Clicks "Verify now" and returns the verification game's words: the canvas doesn't show them in the DOM. */
 async function startVerification(page: Page): Promise<string[]> {
   const started = page.waitForResponse(
     (response) => response.url().endsWith("/api/game/start") && response.request().postDataJSON()?.mode === "verification",
@@ -87,7 +87,7 @@ async function startVerification(page: Page): Promise<string[]> {
   return words;
 }
 
-test("entra en un top 10, se verifica tecleando en el canvas y su marca aparece en el ranking", async ({ page, isMobile }) => {
+test("enters a top 10, verifies by typing on the canvas and the record shows up on the leaderboard", async ({ page, isMobile }) => {
   if (isMobile) await page.setViewportSize({ width: 360, height: 740 });
   const nick = `e2e_v${crypto.randomUUID().slice(0, 8)}`;
   await newAccount(page, nick);
@@ -95,7 +95,7 @@ test("entra en un top 10, se verifica tecleando en el canvas y su marca aparece 
 
   const words = await startVerification(page);
   const canvas = page.getByTestId("verify-canvas");
-  // Nítido: dibuja a la resolución del dispositivo, y cabe en la pantalla.
+  // Sharp: draws at the device's resolution, and fits on the screen.
   const size = await canvas.evaluate((element: HTMLCanvasElement) => ({
     width: element.width,
     css: element.clientWidth,
@@ -105,8 +105,8 @@ test("entra en un top 10, se verifica tecleando en el canvas y su marca aparece 
   if (isMobile) {
     expect(size.dpr).toBeGreaterThanOrEqual(2);
     expect(size.css).toBeLessThanOrEqual(360 - 32);
-    // Al tocar el texto se enfoca el campo oculto: el que abre el teclado del móvil. La partida ya lo
-    // enfoca al empezar (sin el toque del jugador, el móvil no abre el teclado): se le quita antes.
+    // Tapping the text focuses the hidden field: the one that opens the phone's keyboard. The game already
+    // focuses it on start (without the player's tap, the phone doesn't open the keyboard): remove it first.
     const input = page.getByTestId("typing-input");
     await input.evaluate((element: HTMLInputElement) => element.blur());
     await expect(input).not.toBeFocused();
@@ -114,7 +114,7 @@ test("entra en un top 10, se verifica tecleando en el canvas y su marca aparece 
     await expect(input).toBeFocused();
   }
 
-  // Más palabras que en el récord, al mismo ritmo: pasa del 85 % de sus PPM.
+  // More words than in the record, at the same pace: beats 85% of its WPM.
   await page.keyboard.type(`${words.slice(0, 70).join(" ")} `, { delay: 50 });
   const result = page.getByTestId("verify-result");
   await expect(result).toContainText("Verified! Your record is now on the ranking.", { timeout: 40_000 });
@@ -122,7 +122,7 @@ test("entra en un top 10, se verifica tecleando en el canvas y su marca aparece 
   await expect(page.locator(`[data-testid="leaderboard-row"][data-nick="${nick}"]`)).toBeVisible();
 });
 
-test("tecleando despacio no se verifica: quedan intentos y la marca no aparece en el ranking", async ({ page }) => {
+test("typing slowly doesn't verify: attempts remain and the record doesn't show up on the leaderboard", async ({ page }) => {
   const nick = `e2e_v${crypto.randomUUID().slice(0, 8)}`;
   const userId = await newAccount(page, nick);
   await playRecord(page);

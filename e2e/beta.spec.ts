@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("durante la beta nada se indexa: cabecera X-Robots-Tag, meta robots y HSTS", async ({ page }) => {
+test("during the beta nothing is indexed: X-Robots-Tag header, robots meta and HSTS", async ({ page }) => {
   const response = await page.goto("/es");
   expect(response?.headers()["x-robots-tag"]).toBe("noindex");
   expect(response?.headers()["strict-transport-security"]).toBe("max-age=63072000; includeSubDomains");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
 });
 
-test("robots.txt no bloquea nada: si bloqueara, los buscadores no verían el noindex", async ({ request }) => {
+test("robots.txt blocks nothing: if it did, search engines would not see the noindex", async ({ request }) => {
   const response = await request.get("/robots.txt");
   expect(response.status()).toBe(200);
   expect(await response.text()).not.toMatch(/disallow/i);
@@ -20,7 +20,7 @@ const LEGAL = [
 ] as const;
 
 for (const { locale, privacy, terms, privacyTitle, termsTitle } of LEGAL) {
-  test(`el pie lleva a la política de privacidad y a los términos (${locale})`, async ({ page }) => {
+  test(`the footer links to the privacy policy and the terms (${locale})`, async ({ page }) => {
     await page.goto(`/${locale}`);
     await page.getByTestId("site-footer").locator(`a[href="${privacy}"]`).click();
     await expect(page).toHaveURL((url) => url.pathname === privacy);
@@ -32,8 +32,8 @@ for (const { locale, privacy, terms, privacyTitle, termsTitle } of LEGAL) {
   });
 }
 
-test("la beta y los comentarios abren un correo; el pie se ve sin hacer scroll", async ({ page, isMobile }) => {
-  // En una página corta: la portada ya no cabe en una pantalla (top 10 y texto, spec 5b §7).
+test("the beta and feedback links open an email; the footer is visible without scrolling", async ({ page, isMobile }) => {
+  // On a short page: the home page no longer fits on one screen (top 10 and text, spec 5b §7).
   await page.goto("/es/entrar");
   const footer = page.getByTestId("site-footer");
   await expect(footer).toBeInViewport();
@@ -42,11 +42,11 @@ test("la beta y los comentarios abren un correo; el pie se ve sin hacer scroll",
     "href",
     "mailto:feedback@qwertyrank.com",
   );
-  // La etiqueta de la cabecera, solo en escritorio: en un móvil partiría la línea de la cabecera.
+  // The header badge, desktop only: on a phone it would wrap the header line.
   await expect(page.getByTestId("beta-badge")).toBeVisible({ visible: !isMobile });
 });
 
-test("al entrar, el aviso enlaza a los términos y a la política de privacidad", async ({ page }) => {
+test("on sign-in, the notice links to the terms and the privacy policy", async ({ page }) => {
   await page.goto("/es/entrar");
   const consent = page.getByTestId("login-consent");
   await expect(consent).toContainText("Al crear una cuenta aceptas los Términos y la Política de privacidad.");
@@ -54,7 +54,7 @@ test("al entrar, el aviso enlaza a los términos y a la política de privacidad"
   await expect(consent.getByRole("link", { name: "Política de privacidad" })).toHaveAttribute("href", "/es/privacidad");
 });
 
-test("fuera de producción no se cargan los scripts de analítica de Vercel", async ({ page }) => {
+test("outside production the Vercel analytics scripts are not loaded", async ({ page }) => {
   await page.goto("/es");
   await expect(page.locator('script[src^="/_vercel/"]')).toHaveCount(0);
 });

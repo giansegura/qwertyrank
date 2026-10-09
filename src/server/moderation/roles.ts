@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { moderationActions, users } from "../db/schema";
 
-/** Da o quita el rol de admin por email (spec 4a §5.2), registrándolo sin admin: lo hace un script. */
+/** Grants or revokes the admin role by email (spec 4a §5.2), logging it without an admin: a script does it. */
 export async function setAdminRole(db: Db, email: string, role: "admin" | "user"): Promise<boolean> {
   return db.transaction(async (tx) => {
     const [user] = await tx

@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { OwnProfileFallback } from "@/components/profile/own-profile-fallback";
 import { Link } from "@/i18n/navigation";
 
-/** Perfil inexistente o no público. Si es el del propio jugador sancionado, se lo enseña (spec 4a §6.2). */
+/** Nonexistent or non-public profile. If it is the sanctioned player's own, it is shown to them (spec 4a §6.2). */
 export default function ProfileNotFound() {
   const t = useTranslations("Profile");
   return (

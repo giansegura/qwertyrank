@@ -22,14 +22,14 @@ beforeEach(() => {
 });
 
 describe("GET /api/verification", () => {
-  it("sin sesión, 401 unauthorized", async () => {
+  it("without a session, 401 unauthorized", async () => {
     getSessionUser.mockResolvedValue(null);
     const response = await GET(request());
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "unauthorized" });
   });
 
-  it("con sesión, sus pendientes y sin caché", async () => {
+  it("with a session, their pending ones and without cache", async () => {
     const [user] = await db
       .insert(users)
       .values({ name: "", email: `${randomUUID()}@example.com`, nick: `gv_${randomUUID().slice(0, 8)}` })
@@ -43,7 +43,7 @@ describe("GET /api/verification", () => {
     expect(await response.json()).toEqual({ pending: [verification] });
   });
 
-  it("si falla la sesión o la base de datos, 503 unavailable", async () => {
+  it("if the session or the database fails, 503 unavailable", async () => {
     getSessionUser.mockImplementation(async () => {
       throw new Error("db down");
     });

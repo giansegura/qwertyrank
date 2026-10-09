@@ -17,7 +17,7 @@ export interface TypingTestProps {
   initialWords: readonly string[];
 }
 
-/** Test local (práctica): empieza con la primera pulsación y no se envía al servidor. */
+/** Local test (practice): starts with the first keystroke and is not sent to the server. */
 export function TypingTest({ language, durationMs, initialWords }: TypingTestProps) {
   const t = useTranslations("TypingTest");
   const listRef = useRef<readonly string[] | null>(null);
@@ -63,8 +63,8 @@ export function TypingTest({ language, durationMs, initialWords }: TypingTestPro
         <span className="text-sm text-zinc-500 dark:text-zinc-400">{t("restartHint")}</span>
       </div>
 
-      {/* Sin altura reservada: debajo no hay contenido que pueda saltar al crecer el resultado (CLS = 0),
-          y la pantalla inicial cabe sin scroll. */}
+      {/* No reserved height: there is no content below that could shift when the result grows (CLS = 0),
+          and the initial screen fits without scrolling. */}
       <div>
         {session.status === "finished" && session.result ? (
           <ResultView result={session.result} onRestart={restart} />

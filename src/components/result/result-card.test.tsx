@@ -15,7 +15,7 @@ const RESULT: GameResult = {
 };
 
 describe("ResultCard", () => {
-  it("la cifra redondeada, la precisión hacia abajo, el ranking y el jugador enlazado a su perfil", () => {
+  it("the rounded figure, accuracy rounded down, the ranking and the player linked to their profile", () => {
     renderWithIntl(<ResultCard result={RESULT} />, "es");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("82 ppm");
     expect(screen.getByText("97 % de precisión")).toBeInTheDocument();
@@ -23,13 +23,13 @@ describe("ResultCard", () => {
     expect(screen.getByRole("link", { name: /Gian/ })).toHaveAttribute("href", "/es/u/Gian");
   });
 
-  it("anónima: «Anónimo» sin enlace", () => {
+  it('anonymous: "Anónimo" without a link', () => {
     renderWithIntl(<ResultCard result={{ ...RESULT, player: null }} />, "es");
     expect(screen.getByText("Anónimo")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Anónimo/ })).toBeNull();
   });
 
-  it("la llamada a jugar lleva al test y al ranking del idioma de la partida", () => {
+  it("the call to play goes to the test and the ranking of the game's language", () => {
     renderWithIntl(<ResultCard result={RESULT} />, "es");
     expect(screen.getByRole("link", { name: "Hacer el test" })).toHaveAttribute("href", "/pt");
     expect(screen.getByRole("link", { name: "Ver ranking" })).toHaveAttribute("href", "/pt/ranking/tatil");

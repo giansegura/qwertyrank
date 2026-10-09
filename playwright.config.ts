@@ -22,8 +22,8 @@ export default defineConfig({
     url: `http://localhost:${PORT}/en`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    // Playwright lo mezcla con process.env. Claves de prueba de Cloudflare (spec 4a §2.2): el widget
-    // invisible siempre aprueba y `siteverify` siempre acepta. La del sitio se fija en el build.
+    // Playwright merges it with process.env. Cloudflare test keys (spec 4a §2.2): the invisible widget
+    // always passes and `siteverify` always accepts. The site key is fixed at build time.
     env: {
       BETTER_AUTH_URL: `http://localhost:${PORT}`,
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000BB",

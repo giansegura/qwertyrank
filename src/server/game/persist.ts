@@ -25,29 +25,29 @@ export interface GameRecord {
   ipHash: string | null;
   startsAt: Date;
   finishedAt: Date;
-  /** El texto de la partida: se guarda con las pulsaciones para poder reproducirla (spec 4b §6.3). */
+  /** The game's text: stored with the keystrokes so it can be replayed (spec 4b §6.3). */
   words: readonly string[];
   batches: ReceivedBatch[];
 }
 
-/** La partida entraría en un top 10 sin verificar (spec 4b §2): su posición y su verificación. */
+/** The game would enter a top 10 unverified (spec 4b §2): its position and its verification. */
 export interface ReviewedGame {
   rank: number;
   verification: PendingVerification;
 }
 
 export interface SavedGame {
-  /** Si la partida mejora la marca del jugador (`false` si no cuenta para el ranking). */
+  /** Whether the game improves the player's best (`false` if it does not count for the ranking). */
   improved: boolean;
-  /** Si ha quedado en `review`: entonces no escribe marca (`improved` es `false`). */
+  /** Whether it ended up in `review`: then it writes no best (`improved` is `false`). */
   review: ReviewedGame | null;
 }
 
 export type SaveGame = (record: GameRecord) => Promise<SavedGame>;
 
 /**
- * Si la partida cuenta para el ranking (válida, de un jugador con cuenta y con al menos un 90 % de
- * precisión, spec §3.3), guarda su marca. La usan el final de la partida y el reclamo.
+ * If the game counts for the ranking (valid, from a player with an account and with at least 90%
+ * accuracy, spec §3.3), saves its best. Used by the game finish and by the claim.
  */
 export async function recordGameBest(
   db: DbExecutor,
@@ -66,8 +66,8 @@ export async function recordGameBest(
 }
 
 /**
- * Inserta la partida y su registro de pulsaciones, con las palabras. `extra` cambia lo que no sale del
- * anti-trampas: el veredicto `review` y el modo y la verificación de una partida de verificación.
+ * Inserts the game and its keystroke log, with the words. `extra` changes what does not come from the
+ * anti-cheat: the `review` verdict, and the mode and verification of a verification game.
  */
 export async function insertGame(
   tx: DbExecutor,
@@ -79,8 +79,8 @@ export async function insertGame(
 }
 
 /**
- * Guarda la partida Ranked, sus pulsaciones y su marca en una transacción (spec §5.5). Si entraría en
- * un top 10 sin verificar, queda en `review`: sin marca y con su verificación (spec 4b §2.2).
+ * Saves the Ranked game, its keystrokes and its best in one transaction (spec §5.5). If it would enter
+ * a top 10 unverified, it stays in `review`: no best and with its verification (spec 4b §2.2).
  */
 export function createSaveGame(db: Db): SaveGame {
   return async (record) =>

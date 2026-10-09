@@ -22,8 +22,8 @@ async function newUser(): Promise<string> {
 
 const byId = (id: string) => eq(recordVerifications.id, id);
 
-describe("verificaciones pendientes de un jugador", () => {
-  it("las suyas, sin caducar y con algún intento, la que antes caduca primero", async () => {
+describe("a player's pending verifications", () => {
+  it("their own, unexpired and with attempts left, the one expiring soonest first", async () => {
     const userId = await newUser();
     const physical = await seedPendingVerification(db, userId, { wpm: 72.4 });
     const touch = await seedPendingVerification(db, userId, { inputType: "touch", wpm: 50 });
@@ -54,7 +54,7 @@ describe("verificaciones pendientes de un jugador", () => {
     ]);
   });
 
-  it("una verificada o fallida ya no está pendiente", async () => {
+  it("a verified or failed one is no longer pending", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     await db.update(recordVerifications).set({ status: "verified" }).where(byId(verification.id));

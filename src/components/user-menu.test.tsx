@@ -15,11 +15,11 @@ const PENDING = {
   targetWpm: 100,
   requiredWpm: 85,
   attemptsLeft: 3,
-  // Dentro de 5 h y media: "quedan 6 h".
+  // In five and a half hours: "6 h left".
   expiresAt: new Date(Date.now() + 5.5 * 3_600_000).toISOString(),
 };
 
-/** `fetch` según la URL: las sesiones en orden y una respuesta fija para `/api/verification`. */
+/** `fetch` by URL: the sessions in order and a fixed response for `/api/verification`. */
 function fakeServer(sessions: ({ nick: string } | null)[], verification: () => Promise<Response>) {
   const fetchMock = vi.fn(async (url: string) =>
     url === "/api/verification" ? verification() : sessionResponse(sessions.shift() ?? null),
@@ -37,7 +37,7 @@ afterEach(() => {
 });
 
 describe("UserMenu", () => {
-  it("sin sesión enlaza a entrar y no pregunta por récords pendientes", async () => {
+  it("without a session links to sign in and does not ask for pending records", async () => {
     const fetchMock = fakeServer([null], async () => json({ pending: [PENDING] }));
     renderWithIntl(<UserMenu />);
     const link = await screen.findByTestId("user-menu");
@@ -46,7 +46,7 @@ describe("UserMenu", () => {
     expect(fetchMock).not.toHaveBeenCalledWith("/api/verification", expect.anything());
   });
 
-  it("con sesión enseña el nick y enlaza a la cuenta", async () => {
+  it("with a session shows the nick and links to the account", async () => {
     fakeServer([{ nick: "gian_42" }], async () => json({ pending: [] }));
     renderWithIntl(<UserMenu />);
     const link = await screen.findByTestId("user-menu");
@@ -54,7 +54,7 @@ describe("UserMenu", () => {
     expect(link).toHaveAttribute("href", "/en/settings");
   });
 
-  it("vuelve a pedir la sesión cuando cambia (p. ej. tras cambiar el nick)", async () => {
+  it("requests the session again when it changes (e.g. after changing the nick)", async () => {
     fakeServer([{ nick: "viejo_1" }, { nick: "nuevo_2" }], async () => json({ pending: [] }));
     renderWithIntl(<UserMenu />);
     expect(await screen.findByTestId("user-menu")).toHaveAttribute("aria-label", "Your account: viejo_1");
@@ -64,7 +64,7 @@ describe("UserMenu", () => {
     await waitFor(() => expect(screen.getByTestId("user-menu")).toHaveAttribute("aria-label", "Your account: nuevo_2"));
   });
 
-  it("con un récord pendiente, un aviso con las horas que quedan lleva a /verify", async () => {
+  it("with a pending record, a notice with the hours left goes to /verify", async () => {
     const fetchMock = fakeServer([{ nick: "gian_42" }], async () => json({ pending: [PENDING] }));
     renderWithIntl(<UserMenu />);
     const notice = await screen.findByTestId("verify-notice");
@@ -73,27 +73,27 @@ describe("UserMenu", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/verification", { cache: "no-store" });
   });
 
-  it("lo que no es una pendiente con su plazo no cuenta: el aviso sale por las que sí", async () => {
+  it("anything that is not a pending one with its deadline does not count: the notice shows for those that are", async () => {
     fakeServer([{ nick: "gian_42" }], async () => json({ pending: [null, 3, { id: "v2" }, PENDING] }));
     renderWithIntl(<UserMenu />);
     expect(await screen.findByTestId("verify-notice")).toHaveTextContent("Record pending verification · 6 h left");
   });
 
-  it("al cambiar las verificaciones (un récord en review, una verificada) vuelve a pedirlas, sin pedir otra vez la sesión", async () => {
+  it("when the verifications change (a record in review, one verified) requests them again, without requesting the session again", async () => {
     let pending: (typeof PENDING)[] = [];
     const fetchMock = fakeServer([{ nick: "gian_42" }], async () => json({ pending }));
     renderWithIntl(<UserMenu />);
     await waitFor(() => expect(verificationCalls(fetchMock)).toBe(1));
     expect(screen.queryByTestId("verify-notice")).toBeNull();
 
-    // Un récord queda en review: aparece el aviso.
+    // A record goes into review: the notice appears.
     pending = [PENDING];
     await act(async () => {
       window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
     });
     expect(await screen.findByTestId("verify-notice")).toHaveTextContent("6 h left");
 
-    // Se verifica: el aviso se va.
+    // It is verified: the notice goes away.
     pending = [];
     await act(async () => {
       window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
@@ -103,7 +103,7 @@ describe("UserMenu", () => {
     expect(fetchMock.mock.calls.filter(([url]) => url === "/api/auth/get-session")).toHaveLength(1);
   });
 
-  it("una respuesta antigua que llega tarde no pisa a la nueva", async () => {
+  it("an old response that arrives late does not overwrite the new one", async () => {
     let answerFirst: (response: Response) => void = () => {};
     const responses = [
       new Promise<Response>((resolve) => {
@@ -119,7 +119,7 @@ describe("UserMenu", () => {
     });
     expect(await screen.findByTestId("verify-notice")).toBeInTheDocument();
 
-    // La primera petición (de antes del récord) contesta ahora que no había ninguna.
+    // The first request (from before the record) now answers that there were none.
     await act(async () => {
       answerFirst(json({ pending: [] }));
     });
@@ -127,13 +127,13 @@ describe("UserMenu", () => {
   });
 
   it.each([
-    ["la sesión se ha cerrado en otra pestaña (401)", async () => json({ error: "unauthorized" }, 401)],
-    ["el servidor falla (503)", async () => json({ error: "unavailable" }, 503)],
-    ["la red falla", async (): Promise<Response> => Promise.reject(new TypeError("fetch failed"))],
-    ["la respuesta no es la esperada", async () => json({ pendientes: 3 })],
-    ["las pendientes no traen su plazo", async () => json({ pending: [{ id: "v1" }] })],
-    ["una pendiente es null", async () => json({ pending: [null] })],
-  ])("si %s, ni aviso ni error", async (_, verification) => {
+    ["the session was closed in another tab (401)", async () => json({ error: "unauthorized" }, 401)],
+    ["the server fails (503)", async () => json({ error: "unavailable" }, 503)],
+    ["the network fails", async (): Promise<Response> => Promise.reject(new TypeError("fetch failed"))],
+    ["the response is not the expected one", async () => json({ pendingCount: 3 })],
+    ["the pending ones lack their deadline", async () => json({ pending: [{ id: "v1" }] })],
+    ["a pending one is null", async () => json({ pending: [null] })],
+  ])("if %s, neither notice nor error", async (_, verification) => {
     const fetchMock = fakeServer([{ nick: "gian_42" }], verification);
     renderWithIntl(<UserMenu />);
     expect(await screen.findByTestId("user-menu")).toHaveAttribute("aria-label", "Your account: gian_42");

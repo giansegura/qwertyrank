@@ -19,7 +19,7 @@ const render = () => renderWithIntl(<ShareResult gameId={ID} language="pt" wpm={
 const click = () => act(async () => fireEvent.click(screen.getByTestId("share-button")));
 
 describe("ShareResult", () => {
-  it("con navigator.share abre el menú del sistema con la URL y el texto", async () => {
+  it("with navigator.share opens the system menu with the URL and the text", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     stubNavigator({ share });
     render();
@@ -27,7 +27,7 @@ describe("ShareResult", () => {
     expect(share).toHaveBeenCalledWith({ url: URL_ES, text: "He hecho 82 ppm en portugués en QwertyRank. ¿Puedes superarlo?" });
   });
 
-  it("si el jugador cierra el menú (AbortError), no copia ni cambia nada", async () => {
+  it("if the player closes the menu (AbortError), copies and changes nothing", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     stubNavigator({ share: vi.fn().mockRejectedValue(new DOMException("cancel", "AbortError")), writeText });
     render();
@@ -36,7 +36,7 @@ describe("ShareResult", () => {
     expect(screen.getByTestId("share-button")).toHaveTextContent("Compartir");
   });
 
-  it("sin navigator.share, o si falla por otro motivo, copia y avisa 2 s", async () => {
+  it("without navigator.share, or if it fails for another reason, copies and says so for 2 s", async () => {
     for (const share of [undefined, vi.fn().mockRejectedValue(new DOMException("no", "NotAllowedError"))]) {
       vi.useFakeTimers();
       const writeText = vi.fn().mockResolvedValue(undefined);
@@ -52,14 +52,14 @@ describe("ShareResult", () => {
     }
   });
 
-  it("si tampoco se puede copiar, enseña el enlace", async () => {
+  it("if copying is not possible either, shows the link", async () => {
     stubNavigator({ writeText: vi.fn().mockRejectedValue(new Error("denied")) });
     render();
     await click();
     expect(screen.getByRole("link", { name: URL_ES })).toHaveAttribute("href", URL_ES);
   });
 
-  it("enlaza a la página del resultado", () => {
+  it("links to the result page", () => {
     stubNavigator({});
     render();
     expect(screen.getByRole("link", { name: "Ver resultado" })).toHaveAttribute("href", `/es/r/${ID}`);

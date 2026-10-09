@@ -13,10 +13,10 @@ import { getDb } from "@/server/db/client";
 import { readHomeTop } from "@/server/leaderboard/home-top";
 import { getTop } from "@/server/leaderboard/top";
 
-/** El top 10 se regenera cada 60 s, como el ranking, y al momento cuando cambia (spec 5b §7). */
+/** The top 10 is regenerated every 60 s, like the ranking, and right away when it changes (spec 5b §7). */
 export const revalidate = 60;
 
-/** Filas del top de la portada. */
+/** Rows of the home page's top. */
 const HOME_TOP_SIZE = 10;
 
 interface HomePageProps {
@@ -37,7 +37,7 @@ export default async function HomePage({ params }: HomePageProps) {
   const meta = await getTranslations("Metadata");
   const top = await readHomeTop(() => getTop(getDb(), { language: locale, inputType: "physical" }, HOME_TOP_SIZE));
 
-  // El texto de Ranked no va en la página: lo envía el servidor al pulsar Empezar (spec §3.4).
+  // The Ranked text is not in the page: the server sends it when Start is pressed (spec §3.4).
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>

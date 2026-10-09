@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 const defaultNow = () => performance.now();
 
-/** Segundos restantes. Se actualiza solo, sin hacer que se vuelva a pintar el texto. */
+/** Seconds remaining. Updates itself, without making the text re-render. */
 export function Timer({
   endsAt,
   durationMs,

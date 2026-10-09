@@ -5,37 +5,37 @@ import { accuracyPercent, countCorrectChars, countTypedChars, round2, wordsPerMi
 const typed = (words: string[], text: string) => applyInput(createEngine(words), 0, text);
 
 describe("metrics", () => {
-  it("countCorrectChars suma palabras correctas con su espacio", () => {
+  it("countCorrectChars adds correct words with their space", () => {
     expect(countCorrectChars(typed(["hola", "mundo", "azul"], "hola mundo "))).toBe(11);
   });
 
-  it("countCorrectChars no suma palabras confirmadas con errores", () => {
+  it("countCorrectChars does not add committed words with errors", () => {
     expect(countCorrectChars(typed(["hola", "mundo"], "hola mumdo "))).toBe(5);
   });
 
-  it("countCorrectChars suma el prefijo correcto de la palabra activa", () => {
+  it("countCorrectChars adds the correct prefix of the active word", () => {
     expect(countCorrectChars(typed(["hola", "mundo"], "hola mun"))).toBe(8);
   });
 
-  it("countCorrectChars no suma la palabra activa si tiene un error", () => {
+  it("countCorrectChars does not add the active word if it has an error", () => {
     expect(countCorrectChars(typed(["hola", "mundo"], "hola mon"))).toBe(5);
   });
 
-  it("countTypedChars cuenta todo lo escrito, incluidos errores", () => {
+  it("countTypedChars counts everything typed, errors included", () => {
     expect(countTypedChars(typed(["hola", "mundo"], "hola mon"))).toBe(8);
   });
 
-  it("wordsPerMinute usa palabras de 5 caracteres", () => {
+  it("wordsPerMinute uses 5-character words", () => {
     expect(wordsPerMinute(50, 30_000)).toBe(20);
     expect(wordsPerMinute(10, 0)).toBe(0);
   });
 
-  it("accuracyPercent devuelve 0 sin pulsaciones y redondea a 2 decimales", () => {
+  it("accuracyPercent returns 0 without keystrokes and rounds to 2 decimals", () => {
     expect(accuracyPercent(0, 0)).toBe(0);
     expect(accuracyPercent(2, 3)).toBe(66.67);
   });
 
-  it("round2 redondea a 2 decimales", () => {
+  it("round2 rounds to 2 decimals", () => {
     expect(round2(3.14159)).toBe(3.14);
     expect(round2(66.666)).toBe(66.67);
   });

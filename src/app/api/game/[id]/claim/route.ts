@@ -4,7 +4,7 @@ import { getSessionUser } from "@/server/auth/session";
 import { jsonError, readOwner } from "@/server/game/http";
 import { claimGame } from "@/server/game/instance";
 
-/** Pasa a la cuenta una partida anónima de este navegador jugada hace menos de 10 minutos (spec §3.7). */
+/** Moves to the account an anonymous game from this browser played less than 10 minutes ago (spec §3.7). */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const anonId = readOwner(request);

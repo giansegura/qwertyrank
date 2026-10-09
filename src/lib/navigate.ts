@@ -1,4 +1,4 @@
-/** Navegación completa, no de cliente: tras entrar o salir, la página y la cabecera se cargan con la sesión nueva. */
+/** Full navigation, not client-side: after signing in or out, the page and header load with the new session. */
 export function navigateTo(url: string): void {
   window.location.assign(url);
 }

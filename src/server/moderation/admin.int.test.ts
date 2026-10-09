@@ -28,17 +28,17 @@ async function newUser(role: "user" | "admin") {
 const NOT_FOUND = expect.objectContaining({ digest: expect.stringMatching(/^NEXT_HTTP_ERROR_FALLBACK;404/) });
 
 describe("requireAdmin", () => {
-  it("sin sesión, 404", async () => {
+  it("without a session, 404", async () => {
     getSessionUser.mockResolvedValue(null);
     await expect(requireAdmin()).rejects.toEqual(NOT_FOUND);
   });
 
-  it("con sesión de un jugador que no es admin, 404", async () => {
+  it("with the session of a player who is not an admin, 404", async () => {
     getSessionUser.mockResolvedValue({ id: await newUser("user") });
     await expect(requireAdmin()).rejects.toEqual(NOT_FOUND);
   });
 
-  it("con sesión de un admin, devuelve su id", async () => {
+  it("with an admin's session, returns their id", async () => {
     const id = await newUser("admin");
     getSessionUser.mockResolvedValue({ id });
     await expect(requireAdmin()).resolves.toEqual({ id });

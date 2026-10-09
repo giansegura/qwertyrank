@@ -4,13 +4,13 @@ import type { ClientEnv } from "@/lib/game/types";
 import type { TestLanguage } from "@/lib/words/languages";
 
 /**
- * Partidas en curso en Redis. Todas las horas oficiales salen de `TIME` dentro de los
- * scripts Lua: un único reloj para todas las funciones del servidor (spec §4.2).
+ * Games in progress in Redis. Every official time comes from `TIME` inside the
+ * Lua scripts: a single clock for all server functions (spec §4.2).
  */
 
 export const GAME_TTL_SECONDS = 120;
 export const FINISHED_TTL_SECONDS = 600;
-/** Topes por partida: una honesta de 30 s a 320 PPM ronda 2.400–4.000 eventos y unos 300 KB. */
+/** Per-game caps: an honest 30 s game at 320 WPM is around 2,400–4,000 events and about 300 KB. */
 export const MAX_EVENTS_PER_GAME = 6_000;
 export const MAX_BYTES_PER_GAME = 512 * 1024;
 
@@ -20,7 +20,7 @@ export interface GameTimes {
   graceMs: number;
 }
 
-/** Partida de verificación (spec 4b §3.1): de qué verificación y qué intento es. */
+/** Verification game (spec 4b §3.1): which verification and which attempt it belongs to. */
 export interface StartedVerification {
   id: string;
   attempt: number;
@@ -34,7 +34,7 @@ export interface NewGame {
   words: readonly string[];
   env: ClientEnv;
   times: GameTimes;
-  /** Solo en una partida de verificación. */
+  /** Only in a verification game. */
   verification?: StartedVerification;
 }
 
@@ -50,7 +50,7 @@ export interface StoredGame {
   startsAt: number;
   deadline: number;
   lastSeq: number;
-  /** `null` en una partida Ranked. */
+  /** `null` in a Ranked game. */
   verification: StartedVerification | null;
 }
 
@@ -158,7 +158,7 @@ function parseGame(id: string, flat: string[]): StoredGame {
   };
 }
 
-/** Cada tanda se guarda como `<seq>|<hora de llegada>|<JSON de eventos>`. */
+/** Each batch is stored as `<seq>|<arrival time>|<events JSON>`. */
 function parseBatch(entry: string): StoredBatch {
   const first = entry.indexOf("|");
   const second = entry.indexOf("|", first + 1);
@@ -172,7 +172,7 @@ function parseBatch(entry: string): StoredBatch {
 export function createGameStore(redis: Redis, prefix: string): GameStore {
   const gameKey = (id: string) => `${prefix}game:${id}`;
   const eventsKey = (id: string) => `${prefix}game:${id}:events`;
-  // Una sola partida activa por jugador (spec §4.2): por usuario si tiene sesión; si no, por navegador.
+  // A single active game per player (spec §4.2): per user if signed in; otherwise, per browser.
   const activeKey = (game: Pick<NewGame, "owner" | "userId">) =>
     `${prefix}active:${game.userId ? `user:${game.userId}` : `anon:${game.owner}`}`;
 

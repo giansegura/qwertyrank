@@ -5,8 +5,8 @@ import { bests, users } from "../db/schema";
 import type { BoardScore } from "./store";
 
 /**
- * Marcas de los jugadores activos (spec 4a §6.1), listas para `store.add`; solo las de `userId` si se
- * pasa. Las usan "restaurar" (un jugador) y `redis:rebuild` (todos).
+ * Bests of the active players (spec 4a §6.1), ready for `store.add`; only those of `userId` if it is
+ * given. Used by "restore" (one player) and `redis:rebuild` (everyone).
  */
 export async function activeBests(db: Db, userId?: string): Promise<BoardScore[]> {
   const rows = await db

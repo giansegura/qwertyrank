@@ -9,8 +9,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("api de partidas", () => {
-  it("startGame hace POST con JSON y devuelve la partida", async () => {
+describe("games api", () => {
+  it("startGame POSTs JSON and returns the game", async () => {
     const fetchMock = vi.fn(async () => reply(200, { gameId: "g1", words: ["a"], countdownMs: 3000, durationMs: 30000 }));
     vi.stubGlobal("fetch", fetchMock);
     const game = await startGame({ language: "es", env: { coarse: false, touchPoints: 0 } });
@@ -18,14 +18,14 @@ describe("api de partidas", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/game/start", expect.objectContaining({ method: "POST" }));
   });
 
-  it("los errores HTTP llegan como GameApiError con el código del servidor", async () => {
+  it("HTTP errors arrive as GameApiError with the server's code", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => reply(409, { error: "out_of_order" })));
     const error = await sendKeys("g1", { seq: 3, events: [] }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(GameApiError);
     expect(error).toMatchObject({ status: 409, code: "out_of_order" });
   });
 
-  it("finishGame reintenta mientras el servidor está ocupado o no responde", async () => {
+  it("finishGame retries while the server is busy or not responding", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(reply(409, { error: "busy" }))
@@ -37,7 +37,7 @@ describe("api de partidas", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it("corta una petición que no responde a los 5 s, y ese error se puede reintentar", async () => {
+  it("aborts a request that does not respond within 5 s, and that error is retryable", async () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
@@ -56,14 +56,14 @@ describe("api de partidas", () => {
     expect(isRetryable(error)).toBe(true);
   });
 
-  it("finishGame no reintenta una partida cerrada o inexistente", async () => {
+  it("finishGame does not retry a closed or nonexistent game", async () => {
     const fetchMock = vi.fn(async () => reply(409, { error: "closed" }));
     vi.stubGlobal("fetch", fetchMock);
     await expect(finishGame("g1", { lastSeq: 0 }, { delayMs: 0 })).rejects.toMatchObject({ code: "closed" });
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  it("claimGame hace POST a /api/game/{id}/claim y devuelve el ranking", async () => {
+  it("claimGame POSTs to /api/game/{id}/claim and returns the ranking", async () => {
     const claimed = { ranking: { kind: "low_accuracy" }, language: "es", inputType: "touch" };
     const fetchMock = vi.fn(async () => reply(200, claimed));
     vi.stubGlobal("fetch", fetchMock);

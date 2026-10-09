@@ -3,7 +3,7 @@ import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
 import { Link } from "@/i18n/navigation";
 import type { TopEntry } from "@/lib/leaderboard/types";
 
-/** Top 10 del teclado físico en la portada (spec 5b §7), en el HTML del servidor. */
+/** Physical keyboard top 10 on the home page (spec 5b §7), in the server HTML. */
 export function HomeTop({ entries }: { entries: TopEntry[] }) {
   const t = useTranslations("Home");
   return (

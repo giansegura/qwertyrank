@@ -20,31 +20,31 @@ import {
 } from "../../format";
 import { AdminNav } from "../../nav";
 
-/** El título se calcula tras `requireAdmin()`: así la 404 para quien no es admin no lo delata. */
+/** The title is computed after `requireAdmin()`: that way the 404 for non-admins does not give it away. */
 export async function generateMetadata(): Promise<Metadata> {
   await requireAdmin();
-  return { title: "Jugador · Moderación" };
+  return { title: "Player · Moderation" };
 }
 
 const DONE: Record<string, string> = {
-  shadowbanned: "Jugador en shadow-ban.",
-  banned: "Jugador baneado.",
-  active: "Jugador restaurado.",
-  nick: "Nick cambiado.",
-  dismissed: "Denuncias descartadas.",
+  shadowbanned: "Player shadow banned.",
+  banned: "Player banned.",
+  active: "Player restored.",
+  nick: "Nick changed.",
+  dismissed: "Reports dismissed.",
 };
 const ERROR: Record<string, string> = {
-  self: "No puedes actuar sobre tu propia cuenta.",
-  admin: "No se puede actuar sobre otro admin.",
-  unchanged: "El jugador ya tenía ese estado.",
-  not_found: "El jugador no existe.",
-  invalid: "Falta el motivo o no es válido (de 1 a 500 caracteres).",
-  redis: "Estado guardado, pero Redis no se ha actualizado: ejecuta pnpm redis:rebuild.",
+  self: "You cannot act on your own account.",
+  admin: "You cannot act on another admin.",
+  unchanged: "The player already had that status.",
+  not_found: "The player does not exist.",
+  invalid: "The reason is missing or invalid (1 to 500 characters).",
+  redis: "Status saved, but Redis has not been updated: run pnpm redis:rebuild.",
 };
 const STATUS_BUTTONS = [
-  { status: "shadowbanned", label: "Shadow-ban" },
-  { status: "banned", label: "Banear" },
-  { status: "active", label: "Restaurar" },
+  { status: "shadowbanned", label: "Shadow ban" },
+  { status: "banned", label: "Ban" },
+  { status: "active", label: "Restore" },
 ] as const;
 
 const FIELD = "rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900";
@@ -62,7 +62,7 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
   const player = await playerDetail(getDb(), id);
   if (!player) notFound();
   const { done, error } = await searchParams;
-  // `Object.hasOwn`: `?error=constructor` no debe devolver algo del prototipo.
+  // `Object.hasOwn`: `?error=constructor` must not return something from the prototype.
   const notice =
     error && Object.hasOwn(ERROR, error) ? ERROR[error] : done && Object.hasOwn(DONE, done) ? DONE[done] : undefined;
 
@@ -74,9 +74,9 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
           {player.nick}
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {player.email} · {STATUS_LABEL[player.status]} · {player.role === "admin" ? "Admin" : "Jugador"} · alta{" "}
-          {formatDate(player.createdAt)} · país {player.country ?? "—"} · entra con{" "}
-          {player.providers.length > 0 ? player.providers.join(", ") : "enlace por email"}
+          {player.email} · {STATUS_LABEL[player.status]} · {player.role === "admin" ? "Admin" : "Player"} · joined{" "}
+          {formatDate(player.createdAt)} · country {player.country ?? "—"} · signs in with{" "}
+          {player.providers.length > 0 ? player.providers.join(", ") : "email link"}
         </p>
       </div>
 
@@ -91,14 +91,14 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
       )}
 
       {player.role === "admin" ? (
-        <p className="text-zinc-600 dark:text-zinc-400">Es admin: no se puede sancionar.</p>
+        <p className="text-zinc-600 dark:text-zinc-400">Is an admin: cannot be sanctioned.</p>
       ) : (
         <section className="flex flex-col gap-6">
-          <h2 className="text-lg font-semibold">Acciones</h2>
+          <h2 className="text-lg font-semibold">Actions</h2>
           <form action={setStatusAction} className="flex max-w-xl flex-col gap-2">
             <input type="hidden" name="playerId" value={player.id} />
             <label className="flex flex-col gap-1 text-sm">
-              Motivo (queda en el historial)
+              Reason (kept in the history)
               <textarea name="reason" required maxLength={500} rows={2} data-testid="admin-reason" className={FIELD} />
             </label>
             <div className="flex flex-wrap gap-2">
@@ -119,31 +119,31 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
           <form action={resetNickAction} className="flex max-w-xl flex-col gap-2">
             <input type="hidden" name="playerId" value={player.id} />
             <label className="flex flex-col gap-1 text-sm">
-              Motivo del cambio de nick
+              Reason for the nick change
               <textarea name="reason" required maxLength={500} rows={2} data-testid="admin-nick-reason" className={FIELD} />
             </label>
             <button type="submit" data-testid="admin-reset-nick" className={`${BUTTON} self-start`}>
-              Cambiar el nick por uno automático
+              Replace the nick with an automatic one
             </button>
           </form>
           <form action={dismissReportsAction}>
             <input type="hidden" name="playerId" value={player.id} />
             <button type="submit" data-testid="admin-dismiss" className={BUTTON}>
-              Descartar las denuncias abiertas
+              Dismiss the open reports
             </button>
           </form>
         </section>
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Récords</h2>
+        <h2 className="text-lg font-semibold">Records</h2>
         {player.records.length === 0 ? (
-          <p className="text-zinc-600 dark:text-zinc-400">Sin récords.</p>
+          <p className="text-zinc-600 dark:text-zinc-400">No records.</p>
         ) : (
           <ul className="text-sm">
             {player.records.map((record) => (
               <li key={`${record.language}-${record.inputType}`}>
-                {record.language} · {record.inputType}: {record.wpm.toFixed(1)} ppm, {record.accuracy.toFixed(1)} %
+                {record.language} · {record.inputType}: {record.wpm.toFixed(1)} wpm, {record.accuracy.toFixed(1)} %
               </li>
             ))}
           </ul>
@@ -151,14 +151,14 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Niveles verificados</h2>
+        <h2 className="text-lg font-semibold">Verified levels</h2>
         {player.verifiedLevels.length === 0 ? (
-          <p className="text-zinc-600 dark:text-zinc-400">Sin niveles verificados.</p>
+          <p className="text-zinc-600 dark:text-zinc-400">No verified levels.</p>
         ) : (
           <ul data-testid="admin-verified-levels" className="text-sm">
             {player.verifiedLevels.map((level) => (
               <li key={`${level.language}-${level.inputType}`}>
-                {level.language} · {level.inputType}: {level.wpm.toFixed(1)} ppm, {formatDate(level.verifiedAt)}
+                {level.language} · {level.inputType}: {level.wpm.toFixed(1)} wpm, {formatDate(level.verifiedAt)}
               </li>
             ))}
           </ul>
@@ -166,20 +166,20 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Últimas partidas</h2>
-        {/* Ocho columnas: en pantallas estrechas, la tabla se desplaza en horizontal. */}
+        <h2 className="text-lg font-semibold">Latest games</h2>
+        {/* Eight columns: on narrow screens, the table scrolls horizontally. */}
         <div className="overflow-x-auto">
           <table className={TABLE}>
             <thead>
               <tr className={HEAD_ROW}>
-                <th scope="col" className={CELL}>Fecha</th>
-                <th scope="col" className={CELL}>Idioma</th>
-                <th scope="col" className={CELL}>Teclado</th>
-                <th scope="col" className={CELL}>PPM</th>
-                <th scope="col" className={CELL}>Precisión</th>
-                <th scope="col" className={CELL}>Veredicto</th>
-                <th scope="col" className={CELL}>Modo</th>
-                <th scope="col" className={CELL}>Reproducción</th>
+                <th scope="col" className={CELL}>Date</th>
+                <th scope="col" className={CELL}>Language</th>
+                <th scope="col" className={CELL}>Keyboard</th>
+                <th scope="col" className={CELL}>WPM</th>
+                <th scope="col" className={CELL}>Accuracy</th>
+                <th scope="col" className={CELL}>Verdict</th>
+                <th scope="col" className={CELL}>Mode</th>
+                <th scope="col" className={CELL}>Replay</th>
               </tr>
             </thead>
             <tbody>
@@ -197,7 +197,7 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
                   <td className={CELL}>{MODE_LABEL[game.mode]}</td>
                   <td className={CELL}>
                     <Link href={`/admin/games/${game.id}`} data-testid="admin-game-link" className="underline">
-                      Ver
+                      View
                     </Link>
                   </td>
                 </tr>
@@ -208,14 +208,14 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Denuncias recibidas</h2>
+        <h2 className="text-lg font-semibold">Reports received</h2>
         <table className={TABLE}>
           <thead>
             <tr className={HEAD_ROW}>
-              <th scope="col" className={CELL}>Fecha</th>
-              <th scope="col" className={CELL}>Motivo</th>
-              <th scope="col" className={CELL}>Estado</th>
-              <th scope="col" className={CELL}>Denunciante</th>
+              <th scope="col" className={CELL}>Date</th>
+              <th scope="col" className={CELL}>Reason</th>
+              <th scope="col" className={CELL}>Status</th>
+              <th scope="col" className={CELL}>Reporter</th>
             </tr>
           </thead>
           <tbody>
@@ -224,7 +224,7 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
                 <td className={CELL}>{formatDate(report.createdAt)}</td>
                 <td className={CELL}>{REASON_LABEL[report.reason]}</td>
                 <td className={CELL}>{REPORT_STATUS_LABEL[report.status]}</td>
-                <td className={CELL}>{report.reporterNick ?? "(cuenta borrada)"}</td>
+                <td className={CELL}>{report.reporterNick ?? "(deleted account)"}</td>
               </tr>
             ))}
           </tbody>
@@ -232,13 +232,13 @@ export default async function PlayerPage({ params, searchParams }: PlayerPagePro
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Historial de moderación</h2>
+        <h2 className="text-lg font-semibold">Moderation history</h2>
         <table className={TABLE}>
           <thead>
             <tr className={HEAD_ROW}>
-              <th scope="col" className={CELL}>Fecha</th>
-              <th scope="col" className={CELL}>Acción</th>
-              <th scope="col" className={CELL}>Motivo</th>
+              <th scope="col" className={CELL}>Date</th>
+              <th scope="col" className={CELL}>Action</th>
+              <th scope="col" className={CELL}>Reason</th>
               <th scope="col" className={CELL}>Admin</th>
             </tr>
           </thead>

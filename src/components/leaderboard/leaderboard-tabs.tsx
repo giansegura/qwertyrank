@@ -6,7 +6,7 @@ import { INPUT_TYPES, leaderboardHref } from "@/lib/leaderboard/slugs";
 const TAB =
   "rounded-md px-3 py-1.5 text-sm font-medium text-zinc-600 aria-[current]:bg-zinc-200 aria-[current]:text-zinc-950 dark:text-zinc-400 dark:aria-[current]:bg-zinc-800 dark:aria-[current]:text-zinc-50";
 
-/** Filtro del ranking (spec §5.1): el teclado. El idioma es el de la página (selector de idioma). */
+/** Ranking filter (spec §5.1): the keyboard. The language is the page's (language switcher). */
 export function LeaderboardTabs({ input }: { input: InputType }) {
   const t = useTranslations("Leaderboard");
   return (

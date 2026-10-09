@@ -21,14 +21,14 @@ test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": randomClientIp() });
 });
 
-test("con cuenta: la partida da su posición, aparece en el ranking y en su perfil", async ({ page }) => {
-  // Ya verificado: su partida se publica aunque entre en el top 10 (spec 4b §2.1).
+test("with an account: the game gets its position, shows up on the leaderboard and on the profile", async ({ page }) => {
+  // Already verified: their game is published even if it enters the top 10 (spec 4b §2.1).
   await seedVerifiedLevels(await signUp(page, "en"));
   const nick = `e2e_${crypto.randomUUID().slice(0, 8)}`;
   await page.getByTestId("profile-nick").fill(nick);
   await page.getByTestId("profile-save").click();
   await expect(page).toHaveURL((url) => url.pathname === "/en");
-  // El ranking ya está en caché (ISR) antes de jugar: así se comprueba que entrar en el top 100 lo revalida.
+  // The leaderboard is already cached (ISR) before playing: this checks that entering the top 100 revalidates it.
   for (const input of ["physical", "touch"]) await page.goto(`/en/leaderboard/${input}`);
 
   await playValidGame(page);
@@ -41,7 +41,7 @@ test("con cuenta: la partida da su posición, aparece en el ranking y en su perf
   const position = page.getByTestId("my-position");
   await expect(position).toContainText(/Your position: #\d+/);
   const rank = Number((await position.textContent())!.match(/#(\d+)/)![1]);
-  // Al entrar en el top 100 la página se revalida al momento: el jugador ya sale en la tabla.
+  // On entering the top 100 the page is revalidated right away: the player is already in the table.
   if (rank <= 100) await expect(page.locator(`[data-testid="leaderboard-row"][data-nick="${nick}"]`)).toBeVisible();
 
   await page.goto(`/en/u/${nick}`);
@@ -50,9 +50,9 @@ test("con cuenta: la partida da su posición, aparece en el ranking y en su perf
   await expect(page.getByTestId("profile-history").locator("li")).toHaveCount(1);
 });
 
-test("anónimo: «Guárdalo» lleva a crear la cuenta y la partida pasa a ella", async ({ page }) => {
-  // En inglés: Playwright escribe las letras con tilde insertando texto sin pulsar teclas, y el
-  // anti-trampas (con razón) rechaza esa partida como texto inyectado.
+test("anonymous: \"Save it\" leads to creating the account and the game moves to it", async ({ page }) => {
+  // In English: Playwright types accented letters by inserting text without pressing keys, and the
+  // anti-cheat (rightly) rejects that game as injected text.
   await playValidGame(page, "en");
   await expect(page.getByTestId("rank-summary")).toContainText(/You'd be #\d+ on the leaderboard/);
   await page.getByTestId("save-game").click();
@@ -69,7 +69,7 @@ test("anónimo: «Guárdalo» lleva a crear la cuenta y la partida pasa a ella",
   expect(await verdictsOf(userId!)).toEqual(["valid"]);
 });
 
-test("ranking: abre el teclado del dispositivo, solo filtra por teclado y la URL se traduce al cambiar de idioma", async ({
+test("leaderboard: opens the device's keyboard, only filters by keyboard and the URL is translated when switching language", async ({
   page,
   isMobile,
 }) => {
@@ -85,7 +85,7 @@ test("ranking: abre el teclado del dispositivo, solo filtra por teclado y la URL
   await expect(page).toHaveURL(/\/en\/leaderboard\/physical$/);
 });
 
-test("las URLs antiguas con periodo ya no existen", async ({ request }) => {
+test("old URLs with a period no longer exist", async ({ request }) => {
   for (const path of ["/es/ranking/fisico/hoy", "/en/leaderboard/physical/today", "/pt/ranking/tatil/sempre"]) {
     expect((await request.get(path)).status(), path).toBe(404);
   }

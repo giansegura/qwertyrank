@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 
 describe("PasskeyList", () => {
-  it("lista las passkeys con su fecha", () => {
+  it("lists the passkeys with their date", () => {
     vi.mocked(authClient.useListPasskeys).mockReturnValue({
       data: [{ id: "p1", name: null, createdAt: "2026-10-05T10:00:00.000Z" }],
       isPending: false,
@@ -31,14 +31,14 @@ describe("PasskeyList", () => {
     expect(screen.getByTestId("passkey-item")).toHaveTextContent("2026");
   });
 
-  it("si la sesión no es reciente, pide volver a entrar", async () => {
+  it("if the session is not recent, asks to sign in again", async () => {
     addPasskey.mockResolvedValue({ data: null, error: { code: "SESSION_NOT_FRESH", status: 403 } } as never);
     renderWithIntl(<PasskeyList locale="en" />);
     fireEvent.click(screen.getByTestId("passkey-add"));
     expect(await screen.findByTestId("reauth")).toHaveTextContent("sign in again");
   });
 
-  it("cancelar el diálogo del navegador no es un error", async () => {
+  it("cancelling the browser dialog is not an error", async () => {
     addPasskey.mockResolvedValue({ data: null, error: { code: "ERROR_CEREMONY_ABORTED", status: 400 } } as never);
     renderWithIntl(<PasskeyList locale="en" />);
     fireEvent.click(screen.getByTestId("passkey-add"));

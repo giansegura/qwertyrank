@@ -2,34 +2,34 @@ import "server-only";
 import { z } from "zod";
 
 /**
- * Umbrales del anti-trampas (spec §4.3 y §4.5). El código es público: los de producción viven solo en la
- * variable `ANTICHEAT_CONFIG` (un JSON con todos los campos) y tienen que ser distintos de los de desarrollo,
- * que están aquí y en el historial del repositorio. Las reglas los reciben como parámetro.
+ * Anti-cheat thresholds (spec §4.3 and §4.5). The code is public: the production ones live only in the
+ * `ANTICHEAT_CONFIG` variable (a JSON with every field) and must differ from the development ones, which are
+ * here and in the repository history. The rules receive them as a parameter.
  */
 export const anticheatConfigSchema = z.strictObject({
-  /** Margen entre el `t` de un evento y la llegada de su tanda (§4.2). */
+  /** Allowed gap between an event's `t` and the arrival of its batch (§4.2). */
   timingToleranceMs: z.number().int().nonnegative(),
-  /** Pulsaciones de cada ventana en la que se mide la ráfaga. */
+  /** Keystrokes in each window over which a burst is measured. */
   burstWindow: z.number().int().min(2),
-  /** Mediana de intervalos entre `keydown` por debajo de la cual una ráfaga es inhumana. */
+  /** Median interval between `keydown`s below which a burst is inhuman. */
   burstMedianMs: z.number().positive(),
-  /** Cuánto antes de un `input` puede estar el `keydown` que lo produce. */
+  /** How long before an `input` the `keydown` that produces it may be. */
   keydownLookbackMs: z.number().int().positive(),
-  /** Inserciones de varias letras toleradas en táctil (autocorrector). */
+  /** Multi-letter insertions tolerated on touch (autocorrect). */
   touchMultiInsertLimit: z.number().int().nonnegative(),
-  /** Techo de PPM de cada teclado. */
+  /** WPM ceiling for each keyboard. */
   wpmCeiling: z.strictObject({ physical: z.number().positive(), touch: z.number().positive() }),
-  /** Pulsaciones mínimas para decidir el teclado por la firma de los eventos (§4.5). */
+  /** Minimum keystrokes to decide the keyboard from the event signature (§4.5). */
   minKeysForSignature: z.number().int().positive(),
-  /** Proporción de teclas `Unidentified` por encima de la cual el teclado es táctil. */
+  /** Share of `Unidentified` keys above which the keyboard is touch. */
   unidentifiedRatio: z.number().min(0).max(1),
-  /** Mediana de duración de pulsación a partir de la cual el teclado es físico. */
+  /** Median key hold time from which the keyboard is physical. */
   physicalMinHoldMs: z.number().nonnegative(),
 });
 
 export type AnticheatConfig = z.infer<typeof anticheatConfigSchema>;
 
-/** Umbrales de desarrollo y de los tests: públicos. Producción no los acepta (`src/server/env.ts`). */
+/** Development and test thresholds: public. Production rejects them (`src/server/env.ts`). */
 export const DEV_ANTICHEAT_CONFIG: AnticheatConfig = {
   timingToleranceMs: 250,
   burstWindow: 20,
@@ -43,8 +43,8 @@ export const DEV_ANTICHEAT_CONFIG: AnticheatConfig = {
 };
 
 /**
- * `ANTICHEAT_CONFIG` tal como llega del entorno. Un JSON roto se rechaza sin el mensaje de `JSON.parse`, que
- * citaría parte del valor: los umbrales no deben acabar en los logs.
+ * `ANTICHEAT_CONFIG` as it comes from the environment. Broken JSON is rejected without the `JSON.parse` message,
+ * which would quote part of the value: the thresholds must not end up in the logs.
  */
 export const anticheatConfigJson = z
   .string()
@@ -52,13 +52,13 @@ export const anticheatConfigJson = z
     try {
       return JSON.parse(raw) as unknown;
     } catch {
-      ctx.addIssue({ code: "custom", message: "ANTICHEAT_CONFIG no es un JSON válido" });
+      ctx.addIssue({ code: "custom", message: "ANTICHEAT_CONFIG is not valid JSON" });
       return z.NEVER;
     }
   })
   .pipe(anticheatConfigSchema);
 
-/** Si dos configuraciones tienen los mismos umbrales. */
+/** Whether two configurations have the same thresholds. */
 export function sameAnticheatConfig(a: AnticheatConfig, b: AnticheatConfig): boolean {
   return JSON.stringify(anticheatConfigSchema.parse(a)) === JSON.stringify(anticheatConfigSchema.parse(b));
 }

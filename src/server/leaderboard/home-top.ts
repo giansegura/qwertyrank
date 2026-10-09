@@ -3,9 +3,10 @@ import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import type { TopEntry } from "@/lib/leaderboard/types";
 
 /**
- * El top 10 de la portada (spec 5b §7). Si la base de datos falla al regenerarla, el error se relanza: Next
- * sigue sirviendo la última versión buena, con su top, en vez de cambiarla por una sin él (spec 5d §8). Solo
- * en el build, donde no hay versión anterior, la portada sale sin top: el test nunca depende del ranking.
+ * The home page top 10 (spec 5b §7). If the database fails while regenerating it, the error is rethrown: Next
+ * keeps serving the last good version, with its top, instead of replacing it with one without it (spec 5d §8).
+ * Only during the build, where there is no previous version, does the home page come out without a top: the
+ * test never depends on the ranking.
  */
 export async function readHomeTop(
   read: () => Promise<TopEntry[]>,
@@ -15,7 +16,7 @@ export async function readHomeTop(
     return await read();
   } catch (error) {
     if (phase !== PHASE_PRODUCTION_BUILD) throw error;
-    console.error("No se pudo leer el top de la portada", error);
+    console.error("Could not read the home page top", error);
     return null;
   }
 }

@@ -4,16 +4,16 @@ import { keysBodySchema, startBodySchema } from "./schemas";
 const event = { t: 0, type: "input", deleted: 0, inserted: "a", trusted: true };
 
 describe("keysBodySchema", () => {
-  it("acepta una tanda normal", () => {
+  it("accepts a normal batch", () => {
     expect(keysBodySchema.safeParse({ seq: 1, events: [event] }).success).toBe(true);
   });
 
-  it("limita el número de tandas de una partida", () => {
+  it("limits the number of batches in a game", () => {
     expect(keysBodySchema.safeParse({ seq: 30, events: [] }).success).toBe(true);
     expect(keysBodySchema.safeParse({ seq: 31, events: [] }).success).toBe(false);
   });
 
-  it("limita los eventos de cada tanda", () => {
+  it("limits the events in each batch", () => {
     expect(keysBodySchema.safeParse({ seq: 1, events: Array(1_000).fill(event) }).success).toBe(true);
     expect(keysBodySchema.safeParse({ seq: 1, events: Array(1_001).fill(event) }).success).toBe(false);
   });
@@ -23,12 +23,12 @@ describe("startBodySchema", () => {
   const ranked = { language: "es", env: { coarse: false, touchPoints: 0 } };
   const id = "3f2b8c1e-5d4a-4e6b-9c7d-1a2b3c4d5e6f";
 
-  it("sin modo es una partida Ranked, como hasta ahora", () => {
+  it("without a mode it is a Ranked game, as before", () => {
     expect(startBodySchema.parse(ranked)).toEqual(ranked);
     expect(startBodySchema.parse({ ...ranked, mode: "ranked" }).mode).toBe("ranked");
   });
 
-  it("una verificación dice cuál, con un UUID", () => {
+  it("a verification says which one, with a UUID", () => {
     expect(startBodySchema.parse({ ...ranked, mode: "verification", verificationId: id })).toMatchObject({
       mode: "verification",
       verificationId: id,

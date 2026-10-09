@@ -13,10 +13,10 @@ import { breadcrumbStructuredData } from "@/lib/seo/structured-data";
 import { getDb } from "@/server/db/client";
 import { getTop } from "@/server/leaderboard/top";
 
-/** El top se regenera cada 60 s (spec §5.6) y al momento cuando alguien entra en él (`revalidatePath`). */
+/** The top is regenerated every 60 s (spec §5.6) and right away when someone enters it (`revalidatePath`). */
 export const revalidate = 60;
 
-/** Ninguna página en el build (necesitaría la base de datos): se generan en la primera visita. */
+/** No pages at build time (it would need the database): they are generated on the first visit. */
 export function generateStaticParams() {
   return [];
 }
@@ -40,12 +40,12 @@ export async function generateMetadata({ params }: LeaderboardPageProps): Promis
 
 export default async function LeaderboardPage({ params }: LeaderboardPageProps) {
   const { locale, input: inputParam } = await params;
-  // El parámetro es siempre el interno (/es/ranking/fisico llega como physical).
+  // The parameter is always the internal one (/es/ranking/fisico arrives as physical).
   const input = parseInput(inputParam);
   if (!hasLocale(routing.locales, locale) || !input) notFound();
 
   const t = await getTranslations("Leaderboard");
-  // El ranking es el de los tests en el idioma de la página (spec §3.2).
+  // The ranking is the one for tests in the page's language (spec §3.2).
   const entries = await getTop(getDb(), { language: locale, inputType: input });
 
   return (

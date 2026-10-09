@@ -17,7 +17,7 @@ afterAll(async () => {
   await db.$client.end();
 });
 
-/** Las pulsaciones de "hola": down/input/up por letra, 120 ms entre letras. */
+/** The keystrokes of "hola": down/input/up per letter, 120 ms between letters. */
 const EVENTS: TypingEvent[] = [..."hola"].flatMap((char, i): TypingEvent[] => [
   { t: i * 120, type: "down", key: char, code: `Key${char.toUpperCase()}`, trusted: true },
   { t: i * 120 + 1, type: "input", deleted: 0, inserted: char, trusted: true },
@@ -25,8 +25,8 @@ const EVENTS: TypingEvent[] = [..."hola"].flatMap((char, i): TypingEvent[] => [
 ]);
 
 /**
- * Unas PPM enteras que nadie más usa: así se encuentra el extracto de esta partida, que no guarda su id.
- * Enteras y grandes para que el redondeo del extracto no las cambie ni choquen con las de otras ejecuciones.
+ * An integer WPM nobody else uses: that is how this game's sample is found, since it does not store its id.
+ * Integer and large so the sample's rounding does not change it and it does not clash with other runs.
  */
 const uniqueWpm = () => 1_000_000 + Math.floor(Math.random() * 1e9);
 
@@ -38,7 +38,7 @@ async function newUser(status: "active" | "shadowbanned" | "banned" = "active"):
   return row.id;
 }
 
-/** Una partida terminada hace `days` días con su registro de pulsaciones de ese mismo momento. */
+/** A game finished `days` days ago with its keystroke log from that same moment. */
 async function oldGame({
   days,
   userId = null as string | null,
@@ -69,8 +69,8 @@ const logOf = async (gameId: string) => (await db.select().from(keystrokeLogs).w
 const samplesWith = (wpm: number) => db.select().from(rhythmSamples).where(eq(rhythmSamples.wpm, wpm));
 const gameRow = async (gameId: string) => (await db.select().from(games).where(eq(games.id, gameId)))[0];
 
-describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
-  it("a los 30 días guarda el extracto de ritmo, sin identificadores, y borra las pulsaciones", async () => {
+describe("daily task: keystrokes (spec 5a §3.2.1)", () => {
+  it("after 30 days saves the rhythm sample, without identifiers, and deletes the keystrokes", async () => {
     const userId = await newUser();
     const old = await oldGame({ days: 31, userId });
     const recent = await oldGame({ days: 29, userId });
@@ -97,7 +97,7 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     expect(await samplesWith(recent.wpm)).toEqual([]);
   });
 
-  it("el extracto guarda las PPM y la precisión redondeadas", async () => {
+  it("the sample stores rounded WPM and accuracy", async () => {
     const wpm = uniqueWpm();
     await oldGame({ days: 31, wpm: wpm + 0.4 });
 
@@ -108,7 +108,7 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     expect(sample).toMatchObject({ wpm, accuracy: 98 });
   });
 
-  it("las pulsaciones de una mejor marca vigente se quedan, aunque tengan más de 30 días", async () => {
+  it("the keystrokes of a current best stay, even when older than 30 days", async () => {
     const userId = await newUser();
     const best = await oldGame({ days: 40, userId });
     await db.insert(bests).values({
@@ -128,7 +128,7 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     expect(await samplesWith(best.wpm)).toEqual([]);
   });
 
-  it("la etiqueta es el estado del jugador, y anonymous si la partida no tiene", async () => {
+  it("the label is the player's status, and anonymous if the game has none", async () => {
     const shadow = await oldGame({ days: 31, userId: await newUser("shadowbanned") });
     const banned = await oldGame({ days: 31, userId: await newUser("banned") });
     const anonymous = await oldGame({ days: 31 });
@@ -140,8 +140,8 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     expect((await samplesWith(anonymous.wpm))[0].playerStatus).toBe("anonymous");
   });
 
-  it("un registro ilegible o sin eventos se borra sin extracto", async () => {
-    const broken = await oldGame({ days: 31, log: Buffer.from("no es gzip") });
+  it("an unreadable log or one without events is deleted without a sample", async () => {
+    const broken = await oldGame({ days: 31, log: Buffer.from("not gzip") });
     const empty = await oldGame({ days: 31, log: gzipSync(JSON.stringify({ words: ["hola"], batches: [] })) });
 
     await runDailyRetention(db);
@@ -152,7 +152,7 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     }
   });
 
-  it("un evento con un t fuera de rango no bloquea la tarea: se extrae con los tiempos acotados", async () => {
+  it("an event with an out-of-range t does not block the task: it is extracted with capped times", async () => {
     const huge: TypingEvent[] = [
       { t: 0, type: "input", deleted: 0, inserted: "a", trusted: true },
       { t: 3e9, type: "input", deleted: 0, inserted: "b", trusted: true },
@@ -168,7 +168,7 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     expect((await samplesWith(crafted.wpm))[0].intervalsMs).toEqual([MAX_RHYTHM_MS]);
   });
 
-  it("por lotes, y dos ejecuciones a la vez no duplican ningún extracto", async () => {
+  it("in batches, and two concurrent runs do not duplicate any sample", async () => {
     const wpm = uniqueWpm();
     const played = [];
     for (let i = 0; i < 5; i++) played.push(await oldGame({ days: 31 + i, wpm }));
@@ -181,7 +181,7 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
     for (const game of played) expect(await logOf(game.id)).toBeUndefined();
   });
 
-  it("sin tiempo, no hace nada y dice que queda trabajo", async () => {
+  it("with no time, does nothing and says work remains", async () => {
     const old = await oldGame({ days: 31 });
     expect(await runDailyRetention(db, { budgetMs: 0 })).toEqual({
       extracted: 0,
@@ -194,8 +194,8 @@ describe("tarea diaria: pulsaciones (spec 5a §3.2.1)", () => {
   });
 });
 
-describe("tarea diaria: identificadores de las partidas (spec 2 de endurecer la beta)", () => {
-  it("las partidas de más de 30 días, con o sin cuenta, pierden anon_id e ip_hash; las recientes no cambian", async () => {
+describe("daily task: game identifiers (beta-hardening spec §2)", () => {
+  it("games older than 30 days, with or without an account, lose anon_id and ip_hash; recent ones do not change", async () => {
     const userId = await newUser();
     const anonymousOld = await oldGame({ days: 31, log: null });
     const userOld = await oldGame({ days: 31, userId, log: null });

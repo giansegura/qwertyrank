@@ -15,14 +15,14 @@ beforeEach(() => {
 });
 
 describe("AccountActions", () => {
-  it("cerrar sesión vuelve a la portada", async () => {
+  it("signing out goes back to the home page", async () => {
     vi.mocked(authClient.signOut).mockResolvedValue({ data: { success: true }, error: null } as never);
     renderWithIntl(<AccountActions locale="en" />);
     fireEvent.click(screen.getByTestId("sign-out"));
     await vi.waitFor(() => expect(navigateTo).toHaveBeenCalledWith("/en"));
   });
 
-  it("borrar pide confirmación y, al confirmar, borra y vuelve a la portada", async () => {
+  it("deleting asks for confirmation and, once confirmed, deletes and goes back to the home page", async () => {
     deleteUser.mockResolvedValue({ data: { success: true }, error: null } as never);
     renderWithIntl(<AccountActions locale="en" />);
     fireEvent.click(screen.getByTestId("delete-account"));
@@ -31,7 +31,7 @@ describe("AccountActions", () => {
     await vi.waitFor(() => expect(navigateTo).toHaveBeenCalledWith("/en"));
   });
 
-  it("con una sesión de hace más de un día, pide volver a entrar", async () => {
+  it("with a session older than a day, asks to sign in again", async () => {
     deleteUser.mockResolvedValue({ data: null, error: { code: "SESSION_EXPIRED", status: 400 } } as never);
     renderWithIntl(<AccountActions locale="en" />);
     fireEvent.click(screen.getByTestId("delete-account"));

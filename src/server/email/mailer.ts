@@ -14,8 +14,8 @@ export type SendEmail = (message: EmailMessage) => Promise<void>;
 export const OUTBOX_TTL_SECONDS = 3_600;
 
 /**
- * Sin clave de Resend (desarrollo, tests y E2E) el email no sale: se escribe en la consola
- * de `pnpm dev` y en una lista de Redis, de donde lo leen los E2E. El más reciente va primero.
+ * Without a Resend key (development, tests and E2E) the email is not sent: it is written to the
+ * `pnpm dev` console and to a Redis list, where the E2E tests read it. The most recent goes first.
  */
 export function createOutboxMailer(redis: Redis, prefix: string): SendEmail {
   return async (message) => {
@@ -26,7 +26,7 @@ export function createOutboxMailer(redis: Redis, prefix: string): SendEmail {
   };
 }
 
-/** Resend no lanza en errores de la API: devuelve `{ error }`, y aquí se convierte en excepción. */
+/** Resend does not throw on API errors: it returns `{ error }`, which is turned into an exception here. */
 export function createResendMailer(apiKey: string, from: string): SendEmail {
   const resend = new Resend(apiKey);
   return async (message) => {

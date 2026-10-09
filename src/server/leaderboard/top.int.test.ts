@@ -11,7 +11,7 @@ const db = createDb(process.env.DATABASE_URL!);
 const AT = new Date("2026-10-04T12:00:00Z");
 const BOARD: Board = { language: "pt", inputType: "touch" };
 
-// Cada test empieza con el ranking vacío.
+// Each test starts with an empty ranking.
 beforeEach(async () => {
   await emptyBoards(db);
 });
@@ -53,8 +53,8 @@ async function best(nick: string, wpm: number, { status = "active" as "active" |
 
 const nick = (base: string) => `${base}_${randomUUID().slice(0, 6)}`;
 
-describe("top de un ranking (PostgreSQL)", () => {
-  it("ordena por puntuación y numera desde 1", async () => {
+describe("top of a ranking (PostgreSQL)", () => {
+  it("orders by score and numbers from 1", async () => {
     const [slow, fast, mid] = [nick("slow"), nick("fast"), nick("mid")];
     await best(slow, 80);
     await best(fast, 100);
@@ -68,14 +68,14 @@ describe("top de un ranking (PostgreSQL)", () => {
     expect(top[0]).toMatchObject({ country: "BR", accuracy: 95 });
   });
 
-  it("no enseña a jugadores en shadow-ban", async () => {
+  it("does not show shadow-banned players", async () => {
     const visible = nick("visible");
     await best(visible, 60);
     await best(nick("hidden"), 200, { status: "shadowbanned" });
     expect((await getTop(db, BOARD)).map((entry) => entry.nick)).toEqual([visible]);
   });
 
-  it("solo las marcas de ese idioma y teclado", async () => {
+  it("only the bests of that language and keyboard", async () => {
     const here = nick("here");
     await best(here, 60);
     await best(nick("touch_en"), 90, { board: { language: "en", inputType: "touch" } });
@@ -83,7 +83,7 @@ describe("top de un ranking (PostgreSQL)", () => {
     expect((await getTop(db, BOARD)).map((entry) => entry.nick)).toEqual([here]);
   });
 
-  it("respeta el límite", async () => {
+  it("respects the limit", async () => {
     for (const wpm of [50, 60, 70]) await best(nick("n"), wpm);
     expect(await getTop(db, BOARD, 2)).toHaveLength(2);
   });

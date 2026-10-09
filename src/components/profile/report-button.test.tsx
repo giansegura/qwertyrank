@@ -21,13 +21,13 @@ afterEach(() => {
 });
 
 describe("ReportButton", () => {
-  it("sin sesión, lleva a entrar y vuelve al perfil", async () => {
+  it("without a session, goes to sign in and back to the profile", async () => {
     vi.mocked(getViewer).mockResolvedValue(null);
     renderWithIntl(<ReportButton nick="ana" />);
     expect(await screen.findByTestId("report-sign-in")).toHaveAttribute("href", "/en/sign-in?next=%2Fen%2Fu%2Fana");
   });
 
-  it("en el propio perfil no sale", async () => {
+  it("does not show on the player's own profile", async () => {
     vi.mocked(getViewer).mockResolvedValue({ nick: "Ana" });
     const { container } = renderWithIntl(<ReportButton nick="ana" />);
     await waitFor(() => expect(getViewer).toHaveBeenCalled());
@@ -35,7 +35,7 @@ describe("ReportButton", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("denuncia con el motivo elegido y da las gracias", async () => {
+  it("reports with the chosen reason and says thanks", async () => {
     vi.mocked(getViewer).mockResolvedValue({ nick: "gian" });
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
     renderWithIntl(<ReportButton nick="ana" />);
@@ -49,7 +49,7 @@ describe("ReportButton", () => {
     );
   });
 
-  it("si falla, lo dice y deja reintentar", async () => {
+  it("if it fails, says so and allows retrying", async () => {
     vi.mocked(getViewer).mockResolvedValue({ nick: "gian" });
     fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
     renderWithIntl(<ReportButton nick="ana" />);

@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { FEEDBACK_EMAIL, PRIVACY_EMAIL } from "@/lib/site";
 
-/** Términos de uso en inglés (spec 5a §4.3). Borrador para la beta: pendiente de revisión legal. */
+/** Terms of use in English (spec 5a §4.3). Draft for the beta: pending legal review. */
 export function TermsEn() {
   return (
     <>

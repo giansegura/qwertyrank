@@ -9,7 +9,7 @@ afterEach(() => {
   forgetViewer();
 });
 
-/** La sesión (la misma petición que hace la cabecera) y, si hay sesión, la posición. */
+/** The session (the same request the header makes) and, if there is a session, the position. */
 function respond(viewer: { nick: string } | null, position?: unknown) {
   const fetchMock = vi.fn(async (url: string) =>
     url === "/api/auth/get-session"
@@ -21,7 +21,7 @@ function respond(viewer: { nick: string } | null, position?: unknown) {
 }
 
 describe("MyPosition", () => {
-  it("con marca, enseña la posición y la marca", async () => {
+  it("with a best, shows the position and the best", async () => {
     const fetchMock = respond({ nick: "gian_42" }, { rank: 7, wpm: 88.4, accuracy: 97.6 });
     renderWithIntl(<MyPosition language="es" input="touch" />);
     expect(await screen.findByText("Your position: #7 · 88 wpm · 97%")).toBeInTheDocument();
@@ -31,13 +31,13 @@ describe("MyPosition", () => {
     );
   });
 
-  it("sin marca en ese ranking, lo dice", async () => {
+  it("with no best in that ranking, says so", async () => {
     respond({ nick: "gian_42" }, { rank: null });
     renderWithIntl(<MyPosition language="en" input="physical" />);
     expect(await screen.findByText("You're not on this ranking yet.")).toBeInTheDocument();
   });
 
-  it("sin sesión, invita a entrar sin preguntar por la posición", async () => {
+  it("without a session, invites to sign in without asking for the position", async () => {
     const fetchMock = respond(null);
     renderWithIntl(<MyPosition language="en" input="physical" />);
     expect(await screen.findByRole("link", { name: "Sign in to appear in the ranking" })).toHaveAttribute(

@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-/** El perfil propio (spec 4a §6.2): lo pide la 404 de `/u/[nick]` cuando el nick es el del jugador. */
+/** The player's own profile (spec 4a §6.2): requested by the 404 of `/u/[nick]` when the nick is the player's. */
 export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser(request.headers);

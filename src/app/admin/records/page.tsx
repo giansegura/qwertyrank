@@ -6,27 +6,27 @@ import { recordQueues, type RecordRow } from "@/server/moderation/records";
 import { CELL, HEAD_ROW, RECORD_STATE_LABEL, ROW, TABLE, formatDate } from "../format";
 import { AdminNav } from "../nav";
 
-/** El título se calcula tras `requireAdmin()`: así la 404 para quien no es admin no lo delata. */
+/** The title is computed after `requireAdmin()`: that way the 404 for non-admins does not give it away. */
 export async function generateMetadata(): Promise<Metadata> {
   await requireAdmin();
-  return { title: "Récords · Moderación" };
+  return { title: "Records · Moderation" };
 }
 
 function RecordTable({ rows, testId, empty }: { rows: RecordRow[]; testId: string; empty: string }) {
   if (rows.length === 0) return <p className="text-zinc-600 dark:text-zinc-400">{empty}</p>;
   return (
-    // Siete columnas: en pantallas estrechas, la tabla se desplaza en horizontal.
+    // Seven columns: on narrow screens, the table scrolls horizontally.
     <div className="overflow-x-auto">
       <table data-testid={testId} className={TABLE}>
         <thead>
           <tr className={HEAD_ROW}>
-            <th scope="col" className={CELL}>Jugador</th>
-            <th scope="col" className={CELL}>Idioma y teclado</th>
-            <th scope="col" className={CELL}>PPM</th>
-            <th scope="col" className={CELL}>Intentos</th>
-            <th scope="col" className={CELL}>Creado</th>
-            <th scope="col" className={CELL}>Caduca o se resolvió</th>
-            <th scope="col" className={CELL}>Partida</th>
+            <th scope="col" className={CELL}>Player</th>
+            <th scope="col" className={CELL}>Language and keyboard</th>
+            <th scope="col" className={CELL}>WPM</th>
+            <th scope="col" className={CELL}>Attempts</th>
+            <th scope="col" className={CELL}>Created</th>
+            <th scope="col" className={CELL}>Expires or resolved</th>
+            <th scope="col" className={CELL}>Game</th>
           </tr>
         </thead>
         <tbody>
@@ -48,7 +48,7 @@ function RecordTable({ rows, testId, empty }: { rows: RecordRow[]; testId: strin
               </td>
               <td className={CELL}>
                 <Link href={`/admin/games/${row.gameId}`} data-testid="admin-record-replay" className="underline">
-                  Reproducción
+                  Replay
                 </Link>
               </td>
             </tr>
@@ -59,7 +59,7 @@ function RecordTable({ rows, testId, empty }: { rows: RecordRow[]; testId: strin
   );
 }
 
-/** Cola de récords (spec 4b §6.1): solo consulta; el admin actúa con las sanciones de la ficha. */
+/** Records queue (spec 4b §6.1): read-only; the admin acts with the sanctions on the player page. */
 export default async function RecordsPage() {
   await requireAdmin();
   const { pending, verified, closed } = await recordQueues(getDb());
@@ -67,18 +67,18 @@ export default async function RecordsPage() {
   return (
     <>
       <AdminNav />
-      <h1 className="text-2xl font-semibold">Récords</h1>
+      <h1 className="text-2xl font-semibold">Records</h1>
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Pendientes</h2>
-        <RecordTable rows={pending} testId="admin-records-pending" empty="No hay récords pendientes." />
+        <h2 className="text-lg font-semibold">Pending</h2>
+        <RecordTable rows={pending} testId="admin-records-pending" empty="There are no pending records." />
       </section>
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Verificados (7 días)</h2>
-        <RecordTable rows={verified} testId="admin-records-verified" empty="Ninguno en los últimos 7 días." />
+        <h2 className="text-lg font-semibold">Verified (7 days)</h2>
+        <RecordTable rows={verified} testId="admin-records-verified" empty="None in the last 7 days." />
       </section>
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Fallidos o caducados (7 días)</h2>
-        <RecordTable rows={closed} testId="admin-records-closed" empty="Ninguno en los últimos 7 días." />
+        <h2 className="text-lg font-semibold">Failed or expired (7 days)</h2>
+        <RecordTable rows={closed} testId="admin-records-closed" empty="None in the last 7 days." />
       </section>
     </>
   );

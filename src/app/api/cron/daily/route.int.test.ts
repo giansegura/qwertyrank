@@ -13,7 +13,7 @@ afterAll(async () => {
   await db.$client.end();
 });
 
-/** Una partida con cuenta de hace 40 días, con `ip_hash` y su registro de pulsaciones: lo que una llamada sin permiso no debe tocar. */
+/** A game with an account from 40 days ago, with `ip_hash` and its keystroke log: what an unauthorized call must not touch. */
 async function seedOldGame() {
   const [user] = await db
     .insert(users)
@@ -46,7 +46,7 @@ async function seedOldGame() {
   return id;
 }
 
-/** Que la partida sembrada sigue igual: con su `ip_hash` y su registro de pulsaciones. */
+/** That the seeded game is unchanged: with its `ip_hash` and its keystroke log. */
 async function expectUntouched(id: string) {
   const [game] = await db.select().from(games).where(eq(games.id, id));
   expect(game.ipHash).toBe("b".repeat(64));
@@ -55,7 +55,7 @@ async function expectUntouched(id: string) {
 
 const SECRET = "c".repeat(32);
 
-/** La ruta con `CRON_SECRET` recién leída: `serverEnv()` guarda las variables la primera vez. */
+/** The route with `CRON_SECRET` freshly read: `serverEnv()` stores the variables the first time. */
 async function cronRoute(secret: string | undefined) {
   vi.stubEnv("CRON_SECRET", secret);
   vi.resetModules();
@@ -70,7 +70,7 @@ afterEach(() => {
 });
 
 describe("GET /api/cron/daily", () => {
-  it("sin CRON_SECRET configurada responde 401 aunque llegue una cabecera", async () => {
+  it("without CRON_SECRET configured it responds 401 even if a header arrives", async () => {
     const id = await seedOldGame();
     const { GET } = await cronRoute(undefined);
     const response = await GET(request("Bearer undefined"));
@@ -79,7 +79,7 @@ describe("GET /api/cron/daily", () => {
     await expectUntouched(id);
   });
 
-  it("con otro secreto o sin cabecera responde 401", async () => {
+  it("with another secret or without a header it responds 401", async () => {
     const id = await seedOldGame();
     const { GET } = await cronRoute(SECRET);
     expect((await GET(request(`Bearer ${"x".repeat(32)}`))).status).toBe(401);
@@ -87,7 +87,7 @@ describe("GET /api/cron/daily", () => {
     await expectUntouched(id);
   });
 
-  it("con el secreto ejecuta la tarea y devuelve lo que ha hecho, sin caché", async () => {
+  it("with the secret it runs the job and returns what it did, without cache", async () => {
     const { GET } = await cronRoute(SECRET);
     const response = await GET(request(`Bearer ${SECRET}`));
     expect(response.status).toBe(200);

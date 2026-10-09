@@ -6,14 +6,14 @@ function type(words: string[], ...chunks: string[]) {
 }
 
 describe("engine", () => {
-  it("empieza en la primera palabra sin nada escrito", () => {
+  it("starts at the first word with nothing typed", () => {
     const state = createEngine(["hola", "mundo"]);
     expect(state.current).toBe(0);
     expect(state.typed).toEqual([""]);
     expect(isFinished(state)).toBe(false);
   });
 
-  it("cuenta las letras correctas y avanza con el espacio", () => {
+  it("counts the correct letters and advances with the space", () => {
     const state = type(["hola", "mundo"], "hola ");
     expect(state.current).toBe(1);
     expect(state.typed).toEqual(["hola", ""]);
@@ -21,48 +21,48 @@ describe("engine", () => {
     expect(state.totalInserts).toBe(5);
   });
 
-  it("registra el carácter esperado como fallo cuando se escribe otro", () => {
+  it("records the expected character as a mistake when another one is typed", () => {
     const state = type(["casa"], "cosa");
     expect(state.correctInserts).toBe(3);
     expect(state.totalInserts).toBe(4);
     expect(state.mistakes).toEqual({ a: 1 });
   });
 
-  it("el espacio de una palabra incorrecta cuenta como pulsación incorrecta", () => {
+  it("the space of an incorrect word counts as an incorrect keystroke", () => {
     const state = type(["casa", "azul"], "cosa ");
     expect(state.current).toBe(1);
     expect(state.totalInserts).toBe(5);
     expect(state.correctInserts).toBe(3);
   });
 
-  it("ignora un espacio al inicio de palabra (doble espacio)", () => {
+  it("ignores a space at the start of a word (double space)", () => {
     const state = type(["hola", "mundo"], " ", "hola  ");
     expect(state.current).toBe(1);
     expect(state.typed).toEqual(["hola", ""]);
     expect(state.totalInserts).toBe(5);
   });
 
-  it("acepta cualquier espacio en blanco como espacio (p. ej. NBSP de teclados móviles)", () => {
+  it("accepts any whitespace as a space (e.g. NBSP from mobile keyboards)", () => {
     const state = type(["hola", "mundo"], "hola ");
     expect(state.current).toBe(1);
     expect(state.correctInserts).toBe(5);
   });
 
-  it("cuenta como incorrectos los caracteres de más, hasta un máximo", () => {
+  it("counts extra characters as incorrect, up to a maximum", () => {
     const state = type(["sol"], "sol" + "x".repeat(MAX_EXTRA_CHARS + 5));
     expect(state.typed[0]).toBe("sol" + "x".repeat(MAX_EXTRA_CHARS));
     expect(state.totalInserts).toBe(3 + MAX_EXTRA_CHARS);
     expect(state.mistakes).toEqual({});
   });
 
-  it("borra solo dentro de la palabra actual", () => {
+  it("deletes only within the current word", () => {
     let state = type(["hola", "mundo"], "hola ", "mu");
     state = applyInput(state, 5, "");
     expect(state.current).toBe(1);
     expect(state.typed).toEqual(["hola", ""]);
   });
 
-  it("borrar y volver a escribir corrige la palabra, pero los fallos siguen contando", () => {
+  it("deleting and retyping fixes the word, but the mistakes still count", () => {
     let state = type(["gato"], "gatp");
     state = applyInput(state, 1, "o");
     expect(state.typed[0]).toBe("gato");
@@ -71,29 +71,29 @@ describe("engine", () => {
     expect(state.mistakes).toEqual({ o: 1 });
   });
 
-  it("una mayúscula no coincide con la minúscula esperada", () => {
+  it("an uppercase letter does not match the expected lowercase one", () => {
     const state = type(["casa"], "Casa");
     expect(state.mistakes).toEqual({ c: 1 });
   });
 
-  it("procesa varios caracteres de golpe, incluidos espacios", () => {
+  it("processes several characters at once, spaces included", () => {
     const state = type(["uno", "dos", "tres"], "uno dos t");
     expect(state.current).toBe(2);
     expect(state.typed).toEqual(["uno", "dos", "t"]);
   });
 
-  it("termina al confirmar la última palabra e ignora lo que llegue después", () => {
+  it("finishes when the last word is committed and ignores whatever comes after", () => {
     const finished = type(["fin"], "fin ");
     expect(isFinished(finished)).toBe(true);
     expect(applyInput(finished, 0, "abc")).toBe(finished);
   });
 
-  it("ignora un número de borrados no válido", () => {
+  it("ignores an invalid number of deletions", () => {
     const state = applyInput(type(["hola"], "ho"), Number.NaN, "l");
     expect(state.typed[0]).toBe("hol");
   });
 
-  it("no modifica el estado anterior", () => {
+  it("does not modify the previous state", () => {
     const before = type(["hola"], "h");
     applyInput(before, 0, "o");
     expect(before.typed).toEqual(["h"]);

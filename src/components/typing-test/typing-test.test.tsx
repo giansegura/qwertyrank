@@ -11,7 +11,7 @@ function setup(durationMs = 15_000) {
   return screen.getByTestId("typing-input") as HTMLInputElement;
 }
 
-/** Simula escribir carácter a carácter como lo hace el navegador: cambia el valor y dispara `input`. */
+/** Simulates typing character by character the way the browser does: changes the value and fires `input`. */
 function typeText(input: HTMLInputElement, text: string) {
   for (const char of text) {
     fireEvent.input(input, { target: { value: input.value + char } });
@@ -32,7 +32,7 @@ describe("TypingTest", () => {
     vi.unstubAllGlobals();
   });
 
-  it("muestra las palabras iniciales y el tiempo completo", () => {
+  it("shows the initial words and the full time", () => {
     setup();
     const words = screen.getAllByTestId("word");
     expect(words).toHaveLength(WORDS.length);
@@ -40,20 +40,20 @@ describe("TypingTest", () => {
     expect(screen.getByTestId("timer")).toHaveTextContent("15");
   });
 
-  it("marca las letras correctas e incorrectas mientras se escribe", () => {
+  it("marks correct and incorrect letters while typing", () => {
     const input = setup();
     typeText(input, "hp");
     expect(letterStatuses(0)).toEqual(["correct", "incorrect", "pending", "pending"]);
   });
 
-  it("el espacio pasa a la palabra siguiente y vacía el input", () => {
+  it("space moves to the next word and empties the input", () => {
     const input = setup();
     typeText(input, "hola ");
     expect(screen.getAllByTestId("word")[1]).toHaveAttribute("data-state", "active");
     expect(input.value).toBe("");
   });
 
-  it("borrar con retroceso corrige la letra", () => {
+  it("deleting with backspace corrects the letter", () => {
     const input = setup();
     typeText(input, "hp");
     fireEvent.input(input, { target: { value: "h" } });
@@ -61,7 +61,7 @@ describe("TypingTest", () => {
     expect(letterStatuses(0)).toEqual(["correct", "correct", "pending", "pending"]);
   });
 
-  it("no cuenta como error el acento suelto de una tecla muerta", () => {
+  it("does not count the standalone accent of a dead key as an error", () => {
     renderWithIntl(<TypingTest language="es" durationMs={15_000} initialWords={["más"]} />);
     const input = screen.getByTestId("typing-input") as HTMLInputElement;
     typeText(input, "m");
@@ -72,7 +72,7 @@ describe("TypingTest", () => {
     expect(screen.getByTestId("result-accuracy")).toHaveTextContent("100%");
   });
 
-  it("muestra el resultado al acabar el tiempo", () => {
+  it("shows the result when time runs out", () => {
     const input = setup();
     typeText(input, "hola mundo ");
     act(() => {
@@ -84,7 +84,7 @@ describe("TypingTest", () => {
     expect(input).toHaveAttribute("readonly");
   });
 
-  it("Tab reinicia a mitad de partida", () => {
+  it("Tab restarts mid-game", () => {
     const input = setup();
     typeText(input, "ho");
     fireEvent.keyDown(input, { key: "Tab", code: "Tab" });
@@ -96,7 +96,7 @@ describe("TypingTest", () => {
     expect(screen.queryByTestId("result")).not.toBeInTheDocument();
   });
 
-  it("Enter reinicia desde el resultado", () => {
+  it("Enter restarts from the result", () => {
     const input = setup();
     typeText(input, "h");
     act(() => {
@@ -107,14 +107,14 @@ describe("TypingTest", () => {
     expect(screen.getByTestId("timer")).toHaveTextContent("15");
   });
 
-  it("Enter durante la partida no reinicia", () => {
+  it("Enter during the game does not restart", () => {
     const input = setup();
     typeText(input, "ho");
     fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
     expect(letterStatuses(0)).toEqual(["correct", "correct", "pending", "pending"]);
   });
 
-  it("al perder el foco avisa, pero el tiempo sigue corriendo", () => {
+  it("on losing focus shows a notice, but the time keeps running", () => {
     const input = setup();
     fireEvent.focus(input);
     typeText(input, "ho");
@@ -126,13 +126,13 @@ describe("TypingTest", () => {
     expect(screen.getByTestId("result")).toBeInTheDocument();
   });
 
-  it("bloquea pegar texto", () => {
+  it("blocks pasting text", () => {
     const input = setup();
     const notCancelled = fireEvent.paste(input, { clipboardData: { getData: () => "hola mundo" } });
     expect(notCancelled).toBe(false);
   });
 
-  it("si el input ya tenía el foco antes de hidratar, no muestra el aviso de foco", () => {
+  it("if the input already had focus before hydration, does not show the focus notice", () => {
     const ui = withIntl(<TypingTest language="es" durationMs={15_000} initialWords={WORDS} />);
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -142,21 +142,21 @@ describe("TypingTest", () => {
     expect(screen.queryByTestId("focus-prompt")).not.toBeInTheDocument();
   });
 
-  it("en escritorio enfoca el input al cargar", () => {
+  it("on desktop focuses the input on load", () => {
     vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(pointer: fine)" }));
     const input = setup();
     expect(input).toHaveFocus();
     expect(screen.queryByTestId("focus-prompt")).not.toBeInTheDocument();
   });
 
-  it("en móvil no enfoca solo: espera a que se toque el texto", () => {
+  it("on mobile does not focus by itself: waits for the text to be tapped", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
     const input = setup();
     expect(input).not.toHaveFocus();
     expect(screen.getByTestId("focus-prompt")).toBeInTheDocument();
   });
 
-  it("Mayús+Tab no reinicia ni atrapa el foco", () => {
+  it("Shift+Tab neither restarts nor traps focus", () => {
     const input = setup();
     typeText(input, "ho");
     const notPrevented = fireEvent.keyDown(input, { key: "Tab", code: "Tab", shiftKey: true });
@@ -164,7 +164,7 @@ describe("TypingTest", () => {
     expect(letterStatuses(0)).toEqual(["correct", "correct", "pending", "pending"]);
   });
 
-  it("al terminar una composición (teclado de Android) el input vuelve a la palabra actual", () => {
+  it("when a composition ends (Android keyboard) the input returns to the current word", () => {
     const input = setup();
     for (const value of ["h", "ho", "hol", "hola "]) {
       fireEvent.input(input, { target: { value }, isComposing: true });
@@ -176,7 +176,7 @@ describe("TypingTest", () => {
     expect(letterStatuses(1)).toEqual(["correct", "pending", "pending", "pending", "pending"]);
   });
 
-  it("tecla muerta en el orden de Chrome (la letra final llega aún componiendo)", () => {
+  it("dead key in Chrome's order (the final letter arrives while still composing)", () => {
     renderWithIntl(<TypingTest language="es" durationMs={15_000} initialWords={["más"]} />);
     const input = screen.getByTestId("typing-input") as HTMLInputElement;
     typeText(input, "m");
@@ -187,7 +187,7 @@ describe("TypingTest", () => {
     expect(screen.getByTestId("result-accuracy")).toHaveTextContent("100%");
   });
 
-  it("la tecla muerta de US-Internacional (') no cuenta como error", () => {
+  it("the US-International dead key (') does not count as an error", () => {
     renderWithIntl(<TypingTest language="es" durationMs={15_000} initialWords={["más"]} />);
     const input = screen.getByTestId("typing-input") as HTMLInputElement;
     typeText(input, "m");

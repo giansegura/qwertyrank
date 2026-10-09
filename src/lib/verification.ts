@@ -2,42 +2,42 @@ import type { InputType } from "./game/types";
 import type { GameRanking } from "./leaderboard/types";
 import type { TestLanguage } from "./words/languages";
 
-/** Modo de una partida (spec 4b §1): Ranked o de verificación de un récord. */
+/** Mode of a game (spec 4b §1): Ranked or verification of a record. */
 export const GAME_MODES = ["ranked", "verification"] as const;
 export type GameMode = (typeof GAME_MODES)[number];
 
-/** Estado de una verificación (spec 4b §5.1). Una `pending` con `expires_at` pasado está caducada (§3.4). */
+/** Status of a verification (spec 4b §5.1). A `pending` one with a past `expires_at` is expired (§3.4). */
 export const VERIFICATION_STATUSES = ["pending", "verified", "failed"] as const;
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
-/** Spec 4b §1: hasta 3 intentos en las 24 h siguientes al récord. */
+/** Spec 4b §1: up to 3 attempts in the 24 h after the record. */
 export const VERIFICATION_ATTEMPTS = 3;
 export const VERIFICATION_HOURS = 24;
-/** Precisión mínima de la partida de verificación: la misma que pide el ranking (spec §3.3). */
+/** Minimum accuracy of the verification game: the same the ranking requires (spec §3.3). */
 export const VERIFICATION_MIN_ACCURACY = 90;
 
 /**
- * PPM que necesita la partida de verificación (spec 4b §2.4): el 85 % de las del récord, redondeado
- * hacia arriba a una décima. Se calcula en centésimas enteras: 72,4 × 0,85 da 61,540000000000006.
+ * WPM the verification game needs (spec 4b §2.4): 85 % of the record's, rounded up to one decimal.
+ * It is computed in integer hundredths: 72.4 × 0.85 gives 61.540000000000006.
  */
 export function requiredWpm(targetWpm: number): number {
   return Math.ceil((Math.round(targetWpm * 100) * 85) / 1000) / 10;
 }
 
 /**
- * Horas que faltan hasta `expiresAt` (ISO), hacia arriba: "quedan 1 h" hasta el último minuto. Nunca más
- * de 24: el plazo lo pone el reloj de PostgreSQL, que puede ir unos milisegundos por delante del navegador.
+ * Hours left until `expiresAt` (ISO), rounded up: "1 h left" until the last minute. Never more than
+ * 24: the deadline is set by the PostgreSQL clock, which may be a few milliseconds ahead of the browser.
  */
 export function hoursLeft(expiresAt: string, now: number): number {
   return Math.min(VERIFICATION_HOURS, Math.max(1, Math.ceil((Date.parse(expiresAt) - now) / 3_600_000)));
 }
 
-/** Una verificación pendiente, como la ven el resultado, el aviso y `/verify` (spec 4b §2.4). */
+/** A pending verification, as seen by the result, the notice and `/verify` (spec 4b §2.4). */
 export interface PendingVerification {
   id: string;
   language: TestLanguage;
   inputType: InputType;
-  /** PPM de la partida con más PPM de las que esperan esta verificación. */
+  /** WPM of the game with the most WPM among those awaiting this verification. */
   targetWpm: number;
   requiredWpm: number;
   attemptsLeft: number;
@@ -45,7 +45,7 @@ export interface PendingVerification {
   expiresAt: string;
 }
 
-/** Resultado de una partida de verificación (spec 4b §3.3). `attemptsLeft: 0`: se acabó. */
+/** Outcome of a verification game (spec 4b §3.3). `attemptsLeft: 0`: it is over. */
 export type VerificationOutcome =
   | { kind: "verified"; ranking: GameRanking }
   | { kind: "failed"; requiredWpm: number; attemptsLeft: number };

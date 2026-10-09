@@ -8,8 +8,8 @@ vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   useRouter: () => router,
 }));
-// La partida tiene sus propias pruebas: aquí solo importa que se carga con la verificación elegida, el
-// texto que le pide para volver a la lista y cómo acaba (`play`: a jugar Ranked; si no, a la lista).
+// The game has its own tests: here all that matters is that it loads with the chosen verification, the
+// label it is given to go back to the list and how it ends (`play`: to play Ranked; otherwise, to the list).
 const fakeGame = () => ({
   VerificationGame: ({
     verification,
@@ -46,7 +46,7 @@ const PENDING = [
 ];
 const OTHER = { ...PENDING[0], id: "v2", language: "en" as const, inputType: "physical" as const };
 
-/** Elige la primera verificación y espera a que se descargue su partida. */
+/** Picks the first verification and waits for its game to download. */
 async function startFirst() {
   fireEvent.click(screen.getAllByTestId("verify-start")[0]);
   await act(async () => {
@@ -59,7 +59,7 @@ afterEach(() => {
 });
 
 describe("VerifyList", () => {
-  it("lista cada récord con lo que necesita, intentos y horas", async () => {
+  it("lists each record with what it needs, attempts and hours", async () => {
     renderWithIntl(<VerifyList pending={PENDING} />);
     const item = screen.getByTestId("verify-item");
     expect(item).toHaveTextContent("Spanish · touch keyboard");
@@ -67,7 +67,7 @@ describe("VerifyList", () => {
     expect(await screen.findByText(/· 3 h left/)).toBeInTheDocument();
   });
 
-  it("con otras pendientes, al elegir una empieza su partida; sin superarla, «Volver a tus récords» vuelve a pedir la lista", async () => {
+  it('with other pending ones, picking one starts its game; when not passed, "Back to your records" requests the list again', async () => {
     renderWithIntl(<VerifyList pending={[...PENDING, OTHER]} />, "es");
     await startFirst();
     expect(screen.getByTestId("verification-game")).toHaveTextContent("v1");
@@ -79,7 +79,7 @@ describe("VerifyList", () => {
     expect(screen.getByTestId("verify-list")).toBeInTheDocument();
   });
 
-  it("sin otras pendientes, la partida no ofrece volver a la lista: al acabar, «Jugar Ranked» lleva a la portada", async () => {
+  it('with no other pending ones, the game does not offer going back to the list: when done, "Play Ranked" goes to the home page', async () => {
     renderWithIntl(<VerifyList pending={PENDING} />, "es");
     await startFirst();
     expect(screen.getByTestId("verification-done-label")).toHaveTextContent(/^$/);
@@ -88,21 +88,21 @@ describe("VerifyList", () => {
     expect(router.refresh).not.toHaveBeenCalled();
   });
 
-  it("verificada, o si ya no estaba disponible (409), «Jugar Ranked» lleva a la portada aunque queden otras", async () => {
+  it('verified, or if it was no longer available (409), "Play Ranked" goes to the home page even if others remain', async () => {
     renderWithIntl(<VerifyList pending={[...PENDING, OTHER]} />, "es");
     await startFirst();
     fireEvent.click(screen.getByTestId("verification-play"));
     expect(router.push).toHaveBeenCalledWith("/es");
   });
 
-  it("sin pendientes lo dice y lleva a jugar", () => {
+  it("with no pending ones says so and leads to play", () => {
     renderWithIntl(<VerifyList pending={[]} />);
     expect(screen.getByText("You have no records waiting for verification.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Play Ranked" })).toHaveAttribute("href", "/en");
   });
 
-  it("si no se puede descargar la partida de verificación, dice que Ranked no está disponible", async () => {
-    // Sin el módulo ya cargado: la descarga de la partida falla.
+  it("if the verification game cannot be downloaded, says Ranked is unavailable", async () => {
+    // Without the module already loaded: downloading the game fails.
     vi.doMock("./verification-game", () => {
       throw new Error("chunk load failed");
     });

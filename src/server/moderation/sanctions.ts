@@ -11,17 +11,17 @@ import { identitiesOf } from "./identities";
 
 export type PlayerStatus = "active" | "shadowbanned" | "banned";
 export type SanctionRejection = "not_found" | "admin" | "self" | "unchanged";
-/** `redis_failed`: PostgreSQL ya tiene la sanción, pero Redis no se actualizó (hay que ejecutar `pnpm redis:rebuild`). */
+/** `redis_failed`: PostgreSQL already has the sanction, but Redis was not updated (run `pnpm redis:rebuild`). */
 export type SanctionOutcome = { kind: "ok" } | { kind: "redis_failed" } | { kind: "rejected"; why: SanctionRejection };
 
 export interface SanctionsDeps {
   db: Db;
   store: LeaderboardStore;
-  /** Sus páginas en caché cambian; en producción, `revalidatePlayerPages`. */
+  /** Their cached pages change; in production, `revalidatePlayerPages`. */
   onPlayerChanged: () => void;
-  /** Clave de los hashes de identidades baneadas (spec 4a §3.3). */
+  /** Key for the hashes of banned identities (spec 4a §3.3). */
   identitySecret: string;
-  /** Con reserva (spec 4a §6.5): `createNickAvailability`. */
+  /** With reservation (spec 4a §6.5): `createNickAvailability`. */
   isNickTaken: (nick: string) => Promise<boolean>;
   random?: () => number;
 }
@@ -43,7 +43,7 @@ async function resolveOpenReports(
     );
 }
 
-/** Sanciones de moderación (spec 4a §3). Solo las usan el panel y los scripts. */
+/** Moderation sanctions (spec 4a §3). Only used by the panel and the scripts. */
 export function createSanctions(deps: SanctionsDeps) {
   const random = deps.random ?? Math.random;
 
@@ -61,7 +61,7 @@ export function createSanctions(deps: SanctionsDeps) {
     return row;
   }
 
-  /** Shadow-ban, ban o vuelta a activo (spec 4a §3.1). */
+  /** Shadow ban, ban or back to active (spec 4a §3.1). */
   async function setStatus(adminId: string, targetId: string, status: PlayerStatus, reason: string): Promise<SanctionOutcome> {
     const target = await findTarget(adminId, targetId);
     if (typeof target === "string") return { kind: "rejected", why: target };
@@ -82,13 +82,13 @@ export function createSanctions(deps: SanctionsDeps) {
       if (status !== "active") await resolveOpenReports(tx, adminId, targetId, "actioned");
     });
 
-    // PostgreSQL ya está al día: Redis se limpia o se reescribe con sus marcas.
-    // Las páginas se revalidan aunque Redis falle: la sanción ya está confirmada.
+    // PostgreSQL is already up to date: Redis is cleaned up or rewritten with their bests.
+    // The pages are revalidated even if Redis fails: the sanction is already committed.
     try {
       if (status === "active") await deps.store.add(await activeBests(deps.db, targetId));
       else await deps.store.remove(targetId, await userBoards(deps.db, targetId));
     } catch (error) {
-      console.error("setStatus: PostgreSQL actualizado pero Redis falló", error);
+      console.error("setStatus: PostgreSQL updated but Redis failed", error);
       return { kind: "redis_failed" };
     } finally {
       deps.onPlayerChanged();
@@ -96,11 +96,11 @@ export function createSanctions(deps: SanctionsDeps) {
     return { kind: "ok" };
   }
 
-  /** Cambia un nick ofensivo por uno automático (spec 4a §3.2), guardando el anterior en el registro. */
+  /** Replaces an offensive nick with an automatic one (spec 4a §3.2), keeping the previous one in the log. */
   async function resetNick(adminId: string, targetId: string, reason: string): Promise<SanctionOutcome> {
     const target = await findTarget(adminId, targetId);
     if (typeof target === "string") return { kind: "rejected", why: target };
-    // No se deriva del email: podría repetir lo ofensivo.
+    // Not derived from the email: it could repeat the offensive part.
     const nick = await findFreeNick("player", deps.isNickTaken, random);
     await deps.db.transaction(async (tx) => {
       await tx.update(users).set({ nick }).where(eq(users.id, targetId));
@@ -117,7 +117,7 @@ export function createSanctions(deps: SanctionsDeps) {
     return { kind: "ok" };
   }
 
-  /** Cierra sin acción las denuncias abiertas contra un jugador. */
+  /** Closes the open reports against a player without action. */
   async function dismissReports(adminId: string, targetId: string): Promise<void> {
     await resolveOpenReports(deps.db, adminId, targetId, "dismissed");
   }

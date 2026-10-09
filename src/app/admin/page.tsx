@@ -6,10 +6,10 @@ import { openReportsByPlayer } from "@/server/moderation/queries";
 import { CELL, HEAD_ROW, ROW, STATUS_LABEL, TABLE, formatDate } from "./format";
 import { AdminNav } from "./nav";
 
-/** El título se calcula tras `requireAdmin()`: así la 404 para quien no es admin no lo delata. */
+/** The title is computed after `requireAdmin()`: that way the 404 for non-admins does not give it away. */
 export async function generateMetadata(): Promise<Metadata> {
   await requireAdmin();
-  return { title: "Moderación · QwertyRank" };
+  return { title: "Moderation · QwertyRank" };
 }
 
 export default async function AdminHome() {
@@ -19,18 +19,18 @@ export default async function AdminHome() {
   return (
     <>
       <AdminNav />
-      <h1 className="text-2xl font-semibold">Denuncias abiertas</h1>
+      <h1 className="text-2xl font-semibold">Open reports</h1>
       {queue.length === 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-400">No hay denuncias abiertas.</p>
+        <p className="text-zinc-600 dark:text-zinc-400">There are no open reports.</p>
       ) : (
         <table data-testid="admin-reports" className={TABLE}>
           <thead>
             <tr className={HEAD_ROW}>
-              <th scope="col" className={CELL}>Jugador</th>
-              <th scope="col" className={CELL}>Estado</th>
-              <th scope="col" className={CELL}>Trampas</th>
-              <th scope="col" className={CELL}>Nick ofensivo</th>
-              <th scope="col" className={CELL}>Última</th>
+              <th scope="col" className={CELL}>Player</th>
+              <th scope="col" className={CELL}>Status</th>
+              <th scope="col" className={CELL}>Cheating</th>
+              <th scope="col" className={CELL}>Offensive nick</th>
+              <th scope="col" className={CELL}>Latest</th>
             </tr>
           </thead>
           <tbody>

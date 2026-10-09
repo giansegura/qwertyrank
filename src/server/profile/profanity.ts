@@ -12,9 +12,9 @@ import {
 } from "obscenity";
 
 /**
- * Palabrotas para nicks (spec §3.6). La base inglesa es la de obscenity; la de español y
- * portugués es nuestra, y cada palabra lleva sus excepciones legítimas (`computadora` contiene
- * `puta`). En los patrones, `|x` exige empezar en límite de palabra y `x|` acabar en uno.
+ * Swear words for nicks (spec §3.6). The English base is obscenity's; the Spanish and Portuguese
+ * one is ours, and each word carries its legitimate exceptions (`computadora` contains `puta`).
+ * In the patterns, `|x` requires starting at a word boundary and `x|` ending at one.
  */
 const ES_PT: Record<string, readonly string[]> = {
   puta: ["computa", "reputa", "disputa", "diputa", "deputa", "imputa", "amputa", "putativ"],
@@ -78,7 +78,7 @@ const matcher = new RegExpMatcher({
     resolveConfusablesTransformer(),
     resolveLeetSpeakTransformer(),
     toAsciiLowerCaseTransformer(),
-    // Como el preset inglés, pero con la "r" doble: si no, "porra" se queda en "pora" y no se detecta.
+    // Like the English preset, but with double "r": otherwise "porra" becomes "pora" and is not detected.
     collapseDuplicatesTransformer({
       defaultThreshold: 1,
       customThresholds: new Map([
@@ -95,7 +95,7 @@ const matcher = new RegExpMatcher({
   whitelistMatcherTransformers: englishRecommendedWhitelistMatcherTransformers,
 });
 
-/** Para obscenity `_` es una letra más: se cambia por un espacio para que funcionen los límites de palabra. */
+/** For obscenity `_` is just another letter: it is replaced by a space so word boundaries work. */
 export function isProfane(text: string): boolean {
   return matcher.hasMatch(text.replaceAll("_", " "));
 }

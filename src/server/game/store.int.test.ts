@@ -20,7 +20,7 @@ function newGame(owner = randomUUID()): NewGame {
 }
 
 describe("GameStore (Redis)", () => {
-  it("crea la partida con la hora oficial de Redis", async () => {
+  it("creates the game with the official Redis time", async () => {
     const before = Date.now();
     const game = await store.create(newGame());
     expect(game.issuedAt).toBeGreaterThanOrEqual(before - 1_000);
@@ -29,7 +29,7 @@ describe("GameStore (Redis)", () => {
     expect(game.words).toEqual(["hola", "mundo"]);
   });
 
-  it("acepta tandas en orden, ignora duplicados y rechaza huecos", async () => {
+  it("accepts batches in order, ignores duplicates and rejects gaps", async () => {
     const input = newGame();
     await store.create(input);
     expect(await store.append(input.id, input.owner, 1, "[]", 1)).toBe("ok");
@@ -38,14 +38,14 @@ describe("GameStore (Redis)", () => {
     expect(await store.append(input.id, input.owner, 2, '[{"t":1}]', 1)).toBe("ok");
   });
 
-  it("no deja escribir en la partida de otro", async () => {
+  it("does not allow writing to someone else's game", async () => {
     const input = newGame();
     await store.create(input);
     expect(await store.append(input.id, randomUUID(), 1, "[]", 1)).toBe("not_found");
     expect(await store.claimFinish(input.id, randomUUID())).toEqual({ kind: "not_found" });
   });
 
-  it("al reclamar el final devuelve la partida y las tandas con su hora de llegada", async () => {
+  it("claiming the finish returns the game and the batches with their arrival time", async () => {
     const input = newGame();
     const game = await store.create(input);
     await store.append(input.id, input.owner, 1, '[{"t":5,"type":"input"}]', 1);
@@ -59,7 +59,7 @@ describe("GameStore (Redis)", () => {
     expect(claim.finishedAt).toBeGreaterThanOrEqual(claim.batches[0].arrivedAt);
   });
 
-  it("el final es idempotente: mientras se procesa da 'busy' y después devuelve el mismo resultado", async () => {
+  it("the finish is idempotent: while processing it gives 'busy' and then returns the same result", async () => {
     const input = newGame();
     await store.create(input);
     expect((await store.claimFinish(input.id, input.owner)).kind).toBe("ready");
@@ -69,7 +69,7 @@ describe("GameStore (Redis)", () => {
     expect(await store.claimFinish(input.id, input.owner)).toEqual({ kind: "done", result: '{"wpm":42}' });
   });
 
-  it("si falla el guardado, release permite reintentar el final", async () => {
+  it("if saving fails, release allows retrying the finish", async () => {
     const input = newGame();
     await store.create(input);
     await store.claimFinish(input.id, input.owner);
@@ -77,7 +77,7 @@ describe("GameStore (Redis)", () => {
     expect((await store.claimFinish(input.id, input.owner)).kind).toBe("ready");
   });
 
-  it("rechaza tandas que superan el límite de eventos o de tamaño de una partida", async () => {
+  it("rejects batches that exceed a game's event or size limit", async () => {
     const input = newGame();
     await store.create(input);
     expect(await store.append(input.id, input.owner, 1, "[]", MAX_EVENTS_PER_GAME + 1)).toBe("too_large");
@@ -86,7 +86,7 @@ describe("GameStore (Redis)", () => {
     expect(await store.append(input.id, input.owner, 2, "[]", 1)).toBe("too_large");
   });
 
-  it("una partida nueva del mismo jugador abandona la anterior", async () => {
+  it("a new game from the same player abandons the previous one", async () => {
     const owner = randomUUID();
     const first = newGame(owner);
     const second = newGame(owner);
@@ -97,7 +97,7 @@ describe("GameStore (Redis)", () => {
     expect(await store.append(second.id, owner, 1, "[]", 1)).toBe("ok");
   });
 
-  it("guarda el usuario de la partida", async () => {
+  it("stores the game's user", async () => {
     const input = { ...newGame(), userId: randomUUID() };
     await store.create(input);
     expect(await store.claimFinish(input.id, input.owner)).toMatchObject({
@@ -106,13 +106,13 @@ describe("GameStore (Redis)", () => {
     });
   });
 
-  it("una partida sin sesión no tiene usuario", async () => {
+  it("a game without a session has no user", async () => {
     const input = newGame();
     await store.create(input);
     expect(await store.claimFinish(input.id, input.owner)).toMatchObject({ kind: "ready", game: { userId: null } });
   });
 
-  it("un usuario solo tiene una partida activa, aunque juegue en dos navegadores", async () => {
+  it("a user has only one active game, even when playing in two browsers", async () => {
     const userId = randomUUID();
     const first = { ...newGame(), userId };
     const second = { ...newGame(), userId };
@@ -122,7 +122,7 @@ describe("GameStore (Redis)", () => {
     expect(await store.append(second.id, second.owner, 1, "[]", 1)).toBe("ok");
   });
 
-  it("una partida de verificación recuerda su verificación y su intento; una Ranked, ninguna", async () => {
+  it("a verification game remembers its verification and attempt; a Ranked one, neither", async () => {
     const verification = { id: randomUUID(), attempt: 2 };
     const input = { ...newGame(), userId: randomUUID(), verification };
     expect((await store.create(input)).verification).toEqual(verification);

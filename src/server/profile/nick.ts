@@ -2,7 +2,7 @@ import "server-only";
 import { NICK_PATTERN } from "@/lib/nick";
 import { isProfane } from "./profanity";
 
-/** Spec §3.6: 3–20 caracteres `[a-zA-Z0-9_]`, único sin distinguir mayúsculas, sin palabrotas. */
+/** Spec §3.6: 3–20 characters `[a-zA-Z0-9_]`, case-insensitively unique, no swear words. */
 export { NICK_PATTERN };
 
 export type NickProblem = "invalid" | "profane";
@@ -14,8 +14,8 @@ export function checkNick(nick: string): NickProblem | null {
 }
 
 /**
- * Base del nick automático: la primera palabra del nombre o, si no hay nombre, del email.
- * Solo la primera palabra, para no publicar el email entero en los rankings.
+ * Base of the automatic nick: the first word of the name or, if there is no name, of the email.
+ * Only the first word, so the whole email is not published in the rankings.
  */
 export function nickBase(email: string, name: string): string {
   const source = name.trim() || email.split("@")[0];
@@ -28,7 +28,7 @@ export function nickBase(email: string, name: string): string {
   return base.length >= 3 && !isProfane(base) ? base : "player";
 }
 
-/** `base_NN` con cifras al azar hasta encontrar uno libre; tras 6 intentos, 4 cifras. */
+/** `base_NN` with random digits until a free one is found; after 6 attempts, 4 digits. */
 export async function findFreeNick(
   base: string,
   isTaken: (nick: string) => Promise<boolean>,

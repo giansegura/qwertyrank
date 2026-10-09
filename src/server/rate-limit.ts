@@ -9,9 +9,9 @@ export interface RateLimit {
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterSeconds: number };
 
 /**
- * Ventana deslizante aproximada: lo de la ventana fija actual más la parte de la anterior que aún
- * cae dentro de la última `windowMs`. Un solo comando. KEYS: ventana actual y anterior; ARGV: máximo,
- * duración de la ventana y milisegundos transcurridos en la actual. Devuelve {permitido, actual, anterior}.
+ * Approximate sliding window: the count of the current fixed window plus the part of the previous one that
+ * still falls within the last `windowMs`. A single command. KEYS: current and previous window; ARGV: max,
+ * window duration and milliseconds elapsed in the current one. Returns {allowed, current, previous}.
  */
 const SLIDING_WINDOW = `
 local current = tonumber(redis.call('GET', KEYS[1]) or '0')
@@ -27,18 +27,18 @@ redis.call('PEXPIRE', KEYS[1], window * 2)
 return {1, current + 1, previous}`;
 
 /**
- * Milisegundos hasta que vuelva a caber una más, con la misma cuenta que el script:
- * `anterior · (W − e) / W + actual < máximo`.
+ * Milliseconds until one more fits again, with the same arithmetic as the script:
+ * `previous · (W − e) / W + current < max`.
  */
 export function retryAfterMs({ max, windowMs }: RateLimit, current: number, previous: number, elapsed: number): number {
-  // La actual ya está llena: solo cabe en la siguiente, cuando lo de esta (que pasa a ser la anterior) pese menos.
+  // The current one is already full: it only fits in the next one, once this one (now the previous) weighs less.
   if (current >= max) return windowMs - elapsed + Math.ceil(windowMs * (1 - max / current)) + 1;
   return Math.max(1, Math.ceil(windowMs * (1 - (max - current) / previous)) - elapsed + 1);
 }
 
 export type RateLimiter = (name: string, id: string, limit: RateLimit) => Promise<RateLimitResult>;
 
-/** Límites en Redis (spec 4a §2): `<prefix>rl:<name>:<id>:<ventana>`. `now` es inyectable para los tests. */
+/** Limits in Redis (spec 4a §2): `<prefix>rl:<name>:<id>:<window>`. `now` is injectable for the tests. */
 export function createRateLimiter(redis: Redis, prefix: string, now: () => number = Date.now): RateLimiter {
   return async (name, id, limit) => {
     const at = now();

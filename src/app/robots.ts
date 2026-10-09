@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 
 /**
- * No bloquea nada (spec 5a §5, 5b §4): un buscador que no puede leer una página tampoco ve su `noindex`, y el
- * panel y la API ya lo mandan en cabecera o no tienen nada que indexar. Solo declara el sitemap.
+ * Blocks nothing (spec 5a §5, 5b §4): a search engine that cannot read a page does not see its `noindex` either,
+ * and the panel and the API already send it in a header or have nothing to index. It only declares the sitemap.
  */
 export default function robots(): MetadataRoute.Robots {
   return {

@@ -4,7 +4,7 @@ import { getDb } from "@/server/db/client";
 import { getOwnResult } from "@/server/game/result";
 import { jsonError } from "@/server/http";
 
-/** La partida propia (spec 5d §5): la pide la 404 de `/r/[id]` cuando hay sesión. */
+/** The player's own game (spec 5d §5): requested by the 404 of `/r/[id]` when there is a session. */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getSessionUser(request.headers);

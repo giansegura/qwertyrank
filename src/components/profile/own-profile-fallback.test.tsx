@@ -30,7 +30,7 @@ afterEach(() => {
 const page = () => renderWithIntl(<OwnProfileFallback><p>not found</p></OwnProfileFallback>);
 
 describe("OwnProfileFallback", () => {
-  it("al propio jugador le enseña su perfil", async () => {
+  it("shows the player their own profile", async () => {
     vi.mocked(getViewer).mockResolvedValue({ nick: "gian" });
     fetchMock.mockResolvedValue(Response.json(PROFILE));
     page();
@@ -39,7 +39,7 @@ describe("OwnProfileFallback", () => {
     expect(screen.queryByText("not found")).toBeNull();
   });
 
-  it("a otro jugador o sin sesión, la 404 de siempre", async () => {
+  it("to another player or without a session, the usual 404", async () => {
     for (const viewer of [{ nick: "otro" }, null]) {
       vi.mocked(getViewer).mockResolvedValue(viewer);
       page();

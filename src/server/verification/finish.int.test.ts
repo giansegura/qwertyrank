@@ -26,7 +26,7 @@ const store = createLeaderboardStore(redis, prefix);
 const changes: Board[][] = [];
 const BOARD: Board = { language: "en", inputType: "physical" };
 
-/** Como en producción, con 1,5 s de partida y sin cuenta atrás. */
+/** As in production, with a 1.5 s game and no countdown. */
 function serviceWith(leaderboard: LeaderboardStore): GameService {
   return createGameService({
     store: createGameStore(redis, process.env.REDIS_KEY_PREFIX!),
@@ -44,9 +44,9 @@ const service = serviceWith(store);
 
 const ENV = { coarse: false, touchPoints: 0 };
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-/** 3 palabras en 1,5 s: 120 PPM, 100 % de precisión, teclado físico. */
+/** 3 words in 1.5 s: 120 WPM, 100% accuracy, physical keyboard. */
 const FAST = typed("hola ".repeat(3), { every: 50, hold: 30 });
-/** 1 palabra: 40 PPM. */
+/** 1 word: 40 WPM. */
 const SLOW = typed("hola ", { every: 50, hold: 30 });
 const DAY_MS = 86_400_000;
 
@@ -68,10 +68,10 @@ async function newUser(status: "active" | "shadowbanned" = "active"): Promise<st
   return row.id;
 }
 
-/** Gasta un intento y empieza la partida de verificación, como `POST /api/game/start`. */
+/** Spends an attempt and starts the verification game, like `POST /api/game/start`. */
 async function startVerification(userId: string, verificationId: string, using = service) {
   const spent = await spendAttempt(db, { verificationId, userId, language: "en" });
-  if (!spent) throw new Error("sin intentos");
+  if (!spent) throw new Error("no attempts left");
   const owner = randomUUID();
   const { gameId } = await using.start({ owner, userId, language: "en", env: ENV, verification: spent });
   return { owner, gameId };
@@ -89,7 +89,7 @@ async function verify(userId: string, verificationId: string, events: TypingEven
   return finishVerification(await startVerification(userId, verificationId, using), events, using);
 }
 
-/** Una partida de verificación ya jugada y puntuada, lista para `createSaveVerificationGame`. */
+/** A verification game already played and scored, ready for `createSaveVerificationGame`. */
 const played = (userId: string, wpm: number): GameRecord => ({
   id: randomUUID(),
   userId,
@@ -115,8 +115,8 @@ const verdictOf = async (gameId: string) =>
 const bestsOf = (userId: string) =>
   db.select({ gameId: bests.gameId, wpm: bests.wpm, achievedAt: bests.achievedAt }).from(bests).where(eq(bests.userId, userId));
 
-describe("partida de verificación (spec 4b §3)", () => {
-  it("superada: publica el récord, sube el nivel, cierra la verificación y responde con su posición", async () => {
+describe("verification game (spec 4b §3)", () => {
+  it("passed: publishes the record, raises the level, closes the verification and answers with its position", async () => {
     const userId = await newUser();
     const { gameId, verification } = await seedPendingVerification(db, userId, { startsAt: new Date(Date.now() - 60_000) });
 
@@ -135,7 +135,7 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await store.position(BOARD, userId)).not.toBeNull();
     expect(changes.flat()).toContainEqual(BOARD);
 
-    // La partida de verificación se guarda con su modo y su verificación, sin marcas propias.
+    // The verification game is saved with its mode and verification, with no bests of its own.
     const [played] = await db
       .select()
       .from(games)
@@ -144,11 +144,11 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect((await bestsOf(userId)).map((best) => best.gameId)).not.toContain(played.id);
   });
 
-  it("un récord de hace días entra en el ranking con su hora original, sin caducidad en Redis", async () => {
+  it("a record from days ago enters the ranking with its original time, with no expiry in Redis", async () => {
     const userId = await newUser();
     const lastNight = new Date(Date.now() - DAY_MS);
     const longAgo = new Date(Date.now() - 9 * DAY_MS);
-    // La partida del récord, de anoche, y otras dos que esperaban la misma verificación, más lentas.
+    // The record's game, from last night, and two slower ones that were awaiting the same verification.
     const { gameId, verification } = await seedPendingVerification(db, userId, { startsAt: lastNight });
     const old = await seedPendingVerification(db, userId, { startsAt: longAgo, wpm: 80 });
     const recent = await seedPendingVerification(db, userId, { startsAt: new Date(Date.now() - 2 * DAY_MS), wpm: 90 });
@@ -159,13 +159,13 @@ describe("partida de verificación (spec 4b §3)", () => {
     const position = await store.position(BOARD, userId);
     expect(position).not.toBeNull();
     expect(response.verification).toEqual({ kind: "verified", ranking: { kind: "ranked", rank: position, improved: true } });
-    // Las tres pasan a `valid`; la marca es la más rápida, con la hora en que se jugó.
+    // All three become `valid`; the best is the fastest one, with the time it was played.
     for (const game of [gameId, old.gameId, recent.gameId]) expect(await verdictOf(game)).toBe("valid");
     expect(await bestsOf(userId)).toEqual([{ gameId, wpm: 100, achievedAt: lastNight }]);
     expect(await redis.ttl(boardKey(prefix, BOARD))).toBe(-1);
   });
 
-  it("no superada: siguen pendientes los intentos que quedan; al tercero, fallida y el récord sigue en review", async () => {
+  it("not passed: the remaining attempts stay pending; on the third, failed and the record stays in review", async () => {
     const userId = await newUser();
     const { gameId, verification } = await seedPendingVerification(db, userId);
 
@@ -183,7 +183,7 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await bestsOf(userId)).toEqual([]);
   });
 
-  it("con otro teclado no cuenta, aunque llegue a las PPM", async () => {
+  it("with another keyboard it does not count, even if it reaches the WPM", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId, { inputType: "touch" });
     expect((await verify(userId, verification.id, FAST)).verification).toEqual({
@@ -193,11 +193,11 @@ describe("partida de verificación (spec 4b §3)", () => {
     });
   });
 
-  it("si el objetivo sube a mitad de intento, se juzga contra el de ahora", async () => {
+  it("if the target rises mid-attempt, it is judged against the current one", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId, { wpm: 100 });
     const playing = await startVerification(userId, verification.id);
-    // Mientras juega, otra partida mejor (p. ej. en otro dispositivo) pasa a ser el objetivo.
+    // While playing, another better game (e.g. on another device) becomes the target.
     await seedPendingVerification(db, userId, { wpm: 150 });
 
     expect((await finishVerification(playing, FAST)).verification).toEqual({
@@ -207,14 +207,14 @@ describe("partida de verificación (spec 4b §3)", () => {
     });
   });
 
-  it("si el objetivo cambia mientras el final espera a la verificación, se juzga contra el nuevo", async () => {
+  it("if the target changes while the finish waits for the verification, it is judged against the new one", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId, { wpm: 100 });
     const spent = await spendAttempt(db, { verificationId: verification.id, userId, language: "en" });
     const faster = played(userId, 150);
 
-    // A: una partida mejor (p. ej. en otro dispositivo) pasa a ser el objetivo, y A no confirma hasta que
-    // el final de la partida de verificación está esperando por esa verificación.
+    // A: a better game (e.g. on another device) becomes the target, and A does not commit until
+    // the verification game's finish is waiting on that verification.
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
     let retargeted = () => {};
@@ -232,7 +232,7 @@ describe("partida de verificación (spec 4b §3)", () => {
       await untilASessionWaitsForALock(db);
       release();
       await a;
-      // 120 PPM no llegan al 85 % de las 150 del objetivo nuevo: queda un intento menos, nada más.
+      // 120 WPM do not reach 85% of the new target's 150: one attempt fewer is left, nothing more.
       expect(await finished).toEqual({ kind: "failed", requiredWpm: 127.5, attemptsLeft: 2 });
     } finally {
       release();
@@ -241,7 +241,7 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await db.select({ id: games.id }).from(games).where(eq(games.id, game.id))).toHaveLength(1);
   });
 
-  it("desde otro dispositivo: empezar allí cierra la partida de aquí, y cada inicio gasta su intento", async () => {
+  it("from another device: starting there closes the game here, and each start spends its attempt", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     const here = await startVerification(userId, verification.id);
@@ -253,14 +253,14 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await verificationRow(verification.id)).toMatchObject({ status: "verified", attempts: 2 });
   });
 
-  it("ya verificada desde otro dispositivo, un final que no llega no la cierra ni la publica otra vez", async () => {
+  it("already verified from another device, a finish that falls short neither closes nor publishes it again", async () => {
     const userId = await newUser();
     const { gameId, verification } = await seedPendingVerification(db, userId);
     const saveVerificationGame = createSaveVerificationGame(db);
 
     const passed = await saveVerificationGame(played(userId, 120), { id: verification.id, attempt: 2 });
     expect(passed).toMatchObject({ kind: "verified", published: [{ gameId }] });
-    // El tercer intento, en el otro dispositivo, termina después y no llega a las PPM.
+    // The third attempt, on the other device, finishes later and does not reach the WPM.
     const late = await saveVerificationGame(played(userId, 40), { id: verification.id, attempt: 3 });
     expect(late).toMatchObject({ kind: "verified", target: { gameId }, published: [] });
     expect(await verificationRow(verification.id)).toMatchObject({ status: "verified" });
@@ -268,11 +268,11 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await bestsOf(userId)).toEqual([expect.objectContaining({ gameId })]);
   });
 
-  it("si borra la cuenta a mitad de intento, no hay nada que verificar: fallida y sin guardar la partida", async () => {
+  it("if the account is deleted mid-attempt, there is nothing to verify: failed and the game is not saved", async () => {
     const userId = await newUser();
     const { verification } = await seedPendingVerification(db, userId);
     const playing = await startVerification(userId, verification.id);
-    // Mientras juega, borra la cuenta: su verificación cae en cascada.
+    // While playing, the account is deleted: its verification is cascade-deleted.
     await db.delete(users).where(eq(users.id, userId));
 
     expect((await finishVerification(playing, FAST)).verification).toEqual({
@@ -283,7 +283,7 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await db.select({ id: games.id }).from(games).where(eq(games.id, playing.gameId))).toEqual([]);
   });
 
-  it("en shadow-ban sigue el mismo flujo: se publica en PostgreSQL, pero no entra en Redis", async () => {
+  it("under shadow ban the same flow: published in PostgreSQL, but not added to Redis", async () => {
     const userId = await newUser("shadowbanned");
     const { gameId, verification } = await seedPendingVerification(db, userId);
     expect((await verify(userId, verification.id, FAST)).verification).toMatchObject({
@@ -294,7 +294,7 @@ describe("partida de verificación (spec 4b §3)", () => {
     expect(await store.position(BOARD, userId)).toBeNull();
   });
 
-  it("con Redis caído, el récord queda publicado en PostgreSQL y la respuesta lo dice", async () => {
+  it("with Redis down, the record stays published in PostgreSQL and the response says so", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const down = async () => {
       throw new Error("redis down");

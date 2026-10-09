@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac } from "node:crypto";
 
-/** La IP nunca se guarda en claro: HMAC con una sal que cambia cada día UTC (spec §6). */
+/** The IP is never stored in plain text: HMAC with a salt that changes every UTC day (spec §6). */
 
 export function hashIp(ip: string | null, secret: string, now: Date): string | null {
   if (!ip) return null;

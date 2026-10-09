@@ -4,7 +4,7 @@ import { renderWithIntl } from "@/test/render-with-intl";
 import { SiteFooter } from "./site-footer";
 
 describe("SiteFooter", () => {
-  it("la beta y los comentarios abren un correo; las páginas legales, con su ruta traducida", () => {
+  it("the beta and feedback open an email; the legal pages, with their translated route", () => {
     renderWithIntl(<SiteFooter />, "es");
     expect(screen.getByRole("link", { name: "Beta: envíanos tus comentarios" })).toHaveAttribute("href", "mailto:feedback@qwertyrank.com");
     expect(screen.getByRole("link", { name: "Envíanos tus comentarios" })).toHaveAttribute(
@@ -18,7 +18,7 @@ describe("SiteFooter", () => {
   it.each([
     ["en", "/en/privacy", "/en/terms"],
     ["pt", "/pt/privacidade", "/pt/termos"],
-  ] as const)("en %s, las rutas de su idioma", (locale, privacy, terms) => {
+  ] as const)("in %s, the routes of its language", (locale, privacy, terms) => {
     renderWithIntl(<SiteFooter />, locale);
     const links = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(links).toContain(privacy);

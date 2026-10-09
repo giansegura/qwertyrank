@@ -7,8 +7,8 @@ import { useNow } from "../use-now";
 import { useVerificationModule } from "./use-verification-module";
 
 /**
- * `/verify` (spec 4b §4.3): las verificaciones pendientes del jugador y, al elegir una, su partida de
- * verificación, con el mismo módulo que "Verificar ahora".
+ * `/verify` (spec 4b §4.3): the player's pending verifications and, when one is picked, its verification
+ * game, with the same module as "Verify now".
  */
 export function VerifyList({ pending }: { pending: PendingVerification[] }) {
   const t = useTranslations("Verification");
@@ -17,9 +17,9 @@ export function VerifyList({ pending }: { pending: PendingVerification[] }) {
   const now = useNow();
   const verification = useVerificationModule();
 
-  // Al acabar, «Jugar Ranked» lleva a la portada: tras verificarla, si ya no estaba disponible (409, spec 4b
-  // §4.2) o si no quedan otras. Con otras pendientes, sin superarla, «Volver a tus récords» vuelve a la
-  // lista, pedida otra vez al servidor: puede haber cambiado (sin intentos, caducada).
+  // When done, "Play Ranked" goes to the home page: after verifying it, if it was no longer available (409, spec 4b
+  // §4.2) or if there are no others left. With other pending ones, when not passed, "Back to your records" goes back
+  // to the list, requested again from the server: it may have changed (no attempts left, expired).
   const verifying = verification.view(
     (play) => {
       if (play) return router.push("/");

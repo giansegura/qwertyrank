@@ -10,7 +10,7 @@ import { startBodySchema } from "@/server/game/schemas";
 import { clientIp } from "@/server/ip-hash";
 import { spendAttempt } from "@/server/verification/attempts";
 
-/** La cookie anónima nueva y el pase humano recién ganado viajan en cualquier respuesta. */
+/** The new anonymous cookie and the freshly earned human pass travel in any response. */
 function withCookies(response: NextResponse, anon: { value: string } | null, pass: string | null): NextResponse {
   const secure = process.env.NODE_ENV === "production";
   if (anon) {
@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
   const owner = existing ?? anon!.id;
 
   try {
-    // Solo `start` mira la sesión: `keys` y `finish` se autentican con la cookie anónima (spec §4.2).
+    // Only `start` looks at the session: `keys` and `finish` authenticate with the anonymous cookie (spec §4.2).
     const user = await getSessionUser(request.headers);
-    // Una verificación es de una cuenta (spec 4b §3.1): sin sesión no se pasa por la puerta ni se gasta nada.
+    // A verification belongs to an account (spec 4b §3.1): without a session it does not go through the gate or spend anything.
     if (body.mode === "verification" && !user) return withCookies(jsonError("unauthorized", 401), anon, null);
     const gate = await startGate()({
       anonId: owner,
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       const limited = NextResponse.json({ error: "rate_limited", retryAfter: gate.retryAfter }, { status: 429 });
       return withCookies(limited, anon, gate.newPass);
     }
-    // Pasada la puerta, la verificación gasta su intento; uno abandonado o cortado queda gastado.
+    // Past the gate, the verification spends its attempt; an abandoned or cut-off one stays spent.
     let verification: { id: string; attempt: number } | undefined;
     if (body.mode === "verification") {
       const spent = await spendAttempt(getDb(), { verificationId: body.verificationId, userId: user!.id, language: body.language });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
     return withCookies(NextResponse.json(game), anon, gate.newPass);
   } catch (error) {
-    // También Cloudflare caído (TurnstileUnavailableError) o Redis caído: "Ranked no está disponible".
+    // Also Cloudflare down (TurnstileUnavailableError) or Redis down: "Ranked is not available".
     console.error("start failed", error);
     return jsonError("unavailable", 503);
   }

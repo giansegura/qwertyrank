@@ -3,23 +3,23 @@ import { getPathname } from "@/i18n/navigation";
 import { type Locale, routing } from "@/i18n/routing";
 import { SITE_NAME } from "@/lib/site";
 
-/** Las rutas internas con página indexable (spec 5b §3.1). */
+/** The internal routes with an indexable page (spec 5b §3.1). */
 export type SeoHref = "/" | "/practice" | "/leaderboard/physical" | "/leaderboard/touch" | "/privacy" | "/terms";
 
-/** Tamaño de las imágenes al compartir: la de cada página y la de cada partida. */
+/** Size of the share images: each page's and each game's. */
 const IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
-/** Locale de Open Graph de cada idioma de la web. */
+/** Open Graph locale for each language of the site. */
 const OG_LOCALE: Record<Locale, string> = { en: "en_US", es: "es_ES", pt: "pt_BR" };
 
-/** URL de una página en un idioma, relativa a `metadataBase` (`/es/practica`). */
+/** URL of a page in a language, relative to `metadataBase` (`/es/practica`). */
 export function localizedPath(locale: Locale, href: SeoHref): string {
   return getPathname({ locale, href });
 }
 
 /**
- * Canonical y alternativas de idioma de una página (spec 5b §3). `x-default` es `/` en la portada (la raíz
- * redirige al idioma de cada visitante) y la versión inglesa en las demás.
+ * Canonical and language alternates of a page (spec 5b §3). `x-default` is `/` on the home page (the root
+ * redirects to each visitor's language) and the English version on the others.
  */
 export function alternatesFor(locale: Locale, href: SeoHref) {
   const languages: Record<string, string> = {};
@@ -31,28 +31,28 @@ export function alternatesFor(locale: Locale, href: SeoHref) {
 interface PageMetadataInput {
   locale: Locale;
   href: SeoHref;
-  /** Sin la marca: la añade la plantilla del layout. En la portada va el título completo (`absolute`). */
+  /** Without the brand: the layout's template adds it. The home page gets the full title (`absolute`). */
   title: string;
   description?: string;
 }
 
 /**
- * Imagen por defecto al compartir (`src/app/[locale]/opengraph-image.tsx`, spec 5b §6). Hay que nombrarla: si
- * una página define `openGraph`, Next deja de añadir la imagen del archivo.
+ * Default share image (`src/app/[locale]/opengraph-image.tsx`, spec 5b §6). It has to be named: if a page
+ * defines `openGraph`, Next stops adding the file's image.
  */
 function defaultImage(locale: Locale) {
   return { url: `/${locale}/opengraph-image`, ...IMAGE_SIZE, alt: SITE_NAME, type: "image/png" };
 }
 
-/** Imagen de una partida (`src/app/[locale]/r/[id]/opengraph-image.tsx`, spec 5d §4). */
+/** Image of a game (`src/app/[locale]/r/[id]/opengraph-image.tsx`, spec 5d §4). */
 export function resultImage(locale: Locale, id: string, alt: string) {
   return { url: `/${locale}/r/${id}/opengraph-image`, ...IMAGE_SIZE, alt, type: "image/png" };
 }
 
 /**
- * Metadatos de una página indexable. Next no fusiona `openGraph` entre layout y página (lo sustituye), así
- * que se repiten aquí los campos comunes y la imagen. Sin descripción no se declara la clave: con `undefined`,
- * Next borraría la del layout en vez de heredarla.
+ * Metadata of an indexable page. Next does not merge `openGraph` between layout and page (it replaces it), so
+ * the common fields and the image are repeated here. Without a description the key is not declared: with
+ * `undefined`, Next would erase the layout's instead of inheriting it.
  */
 export function pageMetadata({ locale, href, title, description }: PageMetadataInput): Metadata {
   const alternates = alternatesFor(locale, href);
@@ -78,15 +78,15 @@ export function pageMetadata({ locale, href, title, description }: PageMetadataI
 interface ResultMetadataInput {
   locale: Locale;
   id: string;
-  /** Sin la marca: la añade la plantilla del layout. */
+  /** Without the brand: the layout's template adds it. */
   title: string;
   description: string;
   imageAlt: string;
 }
 
 /**
- * Metadatos de una página de resultado (spec 5d §3.3): sin indexar, así que sin canonical ni idiomas, y con
- * la imagen de la partida nombrada a mano (la página define `openGraph`).
+ * Metadata of a result page (spec 5d §3.3): not indexed, so no canonical or languages, and with the game's
+ * image named by hand (the page defines `openGraph`).
  */
 export function resultMetadata({ locale, id, title, description, imageAlt }: ResultMetadataInput): Metadata {
   const fullTitle = `${title} · ${SITE_NAME}`;

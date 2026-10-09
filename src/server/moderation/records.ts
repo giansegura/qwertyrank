@@ -6,11 +6,11 @@ import type { Db } from "../db/client";
 import { games, keystrokeLogs, recordVerifications, users } from "../db/schema";
 import { decodeKeystrokeLog, type StoredKeystrokeLog } from "../game/keystroke-log";
 
-/** Spec 4b §6.1: tres listas de hasta 100 filas; verificados y cerrados, de los últimos 7 días. */
+/** Spec 4b §6.1: three lists of up to 100 rows; verified and closed ones, from the last 7 days. */
 export const RECORDS_LIMIT = 100;
 export const RECORDS_DAYS = 7;
 
-/** `expired`: `pending` con `expires_at` pasado (la caducidad se decide al leer, spec 4b §3.4). */
+/** `expired`: `pending` with a past `expires_at` (expiry is decided on read, spec 4b §3.4). */
 export type RecordState = "pending" | "verified" | "failed" | "expired";
 
 export interface RecordRow {
@@ -20,7 +20,7 @@ export interface RecordRow {
   language: string;
   inputType: string;
   gameId: string;
-  /** PPM de la partida del récord. */
+  /** Wpm of the record's game. */
   wpm: number;
   attempts: number;
   createdAt: Date;
@@ -32,7 +32,7 @@ export interface RecordRow {
 export interface RecordQueues {
   pending: RecordRow[];
   verified: RecordRow[];
-  /** Fallidos o caducados. */
+  /** Failed or expired. */
   closed: RecordRow[];
 }
 
@@ -49,11 +49,11 @@ const FIELDS = {
   expiresAt: recordVerifications.expiresAt,
   resolvedAt: recordVerifications.resolvedAt,
   status: recordVerifications.status,
-  // Con el reloj de PostgreSQL, el mismo que decide en qué lista va.
+  // With the PostgreSQL clock, the same one that decides which list it goes in.
   expired: sql<boolean>`${recordVerifications.expiresAt} <= now()`,
 };
 
-/** Cola de récords del panel (spec 4b §6.1), de la más reciente a la más antigua. Solo consulta. */
+/** Panel record queue (spec 4b §6.1), from newest to oldest. Read-only. */
 export async function recordQueues(db: Db, limit = RECORDS_LIMIT): Promise<RecordQueues> {
   const rows = () =>
     db
@@ -92,7 +92,7 @@ export async function recordQueues(db: Db, limit = RECORDS_LIMIT): Promise<Recor
   return { pending: withState(pending), verified: withState(verified), closed: withState(closed) };
 }
 
-/** El registro de pulsaciones de una partida: no hay (borrado a los 30 días), no se puede leer, o sí. */
+/** A game's keystroke log: there is none (deleted after 30 days), it can't be read, or it can. */
 export type GameLog = { kind: "missing" } | { kind: "unreadable" } | ({ kind: "ok" } & StoredKeystrokeLog);
 
 export interface GameDetail {
@@ -112,7 +112,7 @@ export interface GameDetail {
   log: GameLog;
 }
 
-/** Una partida para el panel (spec 4b §6.2), con su registro ya leído. Nunca lanza por un registro roto. */
+/** A game for the panel (spec 4b §6.2), with its log already read. Never throws because of a broken log. */
 export async function gameDetail(db: Db, id: string): Promise<GameDetail | null> {
   const [row] = await db
     .select({

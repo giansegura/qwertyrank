@@ -1,16 +1,16 @@
 import type { PendingVerification } from "../verification";
 
 /**
- * El ranking de una partida, al terminarla o al reclamarla, con su posición en el ranking de su idioma y
- * teclado (1 = el mejor):
- * - `ranked`: con cuenta; `improved` si es su nueva mejor marca;
- * - `would_rank`: anónima; la posición que tendría, sin escribir en el ranking (spec §5.6);
- * - `low_accuracy`: válida, pero con menos del 90 % de precisión;
- * - `unranked`: partida no válida;
- * - `unavailable`: no se pudo calcular (Redis caído), aunque la partida sí está guardada; `canSave` si es
- *   anónima y se puede guardar en una cuenta;
- * - `review`: entraría en un top 10 y espera su verificación (spec 4b §2.4); `rank`, la posición que
- *   tendría, contada en PostgreSQL.
+ * The ranking of a game, when it finishes or is claimed, with its position in the ranking of its language and
+ * keyboard (1 = the best):
+ * - `ranked`: with an account; `improved` if it is their new best;
+ * - `would_rank`: anonymous; the position it would have, without writing to the ranking (spec §5.6);
+ * - `low_accuracy`: valid, but with less than 90 % accuracy;
+ * - `unranked`: invalid game;
+ * - `unavailable`: could not be computed (Redis down), although the game is saved; `canSave` if it is
+ *   anonymous and can be saved to an account;
+ * - `review`: it would enter a top 10 and awaits its verification (spec 4b §2.4); `rank`, the position it
+ *   would have, counted in PostgreSQL.
  */
 export type GameRanking =
   | { kind: "ranked"; rank: number; improved: boolean }
@@ -20,7 +20,7 @@ export type GameRanking =
   | { kind: "unranked" }
   | { kind: "unavailable"; canSave: boolean };
 
-/** Una fila del top de un ranking. */
+/** A row of a ranking's top. */
 export interface TopEntry {
   rank: number;
   nick: string;
@@ -29,5 +29,5 @@ export interface TopEntry {
   accuracy: number;
 }
 
-/** `GET /api/leaderboard/me`: la posición del jugador en un ranking, o `null` si no tiene marca. */
+/** `GET /api/leaderboard/me`: the player's position in a ranking, or `null` if they have no record. */
 export type MyPositionResponse = { rank: number; wpm: number; accuracy: number } | { rank: null };

@@ -2,13 +2,13 @@ import type { PublicReason, StartRequest, StartResponse } from "@/lib/game/types
 import { GameApiError, finishGame, startGame } from "./api";
 import type { BatchSender } from "./batch-sender";
 
-/** El reto no se pudo resolver: el script no cargó, el widget dio error o se agotó el tiempo. */
+/** The challenge could not be solved: the script did not load, the widget errored or it timed out. */
 export class ChallengeFailedError extends Error {}
 
 /**
- * Pide la partida; si el servidor exige el reto (spec 4a §2.1), lo resuelve en el contenedor y la pide
- * otra vez, una sola vez. `onChallenge` avisa de que empieza el reto. Lo comparten Ranked y la
- * verificación (spec 4b §4.2).
+ * Requests the game; if the server requires the challenge (spec 4a §2.1), solves it in the container and
+ * requests it again, only once. `onChallenge` signals that the challenge is starting. Shared by Ranked and
+ * verification (spec 4b §4.2).
  */
 export async function requestStart(
   body: StartRequest,
@@ -47,37 +47,37 @@ export type StartFailure =
   | { kind: "unauthorized" }
   | { kind: "unavailable" };
 
-/** Por qué no ha empezado la partida (spec 4a §2.1; spec 4b §4.2; spec §8.4). */
+/** Why the game has not started (spec 4a §2.1; spec 4b §4.2; spec §8.4). */
 export function startFailure(error: unknown): StartFailure {
   if (error instanceof ChallengeFailedError) return { kind: "blocked", reason: "challenge_failed", minutes: 0 };
   if (!(error instanceof GameApiError)) return { kind: "unavailable" };
-  // Un segundo `needs_challenge` es un token rechazado: no se reintenta en bucle.
+  // A second `needs_challenge` is a rejected token: no retrying in a loop.
   if (error.code === "needs_challenge") return { kind: "blocked", reason: "challenge_failed", minutes: 0 };
   if (error.code === "banned") return { kind: "blocked", reason: "banned", minutes: 0 };
   if (error.code === "rate_limited") {
     return { kind: "blocked", reason: "rate_limited", minutes: Math.max(1, Math.ceil((error.retryAfter ?? 60) / 60)) };
   }
   if (error.code === "no_pending_verification") return { kind: "no_pending" };
-  // Una verificación sin sesión: ha caducado (p. ej. en `/verify`, abierta desde ayer).
+  // A verification without a session: it has expired (e.g. on `/verify`, open since yesterday).
   if (error.code === "unauthorized") return { kind: "unauthorized" };
   return { kind: "unavailable" };
 }
 
-/** El texto (en `Ranked`) de cada motivo por el que el servidor no cuenta una partida (spec §4.9). */
+/** The text (in `Ranked`) for each reason the server does not count a game (spec §4.9). */
 export const REASON_MESSAGE: Record<PublicReason, "verdictConnection" | "verdictUnrecognized" | "verdictLetterByLetter"> = {
   connection: "verdictConnection",
   unrecognized: "verdictUnrecognized",
   letter_by_letter: "verdictLetterByLetter",
 };
 
-/** Si el servidor no confirma la partida en este tiempo, se enseña el resultado local (spec §8.4). */
+/** If the server does not confirm the game within this time, the local result is shown (spec §8.4). */
 export const SUBMIT_DEADLINE_MS = 10_000;
 
 export type Confirmation<T> = { kind: "result"; response: T } | { kind: "replaced" | "failed" | "timeout" };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Envía lo pendiente y pide el veredicto al servidor, sin esperar más de `SUBMIT_DEADLINE_MS`. */
+/** Sends what is pending and asks the server for the verdict, waiting no longer than `SUBMIT_DEADLINE_MS`. */
 export function confirmFinish<T>(gameId: string, sender: BatchSender): Promise<Confirmation<T>> {
   const confirm = async (): Promise<Confirmation<T>> => {
     const { lastSeq } = await sender.flush();

@@ -1,4 +1,4 @@
-/** Pulsación física o virtual. `t` = ms desde el inicio de la partida. */
+/** Physical or virtual keystroke. `t` = ms since the start of the game. */
 export interface KeyTypingEvent {
   t: number;
   type: "down" | "up";
@@ -8,9 +8,9 @@ export interface KeyTypingEvent {
 }
 
 /**
- * Cambio en el texto escrito: primero se borran `deleted` caracteres del final
- * de la palabra actual y después se insertan los de `inserted` (un espacio, o
- * cualquier otro espacio en blanco, confirma la palabra).
+ * Change in the typed text: first `deleted` characters are removed from the end
+ * of the current word and then those of `inserted` are inserted (a space, or
+ * any other whitespace, commits the word).
  */
 export interface InputTypingEvent {
   t: number;

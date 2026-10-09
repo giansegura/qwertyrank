@@ -17,20 +17,20 @@ afterAll(async () => {
   await db.$client.end();
 });
 
-describe("reserva de nicks", () => {
-  it("el nick de otro usuario está cogido, con cualquier mayúscula", async () => {
+describe("nick reservation", () => {
+  it("another user's nick is taken, in any case", async () => {
     const nick = `Res_${randomUUID().slice(0, 8)}`;
     await db.insert(users).values({ name: "", email: `${randomUUID()}@example.com`, nick });
     expect(await isNickTaken(nick.toLowerCase())).toBe(true);
   });
 
-  it("un nick libre queda reservado: el siguiente que lo pide lo ve cogido", async () => {
+  it("a free nick gets reserved: the next one asking for it sees it taken", async () => {
     const nick = `free_${randomUUID().slice(0, 8)}`;
     expect(await isNickTaken(nick)).toBe(false);
     expect(await isNickTaken(nick.toUpperCase())).toBe(true);
   });
 
-  it("dos registros a la vez con el mismo azar reciben nicks distintos", async () => {
+  it("two simultaneous sign-ups with the same randomness get different nicks", async () => {
     const base = `twin${randomUUID().slice(0, 6)}`;
     const sameRandom = () => 0.42;
     const [a, b] = await Promise.all([

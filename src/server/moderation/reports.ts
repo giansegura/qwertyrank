@@ -6,7 +6,7 @@ import type { Db } from "../db/client";
 import { reports, users } from "../db/schema";
 import type { RateLimit, RateLimiter } from "../rate-limit";
 
-/** Spec 4a §4.2: como mucho 10 denuncias por denunciante cada 24 h. */
+/** Spec 4a §4.2: at most 10 reports per reporter every 24 h. */
 export const REPORT_LIMIT: RateLimit = { max: 10, windowMs: 24 * 60 * 60 * 1000 };
 
 export const reportBodySchema = z.object({
@@ -17,8 +17,8 @@ export const reportBodySchema = z.object({
 export type ReportOutcome = { kind: "ok" | "not_found" | "self" } | { kind: "rate_limited"; retryAfter: number };
 
 /**
- * Denuncia a un jugador por su nick (spec 4a §4.2). Responde `ok` también si está sancionado o si la
- * denuncia ya existía: la respuesta no debe delatar un shadow-ban.
+ * Reports a player by their nick (spec 4a §4.2). Responds `ok` also if they are sanctioned or if the
+ * report already existed: the response must not give away a shadow ban.
  */
 export function createReports(db: Db, limit: RateLimiter, rule: RateLimit = REPORT_LIMIT) {
   return async (reporterId: string, nick: string, reason: ReportReason): Promise<ReportOutcome> => {
@@ -30,7 +30,7 @@ export function createReports(db: Db, limit: RateLimiter, rule: RateLimit = REPO
     if (target.id === reporterId) return { kind: "self" };
     const allowed = await limit("reports", reporterId, rule);
     if (!allowed.ok) return { kind: "rate_limited", retryAfter: allowed.retryAfterSeconds };
-    // Una sola abierta por denunciante, denunciado y motivo (índice único parcial): repetirla no cuenta.
+    // Only one open per reporter, reported player and reason (partial unique index): repeating it doesn't count.
     await db.insert(reports).values({ reporterId, targetUserId: target.id, reason }).onConflictDoNothing();
     return { kind: "ok" };
   };

@@ -3,7 +3,7 @@ import { routing } from "@/i18n/routing";
 import { localizedPath, type SeoHref } from "@/lib/seo/metadata";
 import { SITE_URL } from "@/lib/site";
 
-/** Páginas del sitemap (spec 5b §4): las legales no entran; las guías llegarán con la 5c. */
+/** Sitemap pages (spec 5b §4): the legal ones are left out; the guides will come with 5c. */
 const PAGES: SeoHref[] = ["/", "/practice", "/leaderboard/physical", "/leaderboard/touch"];
 
 export default function sitemap(): MetadataRoute.Sitemap {

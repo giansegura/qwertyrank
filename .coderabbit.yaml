@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Revisión automática de cada PR con CodeRabbit (app de GitHub, se instala aparte: docs/launch.md §11).
-# Comenta; no bloquea la integración. Las reglas del proyecto están en AGENTS.md, CLAUDE.md y docs/.
-language: es-ES
-tone_instructions: "Directo y concreto, en español. Cada comentario dice qué falla, en qué caso y cómo arreglarlo."
+# Automatic review of every PR with CodeRabbit (GitHub app, installed separately: docs/launch.md §11).
+# It comments; it doesn't block merging. The project rules are in AGENTS.md, CLAUDE.md and docs/.
+language: en-US
+tone_instructions: "Direct and concrete, in English. Each comment says what is wrong, in which case and how to fix it."
 
 reviews:
   profile: chill
@@ -19,21 +19,21 @@ reviews:
   path_instructions:
     - path: "src/**"
       instructions: >-
-        Next.js 16 y next-intl 4: sus APIs cambian respecto a versiones anteriores (`params` es una Promise,
-        el middleware es `src/proxy.ts`). No sugieras patrones de versiones antiguas. La portada tiene un
-        presupuesto de JS de 30.720 B (`pnpm budget`): señala cualquier import nuevo que llegue a su cliente.
+        Next.js 16 and next-intl 4: their APIs differ from earlier versions (`params` is a Promise,
+        the middleware is `src/proxy.ts`). Don't suggest patterns from old versions. The home page has a
+        JS budget of 30,720 B (`pnpm budget`): flag any new import that reaches its client.
     - path: "src/server/anticheat/**"
       instructions: >-
-        El jugador nunca debe ver la regla exacta que rechaza una partida (spec §4.9), y el shadow-ban no debe
-        notarse desde fuera (spec §4.7).
+        The player must never see the exact rule that rejects a game (spec §4.9), and a shadow ban must not
+        be noticeable from outside (spec §4.7).
     - path: "messages/**"
       instructions: >-
-        en, es y pt deben tener exactamente las mismas claves. Comprueba que la traducción diga lo mismo
-        en los tres. En es el porcentaje va con espacio (`97 %`); en en y pt, sin él (`97%`).
+        en, es and pt must have exactly the same keys. Check that the translation says the same thing
+        in all three. In es the percentage has a space (`97 %`); in en and pt, it doesn't (`97%`).
     - path: "drizzle/**"
       instructions: >-
-        Las migraciones se aplican en el build de Vercel contra producción: señala cualquier cambio que bloquee
-        tablas grandes o pierda datos.
+        Migrations are applied in the Vercel build against production: flag any change that locks
+        large tables or loses data.
 
 knowledge_base:
   code_guidelines:

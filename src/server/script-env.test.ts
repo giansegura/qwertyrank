@@ -8,25 +8,25 @@ const FULL = {
   UPSTASH_REDIS_REST_TOKEN: "tok",
 };
 
-describe("entorno de los scripts", () => {
-  it("acepta el entorno completo y usa el prefijo por defecto de la app", () => {
+describe("scripts environment", () => {
+  it("accepts the full environment and uses the app's default prefix", () => {
     expect(parseScriptEnv(FULL, "f")).toMatchObject({ redisKeyPrefix: "qr:", redisToken: "tok" });
     expect(parseScriptEnv({ ...FULL, REDIS_KEY_PREFIX: "x:" }, "f").redisKeyPrefix).toBe("x:");
   });
 
-  it.each(["DATABASE_URL", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"])("falla si falta %s, nombrándola", (name) => {
-    expect(() => parseScriptEnv({ ...FULL, [name]: undefined }, "el archivo")).toThrow(new RegExp(`${name}.*el archivo`));
+  it.each(["DATABASE_URL", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"])("fails if %s is missing, naming it", (name) => {
+    expect(() => parseScriptEnv({ ...FULL, [name]: undefined }, "the file")).toThrow(new RegExp(`${name}.*the file`));
     expect(() => parseScriptEnv({ ...FULL, [name]: "  " }, "f")).toThrow(name);
   });
 
-  it("en una vista previa exige un prefijo propio", () => {
+  it("in a preview deployment requires its own prefix", () => {
     const preview = { ...FULL, VERCEL_ENV: "preview" };
-    expect(() => parseScriptEnv(preview, "el archivo")).toThrow(/REDIS_KEY_PREFIX.*el archivo/);
-    expect(() => parseScriptEnv({ ...preview, REDIS_KEY_PREFIX: "qr:" }, "f")).toThrow(/REDIS_KEY_PREFIX.*producción/);
+    expect(() => parseScriptEnv(preview, "the file")).toThrow(/REDIS_KEY_PREFIX.*the file/);
+    expect(() => parseScriptEnv({ ...preview, REDIS_KEY_PREFIX: "qr:" }, "f")).toThrow(/REDIS_KEY_PREFIX.*production/);
     expect(parseScriptEnv({ ...preview, REDIS_KEY_PREFIX: "pr-12:" }, "f").redisKeyPrefix).toBe("pr-12:");
   });
 
-  it("muestra solo los hosts, sin credenciales", () => {
+  it("shows only the hosts, without credentials", () => {
     const text = describeTargets(parseScriptEnv(FULL, "f"));
     expect(text).toContain("db.example.com:5432");
     expect(text).toContain("eu1-x.upstash.io");

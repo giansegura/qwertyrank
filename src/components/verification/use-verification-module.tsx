@@ -9,9 +9,9 @@ import type { VerificationGameProps } from "./verification-game";
 type VerificationGameComponent = typeof import("./verification-game").VerificationGame;
 
 /**
- * La partida de verificación, en lugar de la pantalla en la que se eligió (spec 4b §4.1, §4.3). Su módulo
- * (con el `canvas`) se descarga con `import()` al montarse: no pesa en la portada. Mientras llega,
- * "Cargando…"; si la descarga falla, `onUnavailable`.
+ * The verification game, instead of the screen it was chosen on (spec 4b §4.1, §4.3). Its module
+ * (with the `canvas`) is downloaded with `import()` on mount: it does not weigh on the home page. While it arrives,
+ * "Loading…"; if the download fails, `onUnavailable`.
  */
 export function LazyVerificationGame({ onUnavailable, ...props }: VerificationGameProps & { onUnavailable: () => void }) {
   const t = useTranslations("Ranked");
@@ -39,16 +39,16 @@ export function LazyVerificationGame({ onUnavailable, ...props }: VerificationGa
 }
 
 /**
- * La partida de verificación elegida, en la misma pantalla: tras «Guárdalo» o en `/verify`. Si su módulo no
- * se puede descargar, Ranked no está disponible.
+ * The chosen verification game, on the same screen: after "Save it" or on `/verify`. If its module cannot
+ * be downloaded, Ranked is unavailable.
  */
 export function useVerificationModule() {
   const t = useTranslations("Ranked");
   const [chosen, setChosen] = useState<PendingVerification | "unavailable" | null>(null);
 
   /**
-   * Lo que se enseña en lugar de la pantalla mientras se verifica, o `null`. `onDone` y `doneLabel`, los de
-   * la partida (`VerificationGameProps`).
+   * What is shown instead of the screen while verifying, or `null`. `onDone` and `doneLabel`, those of
+   * the game (`VerificationGameProps`).
    */
   function view(onDone: VerificationGameProps["onDone"], doneLabel?: string): ReactNode {
     if (chosen === "unavailable") {

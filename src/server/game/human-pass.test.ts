@@ -6,20 +6,20 @@ const SECRET = "s".repeat(32);
 const NOW = new Date("2026-10-06T12:00:00Z");
 const later = (seconds: number) => new Date(NOW.getTime() + seconds * 1000);
 
-describe("pase humano", () => {
-  it("vale para el mismo anónimo durante una hora", () => {
+describe("human pass", () => {
+  it("is valid for the same anonymous user for one hour", () => {
     const pass = issueHumanPass("anon-1", SECRET, NOW);
     expect(isValidHumanPass(pass, "anon-1", SECRET, later(HUMAN_PASS_SECONDS - 1))).toBe(true);
     expect(isValidHumanPass(pass, "anon-1", SECRET, later(HUMAN_PASS_SECONDS))).toBe(false);
   });
 
-  it("no vale para otro anónimo ni con otro secreto", () => {
+  it("is not valid for another anonymous user or with another secret", () => {
     const pass = issueHumanPass("anon-1", SECRET, NOW);
     expect(isValidHumanPass(pass, "anon-2", SECRET, NOW)).toBe(false);
     expect(isValidHumanPass(pass, "anon-1", "t".repeat(32), NOW)).toBe(false);
   });
 
-  it("rechaza pases manipulados o mal formados", () => {
+  it("rejects tampered or malformed passes", () => {
     const pass = issueHumanPass("anon-1", SECRET, NOW);
     const [exp, signature] = pass.split(".");
     expect(isValidHumanPass(`${Number(exp) + 3600}.${signature}`, "anon-1", SECRET, NOW)).toBe(false);

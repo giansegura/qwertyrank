@@ -11,8 +11,8 @@ afterAll(async () => {
   await db.$client.end();
 });
 
-describe("rol de admin", () => {
-  it("lo da y lo quita por email, sin distinguir mayúsculas, y lo registra sin admin", async () => {
+describe("admin role", () => {
+  it("grants and revokes it by email, case-insensitively, and logs it without an admin", async () => {
     const email = `${randomUUID()}@example.com`;
     const [user] = await db
       .insert(users)
@@ -35,7 +35,7 @@ describe("rol de admin", () => {
     ]);
   });
 
-  it("con un email que no existe no hace nada", async () => {
+  it("with an email that does not exist it does nothing", async () => {
     expect(await setAdminRole(db, `${randomUUID()}@example.com`, "admin")).toBe(false);
   });
 });

@@ -1,12 +1,12 @@
 /**
- * La parte de la reproducción que corre en el navegador (spec 4b §6.2). No importa nada: el motor de
- * puntuación se queda en el servidor, y el panel no comparte código con la portada (si lo compartiera,
- * Next lo movería a trozos comunes y crecería el JS de la portada).
+ * The part of the replay that runs in the browser (spec 4b §6.2). It imports nothing: the scoring engine
+ * stays on the server, and the panel shares no code with the home page (if it did, Next would move it
+ * into shared chunks and the home page's JS would grow).
  */
 
 /**
- * Un fotograma en compacto: en el instante `t`, lo escrito desde la palabra `from` (las anteriores no
- * cambian). La palabra activa es la última.
+ * A compact frame: at instant `t`, what was typed from word `from` on (the earlier ones do not
+ * change). The active word is the last one.
  */
 export interface FrameDelta {
   t: number;
@@ -14,7 +14,7 @@ export interface FrameDelta {
   tail: string[];
 }
 
-/** Lo escrito en `elapsed`: los fotogramas que ya han pasado, aplicados en orden. */
+/** What was typed at `elapsed`: the frames that have already passed, applied in order. */
 export function typedAt(frames: readonly FrameDelta[], elapsed: number): string[] {
   const typed: string[] = [];
   for (const frame of frames) {

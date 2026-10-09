@@ -3,14 +3,14 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import type { ReceivedBatch } from "../anticheat/rules";
 
 /**
- * `keystroke_logs.events`: JSON comprimido con gzip. Desde la 4b guarda también las palabras de la
- * partida (spec 4b §6.3): `{ words, batches }`. Antes era solo la lista de tandas.
+ * `keystroke_logs.events`: gzip-compressed JSON. Since 4b it also stores the game's words
+ * (spec 4b §6.3): `{ words, batches }`. Before, it was only the list of batches.
  */
 export function encodeKeystrokeLog(log: { words: readonly string[]; batches: readonly ReceivedBatch[] }): Buffer {
   return gzipSync(JSON.stringify({ words: log.words, batches: log.batches }));
 }
 
-/** Un registro leído: sus palabras (`null` si es anterior a la 4b) y sus eventos, sin validar, en orden de llegada. */
+/** A read log: its words (`null` if it predates 4b) and its events, unvalidated, in arrival order. */
 export interface StoredKeystrokeLog {
   words: string[] | null;
   events: unknown[];
@@ -25,8 +25,8 @@ function eventsOf(batches: unknown): unknown[] {
 }
 
 /**
- * Lee un registro en cualquiera de los dos formatos. Nunca lanza: un registro que no se puede leer
- * devuelve `null` (el panel lo dice en vez de romperse).
+ * Reads a log in either format. Never throws: a log that cannot be read
+ * returns `null` (the panel says so instead of breaking).
  */
 export function decodeKeystrokeLog(data: Buffer): StoredKeystrokeLog | null {
   let parsed: unknown;

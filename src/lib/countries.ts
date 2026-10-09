@@ -1,4 +1,4 @@
-/** Códigos ISO 3166-1 alfa-2 (spec §3.6). El nombre sale de `Intl.DisplayNames` en el idioma de la página. */
+/** ISO 3166-1 alpha-2 codes (spec §3.6). The name comes from `Intl.DisplayNames` in the page's language. */
 export const COUNTRY_CODES = [
   "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ",
   "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS",
@@ -36,8 +36,8 @@ export interface CountryOption {
 }
 
 /**
- * Opciones del selector de país, ordenadas por nombre. Se calculan solo en el servidor: Node y el
- * navegador traen datos de ICU distintos y darían otros nombres u otro orden al hidratar.
+ * Country selector options, sorted by name. They are computed only on the server: Node and the
+ * browser ship different ICU data and would give other names or another order on hydration.
  */
 export function countryOptions(locale: string): CountryOption[] {
   return COUNTRY_CODES.map((code) => ({ code, name: countryName(code, locale) })).toSorted((a, b) =>
@@ -45,12 +45,12 @@ export function countryOptions(locale: string): CountryOption[] {
   );
 }
 
-/** Cada letra del código pasa a su "regional indicator symbol": ES → 🇪🇸. */
+/** Each letter of the code becomes its "regional indicator symbol": ES → 🇪🇸. */
 export function flagEmoji(code: CountryCode): string {
   return String.fromCodePoint(...[...code].map((char) => 0x1f1e6 + char.charCodeAt(0) - 65));
 }
 
-/** Bandera y un espacio delante del nick, o nada si no hay país (o no es válido). */
+/** Flag and a space before the nick, or nothing if there is no country (or it is not valid). */
 export function flagPrefix(country: string | null): string {
   return country && isCountryCode(country) ? `${flagEmoji(country)} ` : "";
 }

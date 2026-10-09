@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Envoltura de las páginas legales (spec 5a §4.1): texto de lectura, sin JS de cliente. */
+/** Wrapper for the legal pages (spec 5a §4.1): reading text, no client JS. */
 export function LegalArticle({ children }: { children: ReactNode }) {
   return (
     <article

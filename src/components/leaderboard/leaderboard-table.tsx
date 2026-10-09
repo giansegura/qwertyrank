@@ -46,7 +46,7 @@ export function LeaderboardTable({ entries }: { entries: TopEntry[] }) {
           >
             <td className="py-2 font-mono text-zinc-500 tabular-nums">{entry.rank}</td>
             <td className="truncate py-2">
-              {/* Sin precarga: serían hasta 100 perfiles regenerándose por cada visita (límite de Vercel Hobby). */}
+              {/* No prefetch: it would be up to 100 profiles regenerating on every visit (Vercel Hobby limit). */}
               <Link
                 href={{ pathname: "/u/[nick]", params: { nick: entry.nick } }}
                 prefetch={false}

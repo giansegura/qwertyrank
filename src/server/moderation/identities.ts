@@ -7,7 +7,7 @@ import { accounts, bannedIdentities, users } from "../db/schema";
 
 export type IdentityKind = "email" | "google";
 
-/** Email tal como se compara (spec 4a §3.3): minúsculas, sin `+etiqueta` y, en Gmail, sin puntos. */
+/** Email as it is compared (spec 4a §3.3): lowercase, without `+tag` and, on Gmail, without dots. */
 export function normalizeEmail(email: string): string {
   const clean = email.trim().toLowerCase();
   const at = clean.lastIndexOf("@");
@@ -17,14 +17,14 @@ export function normalizeEmail(email: string): string {
   return `${domain === "gmail.com" ? local.replaceAll(".", "") : local}@${domain}`;
 }
 
-/** HMAC de la identidad con una clave propia derivada del secreto: nunca se guarda en claro. */
+/** HMAC of the identity with its own key derived from the secret: never stored in plain text. */
 export function identityHash(kind: IdentityKind, value: string, secret: string): string {
   const key = createHmac("sha256", secret).update("banned-identity").digest();
   const normalized = kind === "email" ? normalizeEmail(value) : `google:${value}`;
   return createHmac("sha256", key).update(normalized).digest("hex");
 }
 
-/** Identidades de un usuario: su email y sus cuentas de Google. */
+/** A user's identities: their email and their Google accounts. */
 export async function identitiesOf(
   db: DbExecutor,
   userId: string,
@@ -51,7 +51,7 @@ export async function isBannedIdentity(db: DbExecutor, hash: string): Promise<bo
   return rows.length > 0;
 }
 
-/** Error de Better Auth: la página de entrar lo traduce como "No se puede crear la cuenta". */
+/** Better Auth error: the sign-in page translates it as "This account can't be created". */
 export function accountBlocked(): APIError {
   return new APIError("FORBIDDEN", { code: "ACCOUNT_BLOCKED", message: "This account cannot be created" });
 }

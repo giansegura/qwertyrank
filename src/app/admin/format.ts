@@ -1,25 +1,25 @@
-const DATE = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
+const DATE = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
 export const formatDate = (date: Date) => `${DATE.format(date)} UTC`;
 
-export const STATUS_LABEL: Record<string, string> = { active: "Activo", shadowbanned: "Shadow-ban", banned: "Baneado" };
+export const STATUS_LABEL: Record<string, string> = { active: "Active", shadowbanned: "Shadow ban", banned: "Banned" };
 export const ACTION_LABEL: Record<string, string> = {
-  shadowban: "Shadow-ban",
+  shadowban: "Shadow ban",
   ban: "Ban",
-  restore: "Restaurado",
-  reset_nick: "Nick cambiado",
-  grant_admin: "Admin concedido",
-  revoke_admin: "Admin retirado",
+  restore: "Restored",
+  reset_nick: "Nick changed",
+  grant_admin: "Admin granted",
+  revoke_admin: "Admin revoked",
 };
-export const REASON_LABEL: Record<string, string> = { cheating: "Trampas", offensive_nick: "Nick ofensivo" };
-export const REPORT_STATUS_LABEL: Record<string, string> = { open: "Abierta", dismissed: "Descartada", actioned: "Resuelta" };
+export const REASON_LABEL: Record<string, string> = { cheating: "Cheating", offensive_nick: "Offensive nick" };
+export const REPORT_STATUS_LABEL: Record<string, string> = { open: "Open", dismissed: "Dismissed", actioned: "Actioned" };
 export const RECORD_STATE_LABEL: Record<string, string> = {
-  pending: "Pendiente",
-  verified: "Verificado",
-  failed: "Fallido",
-  expired: "Caducado",
+  pending: "Pending",
+  verified: "Verified",
+  failed: "Failed",
+  expired: "Expired",
 };
-export const MODE_LABEL: Record<string, string> = { ranked: "Ranked", verification: "Verificación" };
+export const MODE_LABEL: Record<string, string> = { ranked: "Ranked", verification: "Verification" };
 
 export const TABLE = "w-full border-collapse text-left text-sm";
 export const HEAD_ROW = "border-b border-zinc-300 dark:border-zinc-700";

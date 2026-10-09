@@ -5,8 +5,8 @@ import { FEEDBACK_EMAIL } from "@/lib/site";
 const FEEDBACK = `mailto:${FEEDBACK_EMAIL}`;
 
 /**
- * Pie de todas las páginas (spec 5a §4.4), en una línea: la marca de beta, cómo enviar comentarios y las
- * páginas legales. En la pantalla inicial queda abajo del todo, porque el `main` se estira.
+ * Footer of every page (spec 5a §4.4), on one line: the beta badge, how to send feedback and the
+ * legal pages. On the initial screen it sits at the very bottom, because `main` stretches.
  */
 export function SiteFooter() {
   const t = useTranslations("Footer");

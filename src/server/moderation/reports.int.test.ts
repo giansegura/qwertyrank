@@ -33,20 +33,20 @@ const openReportsAgainst = (targetId: string) =>
     .from(reports)
     .where(eq(reports.targetUserId, targetId));
 
-describe("denuncias", () => {
-  it("crea la denuncia contra el nick, con cualquier mayúscula", async () => {
+describe("reports", () => {
+  it("creates the report against the nick, in any case", async () => {
     const [reporter, target] = [await newUser(), await newUser()];
     expect(await report(reporter.id, target.nick.toUpperCase(), "cheating")).toEqual({ kind: "ok" });
     expect(await openReportsAgainst(target.id)).toEqual([{ reporterId: reporter.id, reason: "cheating", status: "open" }]);
   });
 
-  it("un nick que no existe es not_found; uno mismo, self", async () => {
+  it("a nick that does not exist is not_found; oneself, self", async () => {
     const reporter = await newUser();
-    expect(await report(reporter.id, `nadie_${randomUUID().slice(0, 6)}`, "cheating")).toEqual({ kind: "not_found" });
+    expect(await report(reporter.id, `nobody_${randomUUID().slice(0, 6)}`, "cheating")).toEqual({ kind: "not_found" });
     expect(await report(reporter.id, reporter.nick.toLowerCase(), "cheating")).toEqual({ kind: "self" });
   });
 
-  it("repetir una denuncia abierta no crea otra; tras descartarla, sí", async () => {
+  it("repeating an open report does not create another; after dismissing it, it does", async () => {
     const [reporter, target] = [await newUser(), await newUser()];
     await report(reporter.id, target.nick, "offensive_nick");
     expect(await report(reporter.id, target.nick, "offensive_nick")).toEqual({ kind: "ok" });
@@ -56,12 +56,12 @@ describe("denuncias", () => {
     expect(await openReportsAgainst(target.id)).toHaveLength(2);
   });
 
-  it("contra un jugador en shadow-ban responde lo mismo: no lo delata", async () => {
+  it("against a shadow-banned player it responds the same: it does not give them away", async () => {
     const [reporter, target] = [await newUser(), await newUser("shadowbanned")];
     expect(await report(reporter.id, target.nick, "cheating")).toEqual({ kind: "ok" });
   });
 
-  it("pasado el límite diario del denunciante, rate_limited", async () => {
+  it("past the reporter's daily limit, rate_limited", async () => {
     const limited = createReports(db, limit, { max: 2, windowMs: 86_400_000 });
     const reporter = await newUser();
     await limited(reporter.id, (await newUser()).nick, "cheating");

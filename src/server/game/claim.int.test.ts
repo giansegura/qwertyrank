@@ -33,7 +33,7 @@ async function newUser({ verified = true } = {}): Promise<string> {
   return row.id;
 }
 
-/** Partida anónima terminada hace `minutesAgo` minutos. */
+/** Anonymous game finished `minutesAgo` minutes ago. */
 async function anonymousGame(overrides: Partial<GameRecord> = {}, minutesAgo = 1) {
   const finishedAt = new Date(Date.now() - minutesAgo * 60_000);
   const record: GameRecord = {
@@ -63,8 +63,8 @@ async function owner(gameId: string) {
   return row;
 }
 
-describe("reclamar una partida anónima (spec §3.7)", () => {
-  it("una partida reciente pasa al usuario y es su marca, con la hora en que se jugó", async () => {
+describe("claiming an anonymous game (spec §3.7)", () => {
+  it("a recent game goes to the user and becomes their best, with the time it was played", async () => {
     const userId = await newUser();
     const game = await anonymousGame();
     const outcome = await claimGame({ gameId: game.id, anonId: game.anonId, userId });
@@ -78,20 +78,20 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
     ]);
   });
 
-  it("pasados 10 minutos ya no se puede", async () => {
+  it("after 10 minutes it is no longer possible", async () => {
     const game = await anonymousGame({}, 11);
     expect(await claimGame({ gameId: game.id, anonId: game.anonId, userId: await newUser() })).toEqual({ kind: "expired" });
     expect((await owner(game.id)).userId).toBeNull();
   });
 
-  it("desde otro navegador (otro anon_id) no se encuentra", async () => {
+  it("from another browser (another anon_id) it is not found", async () => {
     const game = await anonymousGame();
     expect(await claimGame({ gameId: game.id, anonId: randomUUID(), userId: await newUser() })).toEqual({
       kind: "not_found",
     });
   });
 
-  it("repetir el reclamo no cambia nada", async () => {
+  it("repeating the claim changes nothing", async () => {
     const userId = await newUser();
     const game = await anonymousGame();
     await claimGame({ gameId: game.id, anonId: game.anonId, userId });
@@ -101,7 +101,7 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
     });
   });
 
-  it("otro usuario del mismo navegador no puede quitársela", async () => {
+  it("another user on the same browser cannot take it", async () => {
     const game = await anonymousGame();
     await claimGame({ gameId: game.id, anonId: game.anonId, userId: await newUser() });
     expect(await claimGame({ gameId: game.id, anonId: game.anonId, userId: await newUser() })).toEqual({
@@ -109,14 +109,14 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
     });
   });
 
-  it("una partida rechazada no se reclama", async () => {
+  it("a rejected game cannot be claimed", async () => {
     const game = await anonymousGame({ verdict: "rejected", rejectReason: "untrusted" });
     expect(await claimGame({ gameId: game.id, anonId: game.anonId, userId: await newUser() })).toEqual({
       kind: "not_found",
     });
   });
 
-  it("con menos del 90 % de precisión se guarda en la cuenta, pero sin ranking", async () => {
+  it("with under 90% accuracy it is saved to the account, but without ranking", async () => {
     const userId = await newUser();
     const game = await anonymousGame({ accuracy: 85 });
     expect(await claimGame({ gameId: game.id, anonId: game.anonId, userId })).toMatchObject({
@@ -126,7 +126,7 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
     expect((await owner(game.id)).userId).toBe(userId);
   });
 
-  it("si entraría en un top 10 sin verificar, el reclamo la deja en review con su verificación", async () => {
+  it("if it would enter a top 10 unverified, the claim leaves it in review with its verification", async () => {
     await emptyBoards(db);
     const userId = await newUser({ verified: false });
     const game = await anonymousGame({ wpm: 80 });
@@ -144,10 +144,10 @@ describe("reclamar una partida anónima (spec §3.7)", () => {
     expect(row).toMatchObject({ userId, verdict: "review", verificationId: expect.any(String) });
     expect(await db.select().from(bests).where(eq(bests.gameId, game.id))).toEqual([]);
 
-    // Repetir el reclamo (p. ej. al recargar la página) enseña la misma verificación…
+    // Repeating the claim (e.g. on page reload) shows the same verification…
     const again = await claimGame({ gameId: game.id, anonId: game.anonId, userId });
     expect(again).toMatchObject({ kind: "ok", claim: { ranking: { kind: "review", rank: 1, verification: { id: row.verificationId } } } });
-    // …y, si ha caducado, ya no hay nada que verificar.
+    // …and, once it has expired, there is nothing left to verify.
     await db
       .update(recordVerifications)
       .set({ expiresAt: sql`now() - interval '1 minute'` })

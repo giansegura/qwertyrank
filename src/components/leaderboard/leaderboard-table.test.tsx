@@ -4,7 +4,7 @@ import { renderWithIntl } from "@/test/render-with-intl";
 import { LeaderboardTable } from "./leaderboard-table";
 
 describe("LeaderboardTable", () => {
-  it("una fila por jugador, con posición, bandera, enlace al perfil, PPM y precisión", () => {
+  it("one row per player, with position, flag, profile link, wpm and accuracy", () => {
     renderWithIntl(
       <LeaderboardTable
         entries={[
@@ -28,7 +28,7 @@ describe("LeaderboardTable", () => {
     expect(second).toHaveAttribute("data-nick", "ana");
   });
 
-  it("cabeceras y precisión con el formato de cada idioma", () => {
+  it("headers and accuracy formatted for each language", () => {
     renderWithIntl(<LeaderboardTable entries={[{ rank: 1, nick: "ana", country: null, wpm: 80, accuracy: 95.7 }]} />, "es");
     expect(screen.getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
       "#",
@@ -39,7 +39,7 @@ describe("LeaderboardTable", () => {
     expect(screen.getByTestId("leaderboard-row")).toHaveTextContent("95 %");
   });
 
-  it("sin jugadores, invita a jugar", () => {
+  it("with no players, invites to play", () => {
     renderWithIntl(<LeaderboardTable entries={[]} />);
     expect(screen.getByTestId("leaderboard-empty")).toHaveTextContent("Be the first!");
     expect(screen.getByRole("link", { name: "Play Ranked" })).toHaveAttribute("href", "/en");

@@ -11,23 +11,23 @@ import { VERIFICATION_CHANGED_EVENT } from "@/lib/viewer";
 import type { TestLanguage } from "@/lib/words/languages";
 import { useNow } from "../use-now";
 
-// RankedTest descarga este módulo durante la partida y saca de él también la partida de verificación de
-// "Verificar ahora" (spec 4b §4.1): con un solo `import()`, la portada no paga otro.
+// RankedTest downloads this module during the game and also takes from it the verification game for
+// "Verify now" (spec 4b §4.1): with a single `import()`, the home page does not pay for another.
 export { LazyVerificationGame } from "../verification/use-verification-module";
-// El botón «Compartir» (spec 5d §6) viaja en este mismo módulo: la portada no paga otro `import()`.
+// The "Share" button (spec 5d §6) ships in this same module: the home page does not pay for another `import()`.
 export { ShareResult } from "./share-result";
 
 export interface RankSummaryProps {
   ranking: GameRanking;
   gameId: string;
-  /** Idioma del test: el ranking es el de ese idioma (spec §3.2), aunque la página esté en otro. */
+  /** Language of the test: the ranking is that language's (spec §3.2), even if the page is in another. */
   language: TestLanguage;
   inputType: InputType;
-  /** "Verificar ahora" en la misma pantalla (spec 4b §4.1). Sin él (tras «Guárdalo»), lleva a `/verify`. */
+  /** "Verify now" on the same screen (spec 4b §4.1). Without it (after "Save it"), goes to `/verify`. */
   onVerify?: (verification: PendingVerification) => void;
 }
 
-/** Intentos y horas que le quedan a una verificación. Las horas, solo en el navegador (`useNow`). */
+/** Attempts and hours left for a verification. The hours only in the browser (`useNow`). */
 function ReviewLeft({ verification }: { verification: PendingVerification }) {
   const t = useTranslations("Ranked");
   const now = useNow();
@@ -39,13 +39,13 @@ function ReviewLeft({ verification }: { verification: PendingVerification }) {
   );
 }
 
-/** Posición de la partida en el ranking, o la que tendría si se guarda (spec §3.4, paso 7) o se verifica (spec 4b §4.1). */
+/** Position of the game in the ranking, or the one it would have if saved (spec §3.4, step 7) or verified (spec 4b §4.1). */
 export function RankSummary({ ranking, gameId, language, inputType, onVerify }: RankSummaryProps) {
   const t = useTranslations("Ranked");
   const tv = useTranslations("Verification");
 
-  // Un récord en `review` (tras la partida o tras «Guárdalo») abre o renueva una verificación: el aviso de
-  // la cabecera vuelve a pedir las pendientes. Aquí y no en RankedTest: este módulo no pesa en la portada.
+  // A record in `review` (after the game or after "Save it") opens or renews a verification: the header
+  // notice requests the pending ones again. Here and not in RankedTest: this module does not weigh on the home page.
   useEffect(() => {
     if (ranking.kind === "review") window.dispatchEvent(new Event(VERIFICATION_CHANGED_EVENT));
   }, [ranking]);
@@ -101,7 +101,7 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
             )}
           </>
         ) : (
-          // Sin intentos (p. ej. gastados en otro dispositivo mientras tanto): ya no se puede verificar.
+          // No attempts left (e.g. used up on another device in the meantime): it can no longer be verified.
           <p className="text-sm text-zinc-600 dark:text-zinc-400">{tv("exhausted")}</p>
         )}
       </div>
@@ -118,7 +118,7 @@ export function RankSummary({ ranking, gameId, language, inputType, onVerify }: 
   }
 
   if (ranking.kind === "unavailable") {
-    // Spec §8.4: aviso "ranking no disponible temporalmente". La partida anónima está guardada y se puede reclamar.
+    // Spec §8.4: "ranking temporarily unavailable" notice. The anonymous game is saved and can be claimed.
     return (
       <div data-testid="rank-summary" className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="w-full text-sm text-zinc-600 dark:text-zinc-400">{t("rankingUnavailable")}</p>

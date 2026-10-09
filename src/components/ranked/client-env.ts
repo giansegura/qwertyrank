@@ -1,6 +1,6 @@
 import type { ClientEnv } from "@/lib/game/types";
 
-/** Señales del dispositivo que se envían al empezar. El servidor decide con la forma de las pulsaciones. */
+/** Device signals sent at start. The server decides based on the shape of the keystrokes. */
 export function readClientEnv(): ClientEnv {
   return {
     coarse: window.matchMedia?.("(pointer: coarse)").matches ?? false,

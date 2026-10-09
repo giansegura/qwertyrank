@@ -17,8 +17,8 @@ function post(url: string, body: unknown, cookie?: string) {
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 const START = { language: "es", env: { coarse: false, touchPoints: 0 } };
 
-describe("API de partidas", () => {
-  it("start devuelve el texto y crea la cookie anónima firmada", async () => {
+describe("games API", () => {
+  it("start returns the text and creates the signed anonymous cookie", async () => {
     const response = await start(post(`${BASE}/start`, START));
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -29,24 +29,24 @@ describe("API de partidas", () => {
     expect(cookie?.value).toMatch(/^[0-9a-f-]{36}\./);
   });
 
-  it("con la cookie ya creada no la vuelve a enviar", async () => {
+  it("with the cookie already created it does not send it again", async () => {
     const first = await start(post(`${BASE}/start`, START));
     const cookie = `qr_anon=${first.cookies.get("qr_anon")!.value}`;
     const second = await start(post(`${BASE}/start`, START, cookie));
     expect(second.cookies.get("qr_anon")).toBeUndefined();
   });
 
-  it("rechaza cuerpos inválidos con 400", async () => {
+  it("rejects invalid bodies with 400", async () => {
     expect((await start(post(`${BASE}/start`, { language: "fr", env: START.env }))).status).toBe(400);
-    expect((await start(post(`${BASE}/start`, "no es json"))).status).toBe(400);
+    expect((await start(post(`${BASE}/start`, "not json"))).status).toBe(400);
   });
 
-  it("un token de Turnstile demasiado largo es un cuerpo inválido", async () => {
+  it("a Turnstile token that is too long is an invalid body", async () => {
     const response = await start(post(`${BASE}/start`, { ...START, turnstileToken: "x".repeat(2_049) }));
     expect(response.status).toBe(400);
   });
 
-  it("keys y finish sin cookie, o de una partida ajena, dan 404", async () => {
+  it("keys and finish without a cookie, or for someone else's game, give 404", async () => {
     const res = await start(post(`${BASE}/start`, START));
     const { gameId } = await res.json();
     expect((await keys(post(`${BASE}/${gameId}/keys`, { seq: 1, events: [] }), params(gameId))).status).toBe(404);
@@ -55,7 +55,7 @@ describe("API de partidas", () => {
     expect((await finish(post(`${BASE}/${gameId}/finish`, { lastSeq: 0 }, otherCookie), params(gameId))).status).toBe(404);
   });
 
-  it("keys valida los eventos y acepta tandas en orden", async () => {
+  it("keys validates the events and accepts batches in order", async () => {
     const res = await start(post(`${BASE}/start`, START));
     const cookie = `qr_anon=${res.cookies.get("qr_anon")!.value}`;
     const { gameId } = await res.json();

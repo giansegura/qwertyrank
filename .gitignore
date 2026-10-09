@@ -49,5 +49,5 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 
-# documentos de diseño y planes: solo en local
+# design docs and plans: local only
 /docs/superpowers/

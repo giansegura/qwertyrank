@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isProfane } from "./profanity";
 
-// Listas probadas al elegir la librería: insultos con leetspeak y palabras legítimas que los contienen.
+// Lists tested when choosing the library: insults with leetspeak and legitimate words that contain them.
 const PROFANE = [
   "xx_puta_xx", "put4", "PUT4_master", "sh1t", "5h1t_lord", "fuuuck", "fuck_you", "m3rd4", "caralh0",
   "p0rr4", "gilip0llas", "pqp", "f0da", "fodase", "pendej0", "v3rga", "cabr0n", "b1tch", "pussy_cat",
@@ -16,11 +16,11 @@ const CLEAN = [
 ];
 
 describe("isProfane", () => {
-  it.each(PROFANE)("detecta %s", (nick) => {
+  it.each(PROFANE)("detects %s", (nick) => {
     expect(isProfane(nick)).toBe(true);
   });
 
-  it.each(CLEAN)("deja pasar %s", (nick) => {
+  it.each(CLEAN)("lets %s through", (nick) => {
     expect(isProfane(nick)).toBe(false);
   });
 });

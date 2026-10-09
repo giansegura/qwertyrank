@@ -4,8 +4,8 @@ import { createAuthClient } from "better-auth/react";
 import type { Auth } from "@/server/auth/auth";
 
 /**
- * Cliente de Better Auth. Pesa: solo lo importan las páginas de entrar y de ajustes, nunca la
- * portada (spec §7.5). La API está en el mismo origen (/api/auth), así que no necesita baseURL.
+ * Better Auth client. It is heavy: only the sign-in and settings pages import it, never the
+ * home page (spec §7.5). The API is on the same origin (/api/auth), so it needs no baseURL.
  */
 export const authClient = createAuthClient({
   plugins: [inferAdditionalFields<Auth>(), magicLinkClient(), passkeyClient()],

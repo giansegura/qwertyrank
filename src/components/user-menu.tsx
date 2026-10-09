@@ -24,7 +24,7 @@ function UserIcon({ className }: { className: string }) {
   );
 }
 
-/** El aviso de récord pendiente, ya descargado, con las pendientes que enseña. */
+/** The pending-record notice, already downloaded, with the pending ones it shows. */
 interface Notice {
   PendingNotice: typeof import("./verification/pending-notice").PendingNotice;
   pending: PendingVerification[];
@@ -34,12 +34,12 @@ export function UserMenu() {
   const t = useTranslations("Nav");
   const pathname = usePathname();
   const [viewer, setViewer] = useState<Viewer | undefined>(undefined);
-  // Récords pendientes de verificar (spec 4b §4.3): el aviso se descarga solo si hay alguno.
+  // Records pending verification (spec 4b §4.3): the notice is downloaded only if there are any.
   const [notice, setNotice] = useState<Notice | null>(null);
 
   useEffect(() => {
-    // Cada carga tiene un número y solo cuenta la última: una respuesta que llega tarde no pisa a la
-    // siguiente. Al desmontar, ninguna.
+    // Each load has a number and only the latest counts: a response that arrives late does not overwrite the
+    // next one. On unmount, none.
     let latest = 0;
     const load = async () => {
       const id = ++latest;
@@ -56,7 +56,7 @@ export function UserMenu() {
     };
     void load();
     window.addEventListener(SESSION_CHANGED_EVENT, reload);
-    // Las pendientes cambian sin cambiar la sesión: un récord en `review`, una verificación superada…
+    // The pending ones change without the session changing: a record in `review`, a verification passed…
     window.addEventListener(VERIFICATION_CHANGED_EVENT, load);
     return () => {
       latest = -1;
@@ -65,8 +65,8 @@ export function UserMenu() {
     };
   }, []);
 
-  // Hueco de tamaño fijo (24 px de alto, como la fila del logo en móvil): la cabecera no se mueve
-  // cuando llega la sesión (CLS = 0). El aviso va debajo, fuera del flujo.
+  // Fixed-size slot (24 px tall, like the logo row on mobile): the header does not move
+  // when the session arrives (CLS = 0). The notice goes below, out of the flow.
   return (
     <div className="relative flex w-7 justify-end sm:w-32">
       {viewer === null && (

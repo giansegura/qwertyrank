@@ -18,7 +18,7 @@ interface WordProps {
   state: WordState;
 }
 
-/** Una palabra del texto. Memoizada: al teclear solo se vuelve a pintar la palabra activa. */
+/** A word of the text. Memoized: when typing only the active word re-renders. */
 export const Word = memo(function Word({ index, target, typed, state }: WordProps) {
   const length = Math.max(target.length, typed.length);
   const letters = [];

@@ -10,11 +10,11 @@ import { getViewer, type Viewer } from "@/lib/viewer";
 
 type State = "idle" | "choosing" | "sending" | "sent" | "failed";
 
-/** Denunciar a un jugador desde su perfil (spec 4a §4.1). No sale en el propio perfil. */
+/** Report a player from their profile (spec 4a §4.1). Not shown on the player's own profile. */
 export function ReportButton({ nick }: { nick: string }) {
   const t = useTranslations("Profile");
   const pathname = usePathname();
-  // `undefined`: aún no se sabe quién mira.
+  // `undefined`: who is viewing is not known yet.
   const [viewer, setViewer] = useState<Viewer | undefined>(undefined);
   const [state, setState] = useState<State>("idle");
   const [reason, setReason] = useState<ReportReason>("cheating");

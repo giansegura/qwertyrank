@@ -21,26 +21,26 @@ import { CanvasWords } from "./canvas-words";
 export interface VerificationGameProps {
   verification: PendingVerification;
   /**
-   * Texto del botón de acabar si la verificación no se ha superado y aún existe: en `/verify`, con otras
-   * pendientes, «Volver a tus récords». Sin él, o superada, o si ya no existía (409), «Jugar Ranked».
+   * Label of the finish button if the verification was not passed and still exists: on `/verify`, with other
+   * pending ones, "Back to your records". Without it, or when passed, or if it no longer existed (409), "Play Ranked".
    */
   doneLabel?: string;
-  /** Al acabar. `play`: el botón decía «Jugar Ranked»; si no, el de `doneLabel`. */
+  /** When done. `play`: the button said "Play Ranked"; otherwise, the `doneLabel` one. */
   onDone: (play: boolean) => void;
 }
 
 /**
- * PPM que le faltaron, hacia arriba a una décima. En centésimas enteras, como `requiredWpm`: con
- * decimales, 85 − 84,8 da 0,20000000000000284 y saldría 0,3.
+ * WPM it fell short by, rounded up to a tenth. In whole hundredths, like `requiredWpm`: with
+ * decimals, 85 − 84.8 gives 0.20000000000000284 and it would come out as 0.3.
  */
 function wpmShort(requiredWpm: number, wpm: number): number {
   return Math.ceil((Math.round(requiredWpm * 100) - Math.round(wpm * 100)) / 10) / 10;
 }
 
 /**
- * La partida de verificación de un récord (spec 4b §3.2, §4.2): la misma secuencia que Ranked (cuenta
- * atrás, 30 s, resultado), con el texto en un `canvas`. Empieza sola: el jugador ya ha pulsado
- * "Verificar". Cada inicio gasta un intento, así que Tab no empieza otra.
+ * The verification game of a record (spec 4b §3.2, §4.2): the same sequence as Ranked (countdown,
+ * 30 s, result), with the text in a `canvas`. Starts by itself: the player has already pressed
+ * "Verify". Each start uses an attempt, so Tab does not start another one.
  */
 export function VerificationGame({ verification, doneLabel, onDone }: VerificationGameProps) {
   const t = useTranslations("Verification");
@@ -49,7 +49,7 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
   const tn = useTranslations("Nav");
   const pathname = usePathname();
   const { phase, session, challengeRef, ...game } = useServerGame<VerificationFinishResponse>();
-  // Tab no empieza otra partida: cada inicio gasta un intento.
+  // Tab does not start another game: each start uses an attempt.
   const typing = useTypingInput({ target: session, onRestart: () => {} });
 
   function start() {
@@ -59,16 +59,16 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
     );
   }
 
-  // Empieza al montar, en el turno siguiente: sin `setState` síncrono dentro del efecto.
+  // Starts on mount, on the next tick: no synchronous `setState` inside the effect.
   const startOnMount = useEffectEvent(start);
   useEffect(() => {
     const timer = setTimeout(startOnMount, 0);
     return () => clearTimeout(timer);
   }, []);
 
-  // La verificación ha cambiado (superada, con un intento menos o agotada; también con la partida sin
-  // puntuar, que ya gastó su intento: tras el tercero no queda nada que verificar) o ya no existe: el aviso
-  // de la cabecera vuelve a pedir las pendientes.
+  // The verification has changed (passed, with one attempt fewer or exhausted; also with the game
+  // unscored, which already used its attempt: after the third there is nothing left to verify) or no longer
+  // exists: the header notice requests the pending ones again.
   const gone = phase.name === "not_started" && phase.failure.kind === "no_pending";
   useEffect(() => {
     if (phase.name === "result" || phase.name === "unscored" || gone) {
@@ -94,7 +94,7 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
     </button>
   );
 
-  /** Por qué no la ha superado, o `null` si no hay un motivo que dar. */
+  /** Why it was not passed, or `null` if there is no reason to give. */
   function failureText(response: VerificationFinishResponse, requiredWpm: number): string | null {
     if (response.reason) return tr(REASON_MESSAGE[response.reason]);
     if (response.accuracy < VERIFICATION_MIN_ACCURACY) return t("lowAccuracy");
@@ -162,7 +162,7 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
         </div>
       );
     } else {
-      // `requiredWpm` 0: la verificación ya no existe (p. ej. la cuenta se borró a mitad de intento).
+      // `requiredWpm` 0: the verification no longer exists (e.g. the account was deleted mid-attempt).
       const canRetry = outcome.attemptsLeft > 0 && outcome.requiredWpm > 0;
       const reason = canRetry ? failureText(response, outcome.requiredWpm) : null;
       const left = t("attemptsLeft", { attempts: outcome.attemptsLeft });
@@ -192,7 +192,7 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
         {failure.kind === "no_pending" ? (
           <p className="max-w-md">{t("noLongerAvailable")}</p>
         ) : failure.kind === "unauthorized" ? (
-          // La sesión ha caducado: a entrar y de vuelta a esta página.
+          // The session has expired: to sign in and back to this page.
           <p className="max-w-md">
             {t("sessionExpired")}{" "}
             <Link href={loginHref(pathname)} className="font-medium underline">
@@ -215,8 +215,8 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
   }
 
   return (
-    // Tocar o hacer clic en cualquier parte (también en el `canvas`) enfoca el campo oculto: en el móvil,
-    // es lo que abre el teclado.
+    // Tapping or clicking anywhere (also on the `canvas`) focuses the hidden field: on mobile,
+    // that is what opens the keyboard.
     <section
       aria-label={t("label")}
       data-testid="verify-area"
@@ -230,7 +230,7 @@ export function VerificationGame({ verification, doneLabel, onDone }: Verificati
         </span>
       </div>
       {body}
-      {/* Turnstile pinta aquí su widget, si el servidor pide el reto. */}
+      {/* Turnstile renders its widget here, if the server asks for the challenge. */}
       <div ref={challengeRef} />
       <input data-testid="typing-input" aria-label={tt("inputLabel")} {...typing.inputProps} />
     </section>

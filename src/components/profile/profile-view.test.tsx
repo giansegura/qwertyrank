@@ -7,7 +7,7 @@ const RECORD_GAME = "3f6c1e2a-9b4d-4c8e-a1f2-0d9e8b7c6a5f";
 const HISTORY_GAME = "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d";
 
 describe("ProfileView", () => {
-  it("cada récord y cada partida del historial enlazan a su página de resultado", () => {
+  it("each record and each game in the history links to its result page", () => {
     renderWithIntl(
       <ProfileView
         profile={{

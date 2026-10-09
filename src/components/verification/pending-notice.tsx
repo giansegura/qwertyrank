@@ -6,21 +6,21 @@ import { hoursLeft, type PendingVerification } from "@/lib/verification";
 import { useNow } from "../use-now";
 
 /**
- * Aviso de récord pendiente (spec 4b §4.3), bajo el menú de usuario. Va fuera del flujo (`absolute`):
- * aparecer no mueve la cabecera ni la página (CLS = 0). Cuenta las horas de la que antes caduca.
+ * Pending-record notice (spec 4b §4.3), under the user menu. It sits out of the flow (`absolute`):
+ * appearing does not move the header or the page (CLS = 0). Counts the hours of the one expiring first.
  */
 export function PendingNotice({ pending }: { pending: PendingVerification[] }) {
   const t = useTranslations("Verification");
   const now = useNow();
   if (now === null) return null;
-  // La respuesta de `GET /api/verification` se valida aquí y no en la portada, donde cada byte cuenta: lo
-  // que no traiga su plazo (p. ej. `null`) no cuenta, y nunca rompe la cabecera.
+  // The `GET /api/verification` response is validated here and not on the home page, where every byte counts:
+  // anything without its deadline (e.g. `null`) does not count, and never breaks the header.
   const hours = Math.min(
     ...pending.flatMap((verification: PendingVerification | null) =>
       typeof verification?.expiresAt === "string" ? [hoursLeft(verification.expiresAt, now)] : [],
     ),
   );
-  // Sin pendientes (`Infinity`) o con un plazo que no se entiende (`NaN`): sin aviso.
+  // No pending ones (`Infinity`) or a deadline that makes no sense (`NaN`): no notice.
   if (!Number.isFinite(hours)) return null;
   return (
     <Link

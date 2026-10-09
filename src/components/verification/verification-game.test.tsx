@@ -14,12 +14,12 @@ vi.mock("../ranked/api", async (importOriginal) => ({
   sendKeys: vi.fn(),
   finishGame: vi.fn(),
 }));
-// La página en la que se juega: a ella vuelve el enlace a entrar si la sesión ha caducado.
+// The page the game is played on: the sign-in link returns to it if the session has expired.
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
   usePathname: () => "/en/verify",
 }));
-// jsdom no dibuja: el canvas tiene sus propias pruebas.
+// jsdom does not draw: the canvas has its own tests.
 vi.mock("./canvas-words", () => ({ CanvasWords: () => <canvas data-testid="verify-canvas" /> }));
 
 const VERIFICATION = {
@@ -51,7 +51,7 @@ function response(overrides: Partial<VerificationFinishResponse> = {}): Verifica
   };
 }
 
-/** Monta la partida y deja que empiece sola (y que pase lo que tarde el servidor). */
+/** Mounts the game and lets it start by itself (and lets the server's delay pass). */
 async function mount(onDone = vi.fn(), doneLabel?: string) {
   renderWithIntl(<VerificationGame verification={VERIFICATION} onDone={onDone} doneLabel={doneLabel} />);
   await act(async () => {
@@ -62,7 +62,7 @@ async function mount(onDone = vi.fn(), doneLabel?: string) {
   return onDone;
 }
 
-/** Cuenta las veces que la partida avisa a la cabecera de que sus verificaciones han cambiado. */
+/** Counts the times the game tells the header that its verifications have changed. */
 function listenVerificationChanged() {
   const changed = vi.fn();
   window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
@@ -70,7 +70,7 @@ function listenVerificationChanged() {
   return changed;
 }
 
-/** Cuenta atrás y 30 s de partida hasta el resultado. */
+/** Countdown and 30 s of game until the result. */
 async function playToTheEnd() {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(3_000);
@@ -93,7 +93,7 @@ afterEach(() => {
 });
 
 describe("VerificationGame", () => {
-  it("empieza sola: pide la partida de verificación y, tras la cuenta atrás, el texto va en el canvas y no en el DOM", async () => {
+  it("starts by itself: requests the verification game and, after the countdown, the text goes in the canvas and not in the DOM", async () => {
     await mount();
     expect(startGame).toHaveBeenCalledWith({
       language: "es",
@@ -110,7 +110,7 @@ describe("VerificationGame", () => {
     expect(screen.queryAllByTestId("word")).toHaveLength(0);
   });
 
-  it("al tocar el texto se enfoca el campo oculto (el que abre el teclado del móvil)", async () => {
+  it("tapping the text focuses the hidden field (the one that opens the mobile keyboard)", async () => {
     await mount();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3_000);
@@ -125,7 +125,7 @@ describe("VerificationGame", () => {
     expect(screen.queryByTestId("focus-prompt")).toBeNull();
   });
 
-  it("superada: ¡verificado!, con su posición, y vuelve a Ranked", async () => {
+  it("passed: verified!, with its position, and goes back to Ranked", async () => {
     vi.mocked(finishGame).mockResolvedValue(
       response({
         wpm: 110,
@@ -139,13 +139,13 @@ describe("VerificationGame", () => {
     expect(finishGame).toHaveBeenCalledWith("g1", { lastSeq: 0 });
     expect(screen.getByTestId("verify-result")).toHaveTextContent("Verified! Your record is now on the ranking.");
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("#3 on the leaderboard");
-    // El aviso de la cabecera vuelve a pedir las pendientes: esta ya no lo está.
+    // The header notice requests the pending ones again: this one no longer is.
     expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-done"));
     expect(onDone).toHaveBeenCalledWith(true);
   });
 
-  it("no superada: cuánto le faltó y cuántos intentos quedan, y deja reintentar", async () => {
+  it("not passed: how much it fell short by and how many attempts are left, and allows retrying", async () => {
     const changed = listenVerificationChanged();
     await mount();
     await playToTheEnd();
@@ -159,14 +159,14 @@ describe("VerificationGame", () => {
     expect(screen.getByTestId("verify-countdown")).toBeInTheDocument();
   });
 
-  it("lo que le faltó se cuenta en centésimas: 85 − 84,8 son 0,2 y no 0,3", async () => {
+  it("the shortfall is counted in hundredths: 85 − 84.8 is 0.2 and not 0.3", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ wpm: 84.8 }));
     await mount();
     await playToTheEnd();
     expect(screen.getByTestId("verify-result")).toHaveTextContent("You were 0.2 wpm short. You have 2 attempts left.");
   });
 
-  it("con poca precisión o con otro teclado, lo explica", async () => {
+  it("with low accuracy or another keyboard, explains it", async () => {
     vi.mocked(finishGame).mockResolvedValueOnce(response({ wpm: 90, accuracy: 85 }));
     await mount();
     await playToTheEnd();
@@ -181,7 +181,7 @@ describe("VerificationGame", () => {
     expect(screen.getByTestId("verify-result")).toHaveTextContent("You have to use the same keyboard as in your record (physical).");
   });
 
-  it("sin intentos: no se ha podido verificar, sin reintentar; «Jugar Ranked» lleva a jugar", async () => {
+  it('no attempts left: could not be verified, no retry; "Play Ranked" leads to play', async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ verification: { kind: "failed", requiredWpm: 85, attemptsLeft: 0 } }));
     const onDone = await mount();
     await playToTheEnd();
@@ -191,7 +191,7 @@ describe("VerificationGame", () => {
     expect(onDone).toHaveBeenCalledWith(true);
   });
 
-  it("con `doneLabel` (en /verify, con otras pendientes), sin superarla el botón dice eso y vuelve a la lista", async () => {
+  it("with `doneLabel` (on /verify, with other pending ones), when not passed the button says that and goes back to the list", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ verification: { kind: "failed", requiredWpm: 85, attemptsLeft: 0 } }));
     const onDone = await mount(vi.fn(), "Back to your records");
     await playToTheEnd();
@@ -201,7 +201,7 @@ describe("VerificationGame", () => {
     expect(onDone).toHaveBeenCalledWith(false);
   });
 
-  it("con `doneLabel`, superada sigue llevando a jugar Ranked", async () => {
+  it("with `doneLabel`, when passed it still leads to play Ranked", async () => {
     vi.mocked(finishGame).mockResolvedValue(
       response({
         wpm: 110,
@@ -216,7 +216,7 @@ describe("VerificationGame", () => {
     expect(onDone).toHaveBeenCalledWith(true);
   });
 
-  it("si la verificación ya no existe (requiredWpm 0), no habla de PPM que faltan: no se ha podido verificar", async () => {
+  it("if the verification no longer exists (requiredWpm 0), does not mention missing wpm: could not be verified", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ wpm: 90, verification: { kind: "failed", requiredWpm: 0, attemptsLeft: 0 } }));
     await mount();
     await playToTheEnd();
@@ -226,7 +226,7 @@ describe("VerificationGame", () => {
     expect(screen.queryByTestId("verify-retry")).toBeNull();
   });
 
-  it("si el servidor la da por fallida sin que falten PPM, no enseña una diferencia de 0 ni negativa", async () => {
+  it("if the server marks it failed with no wpm missing, does not show a zero or negative difference", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ wpm: 90 }));
     await mount();
     await playToTheEnd();
@@ -236,13 +236,13 @@ describe("VerificationGame", () => {
     expect(screen.getByTestId("verify-retry")).toBeInTheDocument();
   });
 
-  it("si el final no llega al servidor, lo dice como problema de conexión, avisa a la cabecera y deja reintentar", async () => {
+  it("if the finish does not reach the server, reports it as a connection problem, notifies the header and allows retrying", async () => {
     vi.mocked(finishGame).mockRejectedValue(new GameApiError(404, "not_found"));
     const changed = listenVerificationChanged();
     await mount();
     await playToTheEnd();
     expect(screen.getByTestId("verify-result")).toHaveTextContent("Connection problem: this game doesn't count.");
-    // El intento se ha gastado igual (y si era el tercero, ya no quedan): el aviso vuelve a pedir las pendientes.
+    // The attempt was used anyway (and if it was the third, none are left): the notice requests the pending ones again.
     expect(changed).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByTestId("verify-retry"));
     await act(async () => {
@@ -252,14 +252,14 @@ describe("VerificationGame", () => {
     expect(screen.getByTestId("verify-countdown")).toBeInTheDocument();
   });
 
-  it("si el servidor rechaza la partida, da el motivo", async () => {
+  it("if the server rejects the game, gives the reason", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ verdict: "rejected", reason: "letter_by_letter" }));
     await mount();
     await playToTheEnd();
     expect(screen.getByTestId("verify-result")).toHaveTextContent("you have to type letter by letter");
   });
 
-  it("Tab no empieza otra partida: cada inicio gasta un intento", async () => {
+  it("Tab does not start another game: each start uses an attempt", async () => {
     await mount();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3_000);
@@ -271,7 +271,7 @@ describe("VerificationGame", () => {
     expect(startGame).toHaveBeenCalledOnce();
   });
 
-  it("si se sale antes de que el servidor conteste, la partida no llega a arrancar", async () => {
+  it("if the player leaves before the server answers, the game never starts", async () => {
     let resolveStart: (game: typeof GAME) => void = () => {};
     vi.mocked(startGame).mockReturnValue(
       new Promise((resolve) => {
@@ -291,7 +291,7 @@ describe("VerificationGame", () => {
     expect(finishGame).not.toHaveBeenCalled();
   });
 
-  it("si ya no está pendiente (409), lo dice, avisa a la cabecera y «Jugar Ranked» lleva a jugar (también en /verify)", async () => {
+  it('if it is no longer pending (409), says so, notifies the header and "Play Ranked" leads to play (also on /verify)', async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(409, "no_pending_verification"));
     const changed = listenVerificationChanged();
     const onDone = await mount(vi.fn(), "Back to your records");
@@ -303,7 +303,7 @@ describe("VerificationGame", () => {
     expect(onDone).toHaveBeenCalledWith(true);
   });
 
-  it("si la sesión ha caducado (401), lo dice y enlaza a entrar y volver aquí", async () => {
+  it("if the session has expired (401), says so and links to sign in and come back here", async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(401, "unauthorized"));
     await mount();
     const unavailable = screen.getByTestId("verify-unavailable");
@@ -313,14 +313,14 @@ describe("VerificationGame", () => {
     expect(screen.queryByRole("link", { name: "Go to practice" })).toBeNull();
   });
 
-  it("los errores de la puerta se tratan como en Ranked", async () => {
+  it("gate errors are handled as in Ranked", async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(429, "rate_limited", 125));
     await mount();
     expect(screen.getByTestId("verify-unavailable")).toHaveTextContent("Come back in 3 min.");
     expect(screen.getByRole("link", { name: "Go to practice" })).toBeInTheDocument();
   });
 
-  it("si el servidor pide el reto, lo resuelve y pide otra vez la misma verificación con el token", async () => {
+  it("if the server asks for the challenge, solves it and requests the same verification again with the token", async () => {
     vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "site-key");
     vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
     vi.mocked(solveChallenge).mockResolvedValue("tok");

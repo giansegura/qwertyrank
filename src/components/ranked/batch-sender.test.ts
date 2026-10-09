@@ -20,7 +20,7 @@ describe("createBatchSender", () => {
     return { sender, send };
   }
 
-  it("envía cada intervalo solo los eventos nuevos, con seq creciente", async () => {
+  it("sends only the new events each interval, with increasing seq", async () => {
     const { sender, send } = setup();
     sender.start();
     events.push(event(1), event(2));
@@ -33,14 +33,14 @@ describe("createBatchSender", () => {
     ]);
   });
 
-  it("no envía tandas vacías", async () => {
+  it("does not send empty batches", async () => {
     const { sender, send } = setup();
     sender.start();
     await vi.advanceTimersByTimeAsync(9_000);
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("flush envía lo pendiente, espera a que llegue todo y devuelve el último seq", async () => {
+  it("flush sends what is pending, waits for everything to arrive and returns the last seq", async () => {
     const { sender, send } = setup();
     sender.start();
     events.push(event(1));
@@ -50,7 +50,7 @@ describe("createBatchSender", () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
-  it("reintenta los fallos de red", async () => {
+  it("retries network failures", async () => {
     const send = vi.fn().mockRejectedValueOnce(new TypeError("network")).mockResolvedValue(undefined);
     const { sender } = setup(send);
     events.push(event(1));
@@ -60,7 +60,7 @@ describe("createBatchSender", () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
-  it("si una tanda no llega, no envía las siguientes y lo indica", async () => {
+  it("if a batch does not arrive, does not send the following ones and reports it", async () => {
     const send = vi.fn().mockRejectedValue(new GameApiError(409, "closed"));
     const { sender } = setup(send);
     sender.start();
@@ -71,7 +71,7 @@ describe("createBatchSender", () => {
     expect(send).toHaveBeenCalledOnce();
   });
 
-  it("stop deja de enviar", async () => {
+  it("stop stops sending", async () => {
     const { sender, send } = setup();
     sender.start();
     sender.stop();

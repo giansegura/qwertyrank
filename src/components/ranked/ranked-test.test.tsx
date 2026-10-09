@@ -10,7 +10,7 @@ import { RankedTest } from "./ranked-test";
 
 vi.mock("./challenge", () => ({ solveChallenge: vi.fn() }));
 
-// La partida de verificación tiene sus propias pruebas: aquí solo importa que se carga en su lugar.
+// The verification game has its own tests: here all that matters is that it loads in its place.
 vi.mock("../verification/verification-game", () => ({
   VerificationGame: ({ verification, onDone }: { verification: { id: string }; onDone: () => void }) => (
     <button type="button" data-testid="verification-game" onClick={onDone}>
@@ -74,13 +74,13 @@ describe("RankedTest", () => {
     vi.clearAllMocks();
   });
 
-  it("antes de empezar no muestra ninguna palabra, solo el botón", () => {
+  it("before starting shows no words, only the button", () => {
     renderWithIntl(<RankedTest language="es" />);
     expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
     expect(screen.queryAllByTestId("word")).toHaveLength(0);
   });
 
-  it("partida completa: cuenta atrás, texto, envío de pulsaciones y veredicto del servidor", async () => {
+  it("full game: countdown, text, keystrokes sent and server verdict", async () => {
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
     expect(startGame).toHaveBeenCalledWith({ language: "es", env: { coarse: false, touchPoints: 0 } });
@@ -98,11 +98,11 @@ describe("RankedTest", () => {
     expect(finishGame).toHaveBeenCalledWith("g1", { lastSeq });
     expect(screen.getByTestId("result")).toBeInTheDocument();
     expect(screen.getByTestId("ranked-status")).toHaveTextContent("Valid game");
-    // Válida: se puede compartir (spec 5d §6).
+    // Valid: it can be shared (spec 5d §6).
     expect(screen.getByTestId("share-result")).toBeInTheDocument();
   });
 
-  it("muestra el motivo cuando el servidor rechaza la partida", async () => {
+  it("shows the reason when the server rejects the game", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ verdict: "rejected", reason: "letter_by_letter" }));
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
@@ -113,7 +113,7 @@ describe("RankedTest", () => {
     expect(screen.queryByTestId("share-result")).toBeNull();
   });
 
-  it("un final que llega tarde (p. ej. con la pestaña en segundo plano) se explica como problema de conexión", async () => {
+  it("a finish that arrives late (e.g. with the tab in the background) is explained as a connection problem", async () => {
     vi.mocked(finishGame).mockResolvedValue(response({ verdict: "rejected", reason: "connection" }));
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
@@ -123,7 +123,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("ranked-status")).toHaveTextContent("Connection problem");
   });
 
-  it("si el servidor no reconoce la partida (p. ej. cookies bloqueadas), enseña el resultado local como no válido", async () => {
+  it("if the server does not recognise the game (e.g. blocked cookies), shows the local result as invalid", async () => {
     vi.mocked(sendKeys).mockRejectedValue(new GameApiError(404, "not_found"));
     vi.mocked(finishGame).mockRejectedValue(new GameApiError(404, "not_found"));
     renderWithIntl(<RankedTest language="es" />);
@@ -136,7 +136,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("result-accuracy")).toHaveTextContent("100%");
   });
 
-  it("si el servidor no contesta al terminar, no se queda colgado: a los 10 s enseña el resultado local", async () => {
+  it("if the server does not answer at the end, it does not hang: after 10 s shows the local result", async () => {
     vi.mocked(sendKeys).mockReturnValue(new Promise(() => {}));
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
@@ -152,7 +152,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("result")).toBeInTheDocument();
   });
 
-  it("varios Tab mientras se pide la partida solo piden una", async () => {
+  it("several Tabs while the game is being requested only request one", async () => {
     let resolveStart: (game: typeof GAME) => void = () => {};
     vi.mocked(startGame).mockReturnValue(
       new Promise((resolve) => {
@@ -172,7 +172,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("countdown")).toBeInTheDocument();
   });
 
-  it("durante la cuenta atrás no se puede escribir", async () => {
+  it("typing is not possible during the countdown", async () => {
     renderWithIntl(<RankedTest language="es" />);
     fireEvent.click(screen.getByTestId("ranked-start"));
     await act(async () => {
@@ -187,7 +187,7 @@ describe("RankedTest", () => {
     expect(screen.getAllByTestId("word")[0].querySelectorAll('[data-status="pending"]')).toHaveLength(4);
   });
 
-  it("Espacio empieza la partida", async () => {
+  it("Space starts the game", async () => {
     renderWithIntl(<RankedTest language="en" />);
     fireEvent.keyDown(screen.getByTestId("typing-input"), { key: " ", code: "Space" });
     await act(async () => {
@@ -196,7 +196,7 @@ describe("RankedTest", () => {
     expect(startGame).toHaveBeenCalledOnce();
   });
 
-  it("si el servidor no está disponible, lo dice y ofrece la práctica", async () => {
+  it("if the server is unavailable, says so and offers practice", async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(503, "unavailable"));
     renderWithIntl(<RankedTest language="es" />);
     fireEvent.click(screen.getByTestId("ranked-start"));
@@ -208,7 +208,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
   });
 
-  it("si otra partida la cerró, lo explica y enseña el resultado local", async () => {
+  it("if another game closed it, explains it and shows the local result", async () => {
     vi.mocked(finishGame).mockRejectedValue(new GameApiError(409, "closed"));
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
@@ -219,7 +219,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("result")).toBeInTheDocument();
   });
 
-  it("Tab a mitad de partida empieza otra nueva", async () => {
+  it("Tab mid-game starts a new one", async () => {
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
     fireEvent.keyDown(screen.getByTestId("typing-input"), { key: "Tab", code: "Tab" });
@@ -230,7 +230,7 @@ describe("RankedTest", () => {
     expect(screen.getByTestId("countdown")).toBeInTheDocument();
   });
 
-  it("anónima con buena partida: la posición que tendría y el botón para guardarla", async () => {
+  it("anonymous with a good game: the position it would have and the button to save it", async () => {
     vi.mocked(finishGame).mockResolvedValue(
       response({ ranking: { kind: "would_rank", rank: 4 } }),
     );
@@ -244,7 +244,7 @@ describe("RankedTest", () => {
   });
 });
 
-describe("RankedTest: récord en review", () => {
+describe("RankedTest: record in review", () => {
   const VERIFICATION = {
     id: "v1",
     language: "es" as const,
@@ -268,7 +268,7 @@ describe("RankedTest: récord en review", () => {
     vi.clearAllMocks();
   });
 
-  it("«Verificar ahora» carga la partida de verificación en la misma pantalla; al acabar, vuelve a Ranked", async () => {
+  it('"Verify now" loads the verification game on the same screen; when done, goes back to Ranked', async () => {
     const changed = vi.fn();
     window.addEventListener(VERIFICATION_CHANGED_EVENT, changed);
     onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
@@ -279,9 +279,9 @@ describe("RankedTest: récord en review", () => {
       await vi.dynamicImportSettled();
     });
     expect(screen.getByTestId("rank-summary")).toHaveTextContent("Your score would be #1.");
-    // En `review` todavía no es válida: no se comparte.
+    // In `review` it is not valid yet: it is not shared.
     expect(screen.queryByTestId("share-result")).toBeNull();
-    // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
+    // The header notice requests the pending verifications again.
     expect(changed).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByTestId("verify-now"));
@@ -295,7 +295,7 @@ describe("RankedTest: récord en review", () => {
     expect(screen.getByTestId("ranked-start")).toBeInTheDocument();
   });
 
-  /** Juega una partida que queda en `review` (con el resumen ya descargado). */
+  /** Plays a game that ends up in `review` (with the summary already downloaded). */
   async function playToReview() {
     renderWithIntl(<RankedTest language="es" />);
     await startAndCountDown();
@@ -305,7 +305,7 @@ describe("RankedTest: récord en review", () => {
     });
   }
 
-  /** Pulsa «Verificar ahora» y deja que se descargue la partida de verificación. */
+  /** Presses "Verify now" and lets the verification game download. */
   async function verifyNow() {
     fireEvent.click(screen.getByTestId("verify-now"));
     await act(async () => {
@@ -313,7 +313,7 @@ describe("RankedTest: récord en review", () => {
     });
   }
 
-  it("al volver de la verificación, el campo oculto tiene el foco: Espacio empieza otra partida", async () => {
+  it("on return from the verification, the hidden field has focus: Space starts another game", async () => {
     await playToReview();
     await verifyNow();
     fireEvent.click(screen.getByTestId("verification-game"));
@@ -329,9 +329,9 @@ describe("RankedTest: récord en review", () => {
     expect(screen.getByTestId("countdown")).toBeInTheDocument();
   });
 
-  it("si no se puede descargar la partida de verificación, vuelve a Ranked y dice que no está disponible", async () => {
+  it("if the verification game cannot be downloaded, goes back to Ranked and says it is unavailable", async () => {
     await playToReview();
-    // Con el resumen ya descargado, falla la descarga de la partida de verificación.
+    // With the summary already downloaded, downloading the verification game fails.
     const fakeGame = await import("../verification/verification-game");
     vi.doMock("../verification/verification-game", () => {
       throw new Error("chunk load failed");
@@ -350,7 +350,7 @@ describe("RankedTest: récord en review", () => {
   });
 });
 
-describe("RankedTest: reto y bloqueos", () => {
+describe("RankedTest: challenge and blocks", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "site-key");
@@ -364,7 +364,7 @@ describe("RankedTest: reto y bloqueos", () => {
     vi.clearAllMocks();
   });
 
-  /** Pulsa Empezar y deja que terminen las promesas y las descargas con `import()`. */
+  /** Presses Start and lets the promises and the `import()` downloads finish. */
   async function clickStart() {
     fireEvent.click(screen.getByTestId("ranked-start"));
     await act(async () => {
@@ -374,7 +374,7 @@ describe("RankedTest: reto y bloqueos", () => {
     });
   }
 
-  it("si el servidor pide el reto, lo resuelve y vuelve a pedir la partida con el token", async () => {
+  it("if the server asks for the challenge, solves it and requests the game again with the token", async () => {
     vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
     vi.mocked(solveChallenge).mockResolvedValue("tok");
     renderWithIntl(<RankedTest language="es" />);
@@ -384,7 +384,7 @@ describe("RankedTest: reto y bloqueos", () => {
     expect(screen.getByTestId("countdown")).toBeInTheDocument();
   });
 
-  it("si el reto falla, lo dice, ofrece la práctica y deja volver a intentarlo", async () => {
+  it("if the challenge fails, says so, offers practice and allows trying again", async () => {
     vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
     vi.mocked(solveChallenge).mockRejectedValue(new Error("turnstile timeout"));
     renderWithIntl(<RankedTest language="es" />);
@@ -394,7 +394,7 @@ describe("RankedTest: reto y bloqueos", () => {
     expect(screen.getByTestId("ranked-start")).toBeEnabled();
   });
 
-  it("si el servidor rechaza el token, no lo reintenta en bucle", async () => {
+  it("if the server rejects the token, does not retry it in a loop", async () => {
     vi.mocked(startGame).mockRejectedValue(new GameApiError(403, "needs_challenge"));
     vi.mocked(solveChallenge).mockResolvedValue("tok");
     renderWithIntl(<RankedTest language="es" />);
@@ -404,7 +404,7 @@ describe("RankedTest: reto y bloqueos", () => {
     expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("We couldn't check that you're human");
   });
 
-  it("sin clave de sitio no intenta el reto", async () => {
+  it("without a site key does not attempt the challenge", async () => {
     vi.stubEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY", "");
     vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "needs_challenge"));
     renderWithIntl(<RankedTest language="es" />);
@@ -413,14 +413,14 @@ describe("RankedTest: reto y bloqueos", () => {
     expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("We couldn't check that you're human");
   });
 
-  it("una cuenta baneada ve el aviso", async () => {
+  it("a banned account sees the notice", async () => {
     vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(403, "banned"));
     renderWithIntl(<RankedTest language="es" />);
     await clickStart();
     expect(screen.getByTestId("ranked-blocked")).toHaveTextContent("Your account can't play ranked games.");
   });
 
-  it("con el límite de partidas dice cuántos minutos faltan", async () => {
+  it("with the game limit says how many minutes are left", async () => {
     vi.mocked(startGame).mockRejectedValueOnce(new GameApiError(429, "rate_limited", 125));
     renderWithIntl(<RankedTest language="es" />);
     await clickStart();

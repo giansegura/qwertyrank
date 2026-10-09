@@ -6,8 +6,8 @@ import { leaderboardHref } from "@/lib/leaderboard/slugs";
 import { displayAccuracy, displayWpm } from "@/lib/scoring/metrics";
 
 /**
- * El resultado de una partida (spec 5d §3.2). Sin dependencias de servidor: lo pinta la página y, si el
- * jugador tiene una sanción, su propia 404 en el navegador (spec 5d §5).
+ * The result of a game (spec 5d §3.2). No server dependencies: rendered by the page and, if the
+ * player has a sanction, by their own 404 in the browser (spec 5d §5).
  */
 export function ResultCard({ result }: { result: GameResult }) {
   const t = useTranslations("Share");
@@ -45,7 +45,7 @@ export function ResultCard({ result }: { result: GameResult }) {
         <span>{t("playedOn", { date: format.dateTime(result.startsAt, { dateStyle: "long" }) })}</span>
       </p>
 
-      {/* Se compite en el mismo test: el del idioma de la partida, aunque la página esté en otro. */}
+      {/* Competition is on the same test: the one in the game's language, even if the page is in another. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="w-full font-medium">{t("challenge")}</p>
         <Link

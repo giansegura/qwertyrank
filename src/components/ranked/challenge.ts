@@ -1,6 +1,6 @@
 /**
- * Reto de Cloudflare Turnstile (spec 4a §2.1). `RankedTest` lo descarga con `import()` solo cuando
- * `start` responde `needs_challenge`: ni este código ni el script de Cloudflare pesan en la portada.
+ * Cloudflare Turnstile challenge (spec 4a §2.1). `RankedTest` downloads it with `import()` only when
+ * `start` responds `needs_challenge`: neither this code nor the Cloudflare script weighs on the home page.
  */
 export const TURNSTILE_SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 export const CHALLENGE_TIMEOUT_MS = 15_000;
@@ -36,7 +36,7 @@ function loadTurnstile(): Promise<Turnstile> {
     script.onerror = () => reject(new Error("turnstile script failed"));
     document.head.append(script);
   }).catch((error: unknown) => {
-    // El siguiente intento vuelve a pedir el script.
+    // The next attempt requests the script again.
     loading = null;
     throw error;
   });
@@ -44,8 +44,8 @@ function loadTurnstile(): Promise<Turnstile> {
 }
 
 /**
- * Resuelve el reto en `container` (invisible salvo que Cloudflare pida un clic) y devuelve el token.
- * Falla si el script no carga, si el widget da error o si en `timeoutMs` no hay token.
+ * Solves the challenge in `container` (invisible unless Cloudflare asks for a click) and returns the token.
+ * Fails if the script does not load, if the widget errors or if there is no token within `timeoutMs`.
  */
 export function solveChallenge(container: HTMLElement, siteKey: string, timeoutMs = CHALLENGE_TIMEOUT_MS): Promise<string> {
   return new Promise<string>((resolve, reject) => {

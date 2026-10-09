@@ -13,7 +13,7 @@ export function SiteHeader() {
         <Link href="/" className="font-mono text-base font-semibold sm:text-lg">
           QwertyRank
         </Link>
-        {/* Solo en escritorio: a 360 px no cabe en la línea de la cabecera. En móvil la beta se ve en el pie (spec 5a §4.4). */}
+        {/* Desktop only: at 360 px it does not fit on the header line. On mobile the beta shows in the footer (spec 5a §4.4). */}
         <a
           href={`mailto:${FEEDBACK_EMAIL}`}
           aria-label={t("betaLabel")}
@@ -24,7 +24,7 @@ export function SiteHeader() {
         </a>
       </div>
       <div className="flex items-center gap-3 text-sm sm:gap-6">
-        {/* En móvil el logo ya lleva a Ranked: sin este enlace, la cabecera con el menú de cuenta cabe en 360 px. */}
+        {/* On mobile the logo already goes to Ranked: without this link, the header with the account menu fits in 360 px. */}
         <Link href="/" className="hidden sm:inline">
           {t("home")}
         </Link>

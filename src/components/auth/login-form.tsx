@@ -27,7 +27,7 @@ const EMAIL_ERRORS: Record<string, LoginMessage> = {
   ACCOUNT_BLOCKED: "errorBlocked",
 };
 
-/** Error con el que Better Auth vuelve a esta página (`?error=…`) tras un enlace caducado, ya usado o bloqueado. */
+/** Error Better Auth returns to this page with (`?error=…`) after an expired, already used or blocked link. */
 export function messageForCallbackError(code: string | null): LoginMessage | null {
   if (!code) return null;
   if (code === "ACCOUNT_BLOCKED") return "errorBlocked";

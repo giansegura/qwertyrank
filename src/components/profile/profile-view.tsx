@@ -6,8 +6,8 @@ import type { PublicProfile } from "@/lib/profile";
 import { displayAccuracy, displayWpm } from "@/lib/scoring/metrics";
 
 /**
- * El perfil de un jugador (spec §3.6). Sin dependencias de servidor: lo pinta la página y, si el
- * jugador tiene una sanción, su propia 404 en el navegador (spec 4a §6.2).
+ * A player's profile (spec §3.6). No server dependencies: rendered by the page and, if the
+ * player has a sanction, by their own 404 in the browser (spec 4a §6.2).
  */
 export function ProfileView({ profile, actions }: { profile: PublicProfile; actions?: ReactNode }) {
   const t = useTranslations("Profile");

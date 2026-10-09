@@ -3,7 +3,7 @@ import { isRetryable } from "./api";
 
 export interface BatchSender {
   start(): void;
-  /** Envía lo pendiente y espera a que lleguen todas las tandas. */
+  /** Sends what is pending and waits for all batches to arrive. */
   flush(): Promise<{ lastSeq: number; delivered: boolean }>;
   stop(): void;
 }
@@ -18,9 +18,9 @@ interface Options {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Envía las pulsaciones al servidor cada ~3 s, en orden y una tanda detrás de otra (spec §3.4).
- * Si una tanda no llega tras los reintentos, las siguientes ya no se envían: el servidor
- * marcará la partida como incompleta.
+ * Sends the keystrokes to the server every ~3 s, in order and one batch after another (spec §3.4).
+ * If a batch does not arrive after the retries, the following ones are no longer sent: the server
+ * will mark the game as incomplete.
  */
 export function createBatchSender({
   getEvents,

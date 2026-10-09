@@ -13,7 +13,7 @@ import type { TestLanguage } from "@/lib/words/languages";
 
 type State = { name: "loading" | "signed_out" | "error" } | { name: "loaded"; position: MyPositionResponse };
 
-/** La página del ranking es la misma para todos (en caché 60 s): la posición propia se pide aparte, sin caché. */
+/** The ranking page is the same for everyone (cached 60 s): the player's own position is fetched apart, uncached. */
 export function MyPosition({ language, input }: { language: TestLanguage; input: InputType }) {
   const t = useTranslations("Leaderboard");
   const pathname = usePathname();
@@ -21,7 +21,7 @@ export function MyPosition({ language, input }: { language: TestLanguage; input:
 
   useEffect(() => {
     let active = true;
-    // Sin sesión no se pregunta por la posición: lo sabe ya la cabecera (una petición menos por visita).
+    // Without a session the position is not requested: the header already knows (one request less per visit).
     getViewer()
       .then(async (viewer): Promise<State> => {
         if (!viewer) return { name: "signed_out" };

@@ -9,19 +9,19 @@ import type { TestLanguage } from "@/lib/words/languages";
 
 export interface ShareResultProps {
   gameId: string;
-  /** Idioma del test, para el texto: «en portugués», aunque la página esté en español. */
+  /** Language of the test, for the text: "in Portuguese", even if the page is in Spanish. */
   language: TestLanguage;
   wpm: number;
 }
 
 type ShareState = { kind: "idle" } | { kind: "copied" } | { kind: "manual"; url: string };
 
-/** Cuánto dice el botón «¡Enlace copiado!». */
+/** How long the button says "Link copied!". */
 const COPIED_MS = 2_000;
 
 /**
- * «Compartir» tras una partida Ranked válida (spec 5d §6): el menú del sistema si lo hay; si no, copia el
- * enlace; y si tampoco se puede, lo enseña. El enlace es de este dominio (también en las vistas previas).
+ * "Share" after a valid Ranked game (spec 5d §6): the system menu if there is one; otherwise copies the
+ * link; and if that is not possible either, shows it. The link is on this domain (also in preview deployments).
  */
 export function ShareResult({ gameId, language, wpm }: ShareResultProps) {
   const t = useTranslations("Share");
@@ -42,7 +42,7 @@ export function ShareResult({ gameId, language, wpm }: ShareResultProps) {
         await navigator.share({ url, text: t("shareText", { wpm: displayWpm(wpm), language }) });
         return;
       } catch (error) {
-        // El jugador ha cerrado el menú: no es un fallo.
+        // The player closed the menu: not a failure.
         if (error instanceof DOMException && error.name === "AbortError") return;
       }
     }

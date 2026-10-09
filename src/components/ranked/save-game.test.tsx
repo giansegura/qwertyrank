@@ -16,7 +16,7 @@ vi.mock("next/navigation", async (importOriginal) => ({
   useRouter: () => router,
 }));
 
-// La partida de verificación tiene sus propias pruebas: aquí solo importa que se carga en su lugar.
+// The verification game has its own tests: here all that matters is that it loads in its place.
 vi.mock("../verification/verification-game", () => ({
   VerificationGame: ({ verification, onDone }: { verification: { id: string }; onDone: () => void }) => (
     <button type="button" data-testid="verification-game" onClick={onDone}>
@@ -36,7 +36,7 @@ beforeEach(() => {
 });
 
 describe("SaveGame", () => {
-  it("guarda la partida y enseña su posición", async () => {
+  it("saves the game and shows its position", async () => {
     vi.mocked(claimGame).mockResolvedValue(SAVED);
     renderWithIntl(<SaveGame gameId="g1" />);
     expect(await screen.findByTestId("save-result")).toHaveTextContent("Game saved to your account.");
@@ -44,20 +44,20 @@ describe("SaveGame", () => {
     expect(claimGame).toHaveBeenCalledWith("g1");
   });
 
-  it("pasados 10 minutos, lo explica", async () => {
+  it("after 10 minutes, explains it", async () => {
     vi.mocked(claimGame).mockRejectedValue(new GameApiError(410, "expired"));
     renderWithIntl(<SaveGame gameId="g1" />);
     expect(await screen.findByTestId("save-error")).toHaveTextContent("More than 10 minutes");
   });
 
-  it("si falla, se puede reintentar", async () => {
+  it("if it fails, it can be retried", async () => {
     vi.mocked(claimGame).mockRejectedValueOnce(new GameApiError(503, "unavailable")).mockResolvedValueOnce(SAVED);
     renderWithIntl(<SaveGame gameId="g1" />);
     fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(await screen.findByTestId("save-result")).toBeInTheDocument();
   });
 
-  it("en review, «Verificar ahora» empieza la verificación en esta misma pantalla; al acabar, a jugar Ranked", async () => {
+  it('in review, "Verify now" starts the verification on this same screen; when done, to play Ranked', async () => {
     const verification = {
       id: "v1",
       language: "en" as const,
@@ -73,7 +73,7 @@ describe("SaveGame", () => {
     onTestFinished(() => window.removeEventListener(VERIFICATION_CHANGED_EVENT, changed));
     renderWithIntl(<SaveGame gameId="g1" />);
     fireEvent.click(await screen.findByTestId("verify-now"));
-    // El aviso de la cabecera vuelve a pedir las verificaciones pendientes.
+    // The header notice requests the pending verifications again.
     expect(changed).toHaveBeenCalledOnce();
     await act(async () => {
       await vi.dynamicImportSettled();

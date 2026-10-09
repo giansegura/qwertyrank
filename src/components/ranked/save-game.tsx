@@ -14,14 +14,14 @@ type State = { name: "saving" } | { name: "saved"; claim: ClaimResponse } | { na
 
 const SAVE_ERRORS: Record<string, SaveError> = { expired: "expired", not_found: "notFound" };
 
-/** Pasa a la cuenta la partida anónima de este navegador (spec §3.7) y enseña su posición. */
+/** Moves this browser's anonymous game to the account (spec §3.7) and shows its position. */
 export function SaveGame({ gameId }: { gameId: string }) {
   const t = useTranslations("Save");
   const router = useRouter();
   const [state, setState] = useState<State>({ name: "saving" });
   const [attempt, setAttempt] = useState(0);
-  // "Verificar ahora" (spec 4b §4.1): la partida de verificación, en esta misma pantalla y descargada al
-  // pulsarlo.
+  // "Verify now" (spec 4b §4.1): the verification game, on this same screen and downloaded when
+  // pressed.
   const verification = useVerificationModule();
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function SaveGame({ gameId }: { gameId: string }) {
 
   if (state.name === "saving") return <p role="status">{t("saving")}</p>;
 
-  // Al acabar la verificación, "Jugar Ranked": a la portada.
+  // When the verification ends, "Play Ranked": to the home page.
   const verifying = verification.view(() => router.push("/"));
   if (verifying) return verifying;
 

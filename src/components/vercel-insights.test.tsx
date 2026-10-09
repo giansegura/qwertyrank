@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { VercelInsights } from "./vercel-insights";
 
 describe("VercelInsights", () => {
-  it("en producción, los scripts de Web Analytics y Speed Insights con su cola", () => {
+  it("in production, the Web Analytics and Speed Insights scripts with their queue", () => {
     const { container } = render(<VercelInsights enabled />);
     const scripts = [...container.querySelectorAll("script")];
     expect(scripts.map((script) => script.getAttribute("src"))).toEqual([
@@ -16,7 +16,7 @@ describe("VercelInsights", () => {
     expect(scripts[0].textContent).toContain("window.siq");
   });
 
-  it("fuera de producción, nada", () => {
+  it("outside production, nothing", () => {
     const { container } = render(<VercelInsights enabled={false} />);
     expect(container).toBeEmptyDOMElement();
   });

@@ -7,8 +7,8 @@ import { getViewer } from "@/lib/viewer";
 import { ResultCard } from "./result-card";
 
 /**
- * Dentro de la 404 de un resultado (spec 5d §5): con sesión, pregunta si la partida es del jugador (con
- * shadow-ban o ban no es pública) y, si lo es, se la enseña. A los demás, la 404 de siempre.
+ * Inside a result's 404 (spec 5d §5): with a session, asks whether the game is the player's (with a
+ * shadow-ban or ban it is not public) and, if so, shows it to them. Everyone else gets the usual 404.
  */
 export function OwnResultFallback({ children }: { children: ReactNode }) {
   const pathname = usePathname();

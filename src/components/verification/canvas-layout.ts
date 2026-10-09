@@ -1,6 +1,6 @@
 /**
- * Colocación del texto de la partida de verificación en el `canvas` (spec 4b §3.2), sin DOM: la misma
- * medida que `WordsView` (`text-2xl`, líneas de 40 px, tres a la vista y la activa en la segunda).
+ * Placement of the verification game's text in the `canvas` (spec 4b §3.2), without DOM: the same
+ * measurements as `WordsView` (`text-2xl`, 40 px lines, three in view and the active one second).
  */
 
 export const FONT_SIZE = 24;
@@ -9,24 +9,24 @@ export const VISIBLE_LINES = 3;
 
 export type Measure = (text: string) => number;
 
-/** Un trozo de una palabra en una línea: casi siempre la palabra entera; una más ancha que la línea se parte. */
+/** A piece of a word on a line: almost always the whole word; one wider than the line is split. */
 export interface Segment {
   word: number;
-  /** Letras [start, end) del texto de la palabra. */
+  /** Letters [start, end) of the word's text. */
   start: number;
   end: number;
   line: number;
   x: number;
 }
 
-/** Lo que se dibuja de una palabra: el objetivo y, detrás, las letras de más que se hayan tecleado. */
+/** What is drawn of a word: the target and, after it, any extra letters typed. */
 export function displayText(target: string, typed: string): string {
   return typed.length > target.length ? target + typed.slice(target.length) : target;
 }
 
 /**
- * Ajuste de línea: cada palabra va a la línea siguiente si no cabe en la actual. Una palabra más ancha
- * que la línea empieza en una nueva y se parte por letras (a 360 px, con palabras largas).
+ * Line wrapping: each word goes to the next line if it does not fit on the current one. A word wider
+ * than the line starts on a new one and is split by letters (at 360 px, with long words).
  */
 export function layoutSegments(texts: readonly string[], measure: Measure, maxWidth: number): Segment[] {
   const space = measure(" ");
@@ -61,7 +61,7 @@ export function layoutSegments(texts: readonly string[], measure: Measure, maxWi
   return segments;
 }
 
-/** Dónde va el cursor: en la palabra `current`, tras `index` letras. Al acabar el texto, tras la última. */
+/** Where the cursor goes: in word `current`, after `index` letters. When the text ends, after the last one. */
 export function caretPosition(
   segments: readonly Segment[],
   texts: readonly string[],
@@ -76,14 +76,14 @@ export function caretPosition(
   return { line: segment.line, x: segment.x + measure(texts[current].slice(segment.start, Math.min(index, segment.end))) };
 }
 
-/** Primera línea a la vista: la del cursor queda en la segunda (como `WordsView`). */
+/** First line in view: the cursor's line ends up second (like `WordsView`). */
 export function firstVisibleLine(caretLine: number): number {
   return Math.max(0, caretLine - 1);
 }
 
 /**
- * Tamaño del lienzo en píxeles del dispositivo: con `devicePixelRatio` 2 o 3 se dibuja a esa resolución
- * y se escala, para que el texto se vea nítido.
+ * Canvas size in device pixels: with `devicePixelRatio` 2 or 3 it draws at that resolution
+ * and scales, so the text looks sharp.
  */
 export function canvasSize(cssWidth: number, cssHeight: number, dpr: number): { width: number; height: number; scale: number } {
   const scale = dpr > 0 ? dpr : 1;

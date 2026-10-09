@@ -10,8 +10,8 @@ import { createBatchSender, type BatchSender } from "./batch-sender";
 import { confirmFinish, requestStart, startFailure, type StartFailure } from "./game-flow";
 
 /**
- * Fase de una partida contra el servidor. `result` lleva la respuesta de `finish`; `unscored`, el resultado
- * local cuando el servidor no la ha confirmado; `not_started`, por qué no ha empezado.
+ * Phase of a game against the server. `result` carries the `finish` response; `unscored`, the local result
+ * when the server has not confirmed it; `not_started`, why it has not started.
  */
 export type ServerGamePhase<T> =
   | { name: "idle" }
@@ -25,16 +25,16 @@ export type ServerGamePhase<T> =
   | { name: "not_started"; failure: StartFailure };
 
 /**
- * Una partida con el servidor (spec §3.4), la misma en Ranked y en la verificación (spec 4b §4.2):
- * pedirla (con el reto si hace falta) → cuenta atrás con el texto oculto → 30 s que no se pueden parar,
- * con las pulsaciones enviadas cada ~3 s → el servidor puntúa y da el veredicto. `T` es la respuesta de
- * `finish`. Turnstile pinta el reto en el elemento de `challengeRef`, que se saca del resultado al
- * desestructurarlo: el React Compiler toma `game.challengeRef` en el render por una lectura del ref.
+ * A game with the server (spec §3.4), the same in Ranked and in verification (spec 4b §4.2):
+ * request it (with the challenge if needed) → countdown with the text hidden → 30 s that cannot be stopped,
+ * with keystrokes sent every ~3 s → the server scores and gives the verdict. `T` is the response of
+ * `finish`. Turnstile renders the challenge in the `challengeRef` element, which is taken out of the result
+ * by destructuring: the React Compiler treats `game.challengeRef` in render as a ref read.
  */
 export function useServerGame<T>() {
   const [phase, setPhase] = useState<ServerGamePhase<T>>({ name: "idle" });
 
-  // Cada partida empezada tiene un número; las respuestas de partidas anteriores se ignoran.
+  // Each started game has a number; responses from earlier games are ignored.
   const attemptRef = useRef(0);
   const startingRef = useRef(false);
   const gameIdRef = useRef<string | null>(null);
@@ -50,7 +50,7 @@ export function useServerGame<T>() {
     gameIdRef.current = null;
   }
 
-  // Al desmontar se para la partida, y un inicio que siga en curso ya no la arranca.
+  // On unmount the game stops, and a start still in progress no longer launches it.
   useEffect(
     () => () => {
       attemptRef.current++;
@@ -80,12 +80,12 @@ export function useServerGame<T>() {
   });
 
   /**
-   * Pide una partida nueva y deja la anterior. `onStart` se llama al empezar a pedirla (p. ej. para
-   * vaciar el campo oculto); no se llama si ya se está pidiendo otra.
+   * Requests a new game and drops the previous one. `onStart` is called when the request begins (e.g. to
+   * empty the hidden field); it is not called if another one is already being requested.
    */
   async function start(body: StartRequest, onStart: () => void) {
-    // Con un inicio en curso, repetir Tab o Espacio no pide otra partida: dos inicios a la vez
-    // podrían llegar desordenados y dejar en pantalla una partida que el servidor ya cerró.
+    // With a start in progress, repeating Tab or Space does not request another game: two starts at once
+    // could arrive out of order and leave on screen a game the server already closed.
     if (startingRef.current) return;
     startingRef.current = true;
     const attempt = ++attemptRef.current;
@@ -121,7 +121,7 @@ export function useServerGame<T>() {
     }
   }
 
-  /** Deja la partida en curso (sus respuestas se ignoran) y vuelve al principio, o a `failure`. */
+  /** Drops the game in progress (its responses are ignored) and goes back to the start, or to `failure`. */
   function leave(failure?: StartFailure) {
     attemptRef.current++;
     stopCurrent();

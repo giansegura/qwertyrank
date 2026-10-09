@@ -1,4 +1,4 @@
-/** Estado de una palabra del texto y de cada una de sus letras. Lo comparten el DOM (`Word`) y el `canvas`. */
+/** Status of a word of the text and of each of its letters. Shared by the DOM (`Word`) and the `canvas`. */
 export type WordState = "done" | "active" | "pending";
 export type LetterStatus = "pending" | "correct" | "incorrect" | "extra" | "missed";
 

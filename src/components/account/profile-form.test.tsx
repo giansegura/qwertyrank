@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe("ProfileForm", () => {
-  it("guarda nick y país, y avisa a la cabecera", async () => {
+  it("saves nick and country, and notifies the header", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
     vi.stubGlobal("fetch", fetchMock);
     const listener = vi.fn();
@@ -51,14 +51,14 @@ describe("ProfileForm", () => {
     window.removeEventListener(SESSION_CHANGED_EVENT, listener);
   });
 
-  it("si el nick está ocupado, lo explica", async () => {
+  it("if the nick is taken, explains it", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "nick_taken" }, 409)));
     renderForm();
     fireEvent.click(screen.getByTestId("profile-save"));
     expect(await screen.findByTestId("profile-error")).toHaveTextContent("That nick is taken");
   });
 
-  it("en la bienvenida, tras guardar sigue adonde iba", async () => {
+  it("on the welcome page, after saving goes on where it was heading", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ ok: true })));
     renderForm("/en/practice");
     expect(screen.getByTestId("profile-save")).toHaveTextContent("Save and continue");
@@ -66,9 +66,9 @@ describe("ProfileForm", () => {
     await vi.waitFor(() => expect(navigateTo).toHaveBeenCalledWith("/en/practice"));
   });
 
-  it("el país empieza sin elegir y las opciones son las que calcula el servidor, en su orden", () => {
-    // Una sola fuente para los nombres: Node y el navegador traen datos de ICU distintos y,
-    // si cada uno calculase los suyos, el HTML no coincidiría al hidratar.
+  it("the country starts unselected and the options are the ones the server computes, in its order", () => {
+    // A single source for the names: Node and the browser ship different ICU data and,
+    // if each computed its own, the HTML would not match on hydration.
     renderForm();
     const select = screen.getByTestId("profile-country") as HTMLSelectElement;
     expect(select.value).toBe("");

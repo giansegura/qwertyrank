@@ -1,18 +1,18 @@
 import type { ClaimResponse, FinishRequest, FinishResponse, KeysRequest, StartRequest, StartResponse } from "@/lib/game/types";
 
-/** Error HTTP de la API de partidas, con el código que devuelve el servidor (`busy`, `closed`…). */
+/** HTTP error from the games API, with the code the server returns (`busy`, `closed`…). */
 export class GameApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
-    /** Segundos que faltan, en `rate_limited` (spec 4a §2). */
+    /** Seconds remaining, on `rate_limited` (spec 4a §2). */
     readonly retryAfter: number | null = null,
   ) {
     super(`${status} ${code}`);
   }
 }
 
-/** Una petición que no responde en este tiempo se corta; el error se puede reintentar. */
+/** A request that does not respond within this time is aborted; the error is retryable. */
 export const REQUEST_TIMEOUT_MS = 5_000;
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -44,7 +44,7 @@ export async function sendKeys(gameId: string, body: KeysRequest): Promise<void>
   await post(`/api/game/${gameId}/keys`, body);
 }
 
-/** Se reintentan los fallos de red, los 5xx y el `busy` de un final que ya se está procesando. */
+/** Network failures, 5xx and the `busy` of a finish already being processed are retried. */
 export function isRetryable(error: unknown): boolean {
   if (!(error instanceof GameApiError)) return true;
   return error.status >= 500 || error.code === "busy";
@@ -52,7 +52,7 @@ export function isRetryable(error: unknown): boolean {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** `T`: `FinishResponse` en Ranked, `VerificationFinishResponse` en una partida de verificación. */
+/** `T`: `FinishResponse` in Ranked, `VerificationFinishResponse` in a verification game. */
 export async function finishGame<T = FinishResponse>(
   gameId: string,
   body: FinishRequest,

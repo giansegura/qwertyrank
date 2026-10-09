@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-/** Qué mide el test y cómo funciona el ranking (spec 5b §7): texto para quien llega desde un buscador. */
+/** What the test measures and how the ranking works (spec 5b §7): text for visitors coming from a search engine. */
 export function HomeAbout() {
   const t = useTranslations("Home");
   return (

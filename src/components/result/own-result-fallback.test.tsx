@@ -36,7 +36,7 @@ afterEach(() => {
 const page = () => renderWithIntl(<OwnResultFallback><p>not found</p></OwnResultFallback>);
 
 describe("OwnResultFallback", () => {
-  it("con sesión pide la partida y, si es suya, la enseña", async () => {
+  it("with a session requests the game and, if it is theirs, shows it", async () => {
     vi.mocked(getViewer).mockResolvedValue({ nick: "Gian" });
     fetchMock.mockResolvedValue(Response.json(RESULT));
     page();
@@ -45,7 +45,7 @@ describe("OwnResultFallback", () => {
     expect(screen.queryByText("not found")).toBeNull();
   });
 
-  it("si no es suya, la 404 de siempre", async () => {
+  it("if it is not theirs, the usual 404", async () => {
     vi.mocked(getViewer).mockResolvedValue({ nick: "otro" });
     fetchMock.mockResolvedValue(Response.json({ error: "not_found" }, { status: 404 }));
     page();
@@ -54,7 +54,7 @@ describe("OwnResultFallback", () => {
     expect(screen.getByText("not found")).toBeInTheDocument();
   });
 
-  it("sin sesión o con un id que no es UUID, ni pregunta", async () => {
+  it("without a session or with an id that is not a UUID, does not even ask", async () => {
     vi.mocked(getViewer).mockResolvedValue(null);
     page();
     await waitFor(() => expect(getViewer).toHaveBeenCalled());

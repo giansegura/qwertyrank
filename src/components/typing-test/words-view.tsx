@@ -5,8 +5,8 @@ import type { EngineState } from "@/lib/scoring/engine";
 import { Word } from "./word";
 
 /**
- * Muestra 3 líneas de texto. Mantiene la palabra activa en la segunda línea y
- * mueve el cursor con `transform`, sin volver a pintar las palabras.
+ * Shows 3 lines of text. Keeps the active word on the second line and
+ * moves the cursor with `transform`, without re-rendering the words.
  */
 export function WordsView({ engine }: { engine: EngineState }) {
   const innerRef = useRef<HTMLDivElement>(null);

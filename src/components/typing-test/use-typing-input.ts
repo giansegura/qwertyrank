@@ -15,19 +15,19 @@ export interface TypingTarget {
 
 interface Options {
   target: TypingTarget;
-  /** Tab sin modificadores. */
+  /** Tab without modifiers. */
   onRestart: () => void;
   /** Enter. */
   onEnter?: () => void;
-  /** Espacio. Devuelve `true` si lo ha usado (p. ej. para empezar una partida Ranked). */
+  /** Space. Returns `true` if it used it (e.g. to start a Ranked game). */
   onSpace?: () => boolean;
 }
 
 const prevent = (event: { preventDefault(): void }) => event.preventDefault();
 
 /**
- * Captura del teclado con un `<input>` oculto: convierte cada cambio en `{ deleted, inserted }`,
- * filtra teclas muertas, respeta la composición de los teclados de móvil y gestiona el foco.
+ * Keyboard capture with a hidden `<input>`: turns each change into `{ deleted, inserted }`,
+ * filters dead keys, respects mobile keyboard composition and manages focus.
  */
 export function useTypingInput({ target, onRestart, onEnter, onSpace }: Options) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,10 +35,10 @@ export function useTypingInput({ target, onRestart, onEnter, onSpace }: Options)
   const deadKeyRef = useRef(false);
   const [focused, setFocused] = useState(false);
 
-  // Enfoca al cargar solo con ratón o trackpad: en móvil, enfocar sin que el usuario toque
-  // no abre el teclado y ocultaría el aviso "toca para empezar". Si el input ya tenía el
-  // foco antes de hidratar (un clic temprano), React no vio el evento `focus`: se quita y
-  // se vuelve a dar para que `onFocus` se entere.
+  // Focuses on load only with a mouse or trackpad: on mobile, focusing without the user tapping
+  // does not open the keyboard and would hide the "tap to start" notice. If the input already had
+  // focus before hydration (an early click), React did not see the `focus` event: it is removed
+  // and given again so that `onFocus` notices.
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
@@ -49,7 +49,7 @@ export function useTypingInput({ target, onRestart, onEnter, onSpace }: Options)
     input.focus({ preventScroll: true });
   }, []);
 
-  /** Lleva al motor lo que haya cambiado en el input desde la última vez. */
+  /** Feeds the engine whatever changed in the input since the last time. */
   function processValue(element: HTMLInputElement, composing: boolean, trusted: boolean, at: number) {
     const next = element.value.normalize("NFC");
     const diff = diffInput(lastValueRef.current, next);
@@ -57,7 +57,7 @@ export function useTypingInput({ target, onRestart, onEnter, onSpace }: Options)
     const changed = diff.deleted > 0 || diff.inserted !== "";
     const state = changed ? target.handleInput(diff, trusted, at) : target.engine;
     if (composing) {
-      // Mientras se compone (teclados de Android) no se toca el valor: rompería el IME.
+      // While composing (Android keyboards) the value is not touched: it would break the IME.
       lastValueRef.current = next;
       return;
     }
@@ -71,15 +71,15 @@ export function useTypingInput({ target, onRestart, onEnter, onSpace }: Options)
     processValue(event.currentTarget, composing, event.nativeEvent.isTrusted, eventTime(event.timeStamp));
   }
 
-  // Al acabar una composición, el input vuelve a la palabra actual del motor. Si no, el
-  // teclado seguiría editando texto de palabras ya confirmadas.
+  // When a composition ends, the input returns to the engine's current word. Otherwise the
+  // keyboard would keep editing text of already confirmed words.
   function onCompositionEnd(event: CompositionEvent<HTMLInputElement>) {
     processValue(event.currentTarget, false, event.nativeEvent.isTrusted, eventTime(event.timeStamp));
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     deadKeyRef.current = event.key === "Dead";
-    // Solo Tab sin modificadores reinicia: Mayús+Tab sigue sirviendo para salir con el teclado.
+    // Only Tab without modifiers restarts: Shift+Tab still works to leave with the keyboard.
     const plainTab = event.key === "Tab" && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey;
     if (plainTab) {
       event.preventDefault();
@@ -104,7 +104,7 @@ export function useTypingInput({ target, onRestart, onEnter, onSpace }: Options)
     target.handleKey(info, eventTime(event.timeStamp));
   }
 
-  /** Vacía el input y le da el foco: al empezar una partida nueva. */
+  /** Empties the input and focuses it: when starting a new game. */
   function reset() {
     lastValueRef.current = "";
     const input = inputRef.current;

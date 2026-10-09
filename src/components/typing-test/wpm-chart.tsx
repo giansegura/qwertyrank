@@ -2,7 +2,7 @@ const WIDTH = 600;
 const HEIGHT = 160;
 const PADDING = 8;
 
-/** Gráfica de PPM por segundo, en SVG para no añadir dependencias. */
+/** Chart of WPM per second, in SVG to avoid adding dependencies. */
 export function WpmChart({ perSecond, label }: { perSecond: readonly number[]; label: string }) {
   const max = Math.max(10, ...perSecond);
   const points = perSecond

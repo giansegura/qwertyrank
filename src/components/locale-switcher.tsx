@@ -10,8 +10,8 @@ type Href = ComponentProps<typeof Link>["href"];
 type Pathname = ReturnType<typeof usePathname>;
 
 /**
- * La misma página en otro idioma. Las rutas fijas (también los rankings) las traduce next-intl;
- * las que tienen parámetros (perfil, guardar, resultado) los conservan tal cual.
+ * The same page in another language. Fixed routes (rankings too) are translated by next-intl;
+ * those with parameters (profile, save, result) keep them as they are.
  */
 export function localizedHref(pathname: Pathname, params: Record<string, string | string[] | undefined>): Href {
   switch (pathname) {
@@ -29,7 +29,7 @@ export function localizedHref(pathname: Pathname, params: Record<string, string 
 const OPTION =
   "rounded px-1.5 py-0.5 font-mono text-xs uppercase text-zinc-500 aria-[current]:bg-zinc-200 aria-[current]:text-zinc-900 dark:aria-[current]:bg-zinc-800 dark:aria-[current]:text-zinc-100";
 
-/** Al elegir un idioma en el desplegable, se cierra (en la lista de escritorio no hace nada). */
+/** Picking a language in the dropdown closes it (does nothing in the desktop list). */
 function closeMenu(event: MouseEvent<HTMLAnchorElement>) {
   event.currentTarget.closest("details")?.removeAttribute("open");
 }
@@ -57,7 +57,7 @@ export function LocaleSwitcher() {
   return (
     <nav aria-label={t("label")}>
       <ul className="hidden gap-2 sm:flex">{options()}</ul>
-      {/* En móvil no caben los tres junto al menú: un desplegable con el idioma actual. */}
+      {/* On mobile the three don't fit next to the menu: a dropdown with the current language. */}
       <details className="relative sm:hidden">
         <summary
           data-testid="locale-menu"

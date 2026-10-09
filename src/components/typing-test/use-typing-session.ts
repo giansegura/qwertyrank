@@ -18,11 +18,11 @@ export interface KeyInfo {
 interface Options {
   initialWords: readonly string[];
   durationMs: number;
-  /** Palabras para la siguiente partida al reiniciar. */
+  /** Words for the next game on restart. */
   nextWords: () => readonly string[];
-  /** Con `false`, el reloj no arranca con la primera pulsación sino al llamar a `begin()` (Ranked). */
+  /** With `false`, the clock does not start with the first keystroke but when `begin()` is called (Ranked). */
   autoStart?: boolean;
-  /** Se llama una vez al terminar, con el resultado calculado en el navegador. */
+  /** Called once when finished, with the result computed in the browser. */
   onFinish?: (result: TestResult) => void;
   now?: () => number;
 }
@@ -30,9 +30,9 @@ interface Options {
 const defaultNow = () => performance.now();
 
 /**
- * Lógica de una partida: el reloj empieza con la primera pulsación que cambia el texto
- * (o con `begin()`), termina a los `durationMs` y el resultado sale de `replay`, la
- * misma función que usa el servidor. Los tiempos `at` van en la escala de `performance.now()`.
+ * Logic of a game: the clock starts with the first keystroke that changes the text
+ * (or with `begin()`), ends after `durationMs` and the result comes from `replay`, the
+ * same function the server uses. The `at` times are on the `performance.now()` scale.
  */
 export function useTypingSession({
   initialWords,
@@ -70,9 +70,9 @@ export function useTypingSession({
   }
 
   /**
-   * Tiempo desde el inicio, nunca negativo ni menor que el del evento anterior: una pulsación
-   * que ocurrió justo antes de `begin()` cuenta como 0, y un retraso del hilo principal no
-   * desordena los eventos (el servidor los reproduce ordenados por `t`).
+   * Time since the start, never negative nor less than the previous event's: a keystroke
+   * that happened just before `begin()` counts as 0, and a main-thread delay does not
+   * reorder the events (the server replays them sorted by `t`).
    */
   function elapsed(at: number): number {
     const t = Math.max(lastTRef.current, at - startRef.current!);
@@ -94,7 +94,7 @@ export function useTypingSession({
     const next = applyInput(engineRef.current, diff.deleted, diff.inserted);
 
     if (statusRef.current === "idle") {
-      // Sin arranque automático, o si la pulsación no cambia nada (espacio suelto, borrar), no empieza.
+      // Without auto start, or if the keystroke changes nothing (lone space, delete), it does not start.
       if (!autoStart || sameTyping(next, engineRef.current)) return engineRef.current;
       startClock(at);
     }
@@ -119,13 +119,13 @@ export function useTypingSession({
     eventsRef.current.push({ t, ...key });
   }
 
-  /** Arranca el reloj ahora (Ranked: al terminar la cuenta atrás). */
+  /** Starts the clock now (Ranked: when the countdown ends). */
   function begin() {
     if (statusRef.current !== "idle") return;
     startClock(now());
   }
 
-  /** Pone un texto nuevo y vuelve al reposo. */
+  /** Sets a new text and goes back to idle. */
   function load(words: readonly string[]) {
     if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
     timeoutRef.current = null;
@@ -152,7 +152,7 @@ export function useTypingSession({
   return { engine, status, endsAt, result, handleInput, handleKey, begin, load, restart, getEvents };
 }
 
-/** Dos estados con lo mismo escrito: la pulsación no ha cambiado el texto. */
+/** Two states with the same text typed: the keystroke has not changed the text. */
 function sameTyping(a: EngineState, b: EngineState): boolean {
   return a.current === b.current && a.typed[a.current] === b.typed[b.current];
 }

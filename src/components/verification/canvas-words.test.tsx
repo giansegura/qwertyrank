@@ -4,7 +4,7 @@ import { applyInput, createEngine } from "@/lib/scoring/engine";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { CanvasWords } from "./canvas-words";
 
-/** Un contexto 2D que apunta lo que se dibuja (jsdom no dibuja). */
+/** A 2D context that records what is drawn (jsdom does not draw). */
 function fakeContext() {
   const drawn: { text: string; x: number; y: number; color: string }[] = [];
   const context = {
@@ -45,7 +45,7 @@ afterEach(() => {
 });
 
 describe("CanvasWords", () => {
-  it("no dibuja hasta que han cargado las fuentes; después, a la resolución del dispositivo", async () => {
+  it("does not draw until the fonts have loaded; then, at the device resolution", async () => {
     const { context, drawn } = fakeContext();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context as unknown as CanvasRenderingContext2D);
     renderWithIntl(<CanvasWords engine={createEngine(["hola", "mundo"])} />);
@@ -64,7 +64,7 @@ describe("CanvasWords", () => {
     expect([canvas.width, canvas.height]).toEqual([984, 360]);
   });
 
-  it("pinta los errores en rojo y el texto no está en el DOM", async () => {
+  it("paints errors in red and the text is not in the DOM", async () => {
     const { context, drawn } = fakeContext();
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context as unknown as CanvasRenderingContext2D);
     fontsReady();

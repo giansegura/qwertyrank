@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { loginPath } from "@/lib/auth-paths";
 import { navigateTo } from "@/lib/navigate";
 
-/** Añadir una passkey o borrar la cuenta exige una sesión de menos de un día: se vuelve a entrar y se regresa aquí. */
+/** Adding a passkey or deleting the account requires a session less than a day old: sign in again and come back here. */
 export function Reauth({ locale }: { locale: Locale }) {
   const t = useTranslations("Settings");
 

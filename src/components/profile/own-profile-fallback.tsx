@@ -7,8 +7,8 @@ import { getViewer } from "@/lib/viewer";
 import { ProfileView } from "./profile-view";
 
 /**
- * Dentro de la 404 de un perfil (spec 4a §6.2): si el nick de la URL es el del propio jugador (con
- * shadow-ban o ban su perfil no es público), le enseña el suyo. A los demás, la 404 de siempre.
+ * Inside a profile's 404 (spec 4a §6.2): if the nick in the URL is the player's own (with a
+ * shadow-ban or ban their profile is not public), shows them theirs. Everyone else gets the usual 404.
  */
 export function OwnProfileFallback({ children }: { children: ReactNode }) {
   const pathname = usePathname();

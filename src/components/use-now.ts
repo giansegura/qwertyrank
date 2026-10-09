@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 /**
- * La hora actual, que se actualiza cada `intervalMs`. `null` hasta después de montar: con la hora del
- * servidor el HTML no coincidiría al hidratar, y el React Compiler no deja leerla durante el render.
+ * The current time, updated every `intervalMs`. `null` until after mount: with the server's time
+ * the HTML would not match on hydration, and the React Compiler does not allow reading it during render.
  */
 export function useNow(intervalMs = 60_000): number | null {
   const [now, setNow] = useState<number | null>(null);

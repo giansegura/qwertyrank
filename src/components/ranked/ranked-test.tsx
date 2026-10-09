@@ -19,32 +19,32 @@ import { useServerGame } from "./use-server-game";
 type RankSummaryModule = typeof import("./rank-summary");
 
 /**
- * Partida Ranked (spec §3.4): Empezar → el servidor envía el texto → cuenta atrás 3-2-1 con
- * el texto oculto → 30 s que no se pueden parar → las pulsaciones se envían cada ~3 s →
- * el servidor puntúa y da el veredicto.
+ * Ranked game (spec §3.4): Start → the server sends the text → 3-2-1 countdown with
+ * the text hidden → 30 s that cannot be stopped → keystrokes are sent every ~3 s →
+ * the server scores and gives the verdict.
  */
 export function RankedTest({ language }: { language: TestLanguage }) {
   const t = useTranslations("Ranked");
   const tt = useTranslations("TypingTest");
   const { phase, session, challengeRef, ...game } = useServerGame<FinishResponse>();
-  // El resumen de posición solo hace falta al terminar: su módulo se descarga durante la partida y no pesa
-  // en el JS inicial de la portada (spec §7.5). A los 30 s ya está cargado, así que no hay salto (CLS = 0).
+  // The position summary is only needed at the end: its module downloads during the game and does not weigh
+  // on the home page's initial JS (spec §7.5). By 30 s it is already loaded, so there is no shift (CLS = 0).
   const [summary, setSummary] = useState<RankSummaryModule | null>(null);
-  // "Verificar ahora" (spec 4b §4.1): la partida de verificación ocupa esta pantalla. La descarga y la pinta
-  // el módulo del resumen; aquí solo se esconde Ranked mientras tanto.
+  // "Verify now" (spec 4b §4.1): the verification game takes over this screen. The summary module downloads
+  // and renders it; here Ranked is only hidden in the meantime.
   const [verifying, setVerifying] = useState<PendingVerification | null>(null);
 
   function start() {
     void game.start({ language, env: readClientEnv() }, () => {
-      // Si la descarga falla, el resultado sale sin el resumen y se reintenta en la siguiente partida.
+      // If the download fails, the result shows without the summary and it is retried on the next game.
       if (!summary) import("./rank-summary").then(setSummary, () => {});
       typing.reset();
     });
   }
 
   /**
-   * Al acabar la verificación, de vuelta al principio de Ranked (o a `failure`, si no se pudo descargar). El
-   * campo oculto se crea de nuevo: se pinta ya para darle el foco, y Espacio o Intro empiezan otra partida.
+   * When the verification ends, back to the start of Ranked (or to `failure`, if it could not be downloaded). The
+   * hidden field is created again: it is rendered right away to give it focus, and Space or Enter start another game.
    */
   function endVerification(failure?: StartFailure) {
     game.leave(failure);
@@ -109,8 +109,8 @@ export function RankedTest({ language }: { language: TestLanguage }) {
         </span>
       </div>
 
-      {/* Sin altura reservada: debajo no hay contenido que pueda saltar al crecer el resultado (CLS = 0),
-          y la pantalla inicial cabe sin scroll. */}
+      {/* No reserved height: there is no content below that could shift when the result grows (CLS = 0),
+          and the initial screen fits without scrolling. */}
       <div>
         {waiting || phase.name === "starting" || phase.name === "challenging" ? (
           <div className="flex min-h-30 flex-col items-center justify-center gap-3 text-center">
@@ -133,7 +133,7 @@ export function RankedTest({ language }: { language: TestLanguage }) {
             {phase.name === "challenging" && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">{t("challenge")}</p>
             )}
-            {/* Turnstile pinta aquí su widget: invisible salvo que Cloudflare pida un clic. */}
+            {/* Turnstile renders its widget here: invisible unless Cloudflare asks for a click. */}
             <div ref={challengeRef} data-testid="ranked-challenge" />
             <button
               type="button"

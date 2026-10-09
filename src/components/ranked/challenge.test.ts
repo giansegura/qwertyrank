@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 type Options = { sitekey: string; callback: (token: string) => void; "error-callback": () => void };
 
-// El módulo recuerda el script ya cargado: cada test lo carga de nuevo.
+// The module remembers the already loaded script: each test loads it again.
 async function load() {
   vi.resetModules();
   return import("./challenge");
@@ -28,8 +28,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("reto de Turnstile", () => {
-  it("carga el script una vez, pinta el widget invisible y devuelve el token", async () => {
+describe("Turnstile challenge", () => {
+  it("loads the script once, renders the invisible widget and returns the token", async () => {
     const { solveChallenge, TURNSTILE_SCRIPT } = await load();
     const { turnstile, widgets } = fakeTurnstile();
     const container = document.createElement("div");
@@ -57,7 +57,7 @@ describe("reto de Turnstile", () => {
     expect(scripts()).toHaveLength(1);
   });
 
-  it("si el widget da error, falla", async () => {
+  it("if the widget errors, fails", async () => {
     const { solveChallenge } = await load();
     const { turnstile, widgets } = fakeTurnstile();
     window.turnstile = turnstile as unknown as Window["turnstile"];
@@ -68,7 +68,7 @@ describe("reto de Turnstile", () => {
     expect(turnstile.remove).toHaveBeenCalledWith("w1");
   });
 
-  it("si el script no carga, falla y el siguiente intento lo vuelve a pedir", async () => {
+  it("if the script does not load, fails and the next attempt requests it again", async () => {
     const { solveChallenge } = await load();
     const first = solveChallenge(document.createElement("div"), "k");
     scripts()[0].dispatchEvent(new Event("error"));
@@ -77,7 +77,7 @@ describe("reto de Turnstile", () => {
     expect(scripts()).toHaveLength(2);
   });
 
-  it("si en 15 s no hay token, falla", async () => {
+  it("if there is no token within 15 s, fails", async () => {
     vi.useFakeTimers();
     const { solveChallenge, CHALLENGE_TIMEOUT_MS } = await load();
     const result = solveChallenge(document.createElement("div"), "k");

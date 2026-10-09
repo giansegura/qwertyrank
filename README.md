@@ -61,7 +61,7 @@ pnpm dev                      # http://localhost:3000
 | `pnpm lint` / `pnpm typecheck` | ESLint y TypeScript | — |
 | `pnpm budget` | JS propio de la portada (y de `/practice`) en gzip, por encima de `/_not-found`; falla si la portada pasa de 30,0 KB | `pnpm build` antes, y `python3` |
 
-La CI (`.github/workflows/ci.yml`) lo ejecuta todo en cada PR y en `main`, en tres jobs: `checks` (lint, tipos y unitarios), `integration` (con PostgreSQL, Redis y SRH como servicios) y `e2e` (E2E y `pnpm budget` sobre su build). Los tres deben pasar para integrar en `main`.
+La CI (`.github/workflows/ci.yml`) lo ejecuta todo en cada PR y en `main`, en tres jobs: `checks` (lint, tipos y unitarios), `integration` (con PostgreSQL, Redis y SRH como servicios) y `e2e` (E2E y `pnpm budget` sobre su build). Además, `.github/workflows/pr-title.yml` comprueba que el título de cada PR siga Conventional Commits (`conventional-title`): con squash, ese título es el commit en `main`. Los cuatro deben pasar para integrar en `main`. CodeRabbit revisa cada PR con `.coderabbit.yaml` (comenta, no bloquea).
 
 ## Base de datos
 

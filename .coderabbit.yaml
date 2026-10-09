@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Revisión automática de cada PR con CodeRabbit (app de GitHub, se instala aparte: docs/launch.md §11).
+# Comenta; no bloquea la integración. Las reglas del proyecto están en AGENTS.md, CLAUDE.md y docs/.
+language: es-ES
+tone_instructions: "Directo y concreto, en español. Cada comentario dice qué falla, en qué caso y cómo arreglarlo."
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!pnpm-lock.yaml"
+    - "!drizzle/meta/**"
+  path_instructions:
+    - path: "src/**"
+      instructions: >-
+        Next.js 16 y next-intl 4: sus APIs cambian respecto a versiones anteriores (`params` es una Promise,
+        el middleware es `src/proxy.ts`). No sugieras patrones de versiones antiguas. La portada tiene un
+        presupuesto de JS de 30.720 B (`pnpm budget`): señala cualquier import nuevo que llegue a su cliente.
+    - path: "src/server/anticheat/**"
+      instructions: >-
+        El jugador nunca debe ver la regla exacta que rechaza una partida (spec §4.9), y el shadow-ban no debe
+        notarse desde fuera (spec §4.7).
+    - path: "messages/**"
+      instructions: >-
+        en, es y pt deben tener exactamente las mismas claves. Comprueba que la traducción diga lo mismo
+        en los tres. En es el porcentaje va con espacio (`97 %`); en en y pt, sin él (`97%`).
+    - path: "drizzle/**"
+      instructions: >-
+        Las migraciones se aplican en el build de Vercel contra producción: señala cualquier cambio que bloquee
+        tablas grandes o pierda datos.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "CLAUDE.md"
+
+chat:
+  auto_reply: true

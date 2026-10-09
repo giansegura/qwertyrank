@@ -128,8 +128,22 @@ Sentry corre solo en el servidor. No hay que tocar el código ni subir source ma
 En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main`:
 
 - exigir una PR para integrar;
-- exigir que pasen los checks **`checks`**, **`integration`** y **`e2e`** (aparecen tras la primera ejecución de la CI);
+- exigir que pasen los checks **`checks`**, **`integration`**, **`e2e`** y **`conventional-title`** (aparecen tras
+  la primera ejecución de la CI);
 - exigir que la rama esté al día con `main`.
+
+`conventional-title` (`.github/workflows/pr-title.yml`) comprueba que el título de la PR siga Conventional Commits:
+con squash, ese título es el commit en `main`. En *Settings* → *General* → *Pull Requests*, deja solo **Allow squash
+merging** con **Default commit message: Pull request title** (ya está así).
+
+### CodeRabbit (revisión automática de PR)
+
+1. Instala la app de GitHub **CodeRabbit** desde [coderabbit.ai](https://coderabbit.ai) y dale acceso solo al
+   repositorio `qwertyrank`. Antes, mira en su página de precios qué incluye el plan gratuito para repositorios
+   privados.
+2. Lee la configuración del repositorio (`.coderabbit.yaml`): comenta cada PR en español, con un resumen, y tiene en
+   cuenta `AGENTS.md` y `CLAUDE.md`.
+3. No es un check obligatorio: sus comentarios no bloquean la integración.
 
 ## 12. Primer despliegue
 

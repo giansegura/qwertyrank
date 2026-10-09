@@ -24,6 +24,15 @@ export function HomeAbout() {
           ),
         })}
       </p>
+      <p>
+        {t.rich("about4", {
+          guides: (chunks) => (
+            <Link href="/guides" className="font-medium underline">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
     </section>
   );
 }

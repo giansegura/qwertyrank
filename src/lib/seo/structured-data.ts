@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/routing";
+import { type GuideHref, GUIDES_PUBLISHED } from "@/lib/guides";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { localizedPath, type SeoHref } from "./metadata";
 
@@ -29,15 +30,55 @@ export function homeStructuredData(locale: Locale, description: string): Structu
   };
 }
 
-/** Breadcrumbs of a page that hangs from the home page: QwertyRank › {name}. */
-export function breadcrumbStructuredData(locale: Locale, href: SeoHref, name: string): StructuredData {
+/**
+ * Breadcrumbs of a page: QwertyRank › {name}, or QwertyRank › {parent} › {name} for a page under a section
+ * (a guide under the guides index, spec 5c §5).
+ */
+export function breadcrumbStructuredData(
+  locale: Locale,
+  href: SeoHref,
+  name: string,
+  parent?: { href: SeoHref; name: string },
+): StructuredData {
+  const crumbs = [
+    { name: SITE_NAME, href: "/" as SeoHref },
+    ...(parent ? [parent] : []),
+    { name, href },
+  ];
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: SITE_NAME, item: absolute(localizedPath(locale, "/")) },
-      { "@type": "ListItem", position: 2, name, item: absolute(localizedPath(locale, href)) },
-    ],
+    itemListElement: crumbs.map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: crumb.name,
+      item: absolute(localizedPath(locale, crumb.href)),
+    })),
+  };
+}
+
+interface ArticleInput {
+  locale: Locale;
+  href: GuideHref;
+  title: string;
+  description: string;
+}
+
+/** A guide (spec 5c §5): an Article written and published by QwertyRank, with the default share image. */
+export function articleStructuredData({ locale, href, title, description }: ArticleInput): StructuredData {
+  const organization = { "@type": "Organization", name: SITE_NAME, url: SITE_URL };
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    inLanguage: locale,
+    datePublished: GUIDES_PUBLISHED,
+    dateModified: GUIDES_PUBLISHED,
+    mainEntityOfPage: absolute(localizedPath(locale, href)),
+    image: absolute(`/${locale}/opengraph-image`),
+    author: organization,
+    publisher: organization,
   };
 }
 

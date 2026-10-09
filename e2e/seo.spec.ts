@@ -59,7 +59,11 @@ test("the home page: full title, x-default to the root, JSON-LD, top 10 and expl
   expect(graph.map((node) => node["@type"])).toEqual(["WebSite", "Organization", "WebApplication"]);
   // In the server HTML, without clicking anything.
   await expect(page.getByTestId("home-top").getByRole("heading", { level: 2 })).toHaveText("Top 10 · physical keyboard");
-  await expect(page.getByTestId("home-about").getByRole("link")).toHaveAttribute("href", "/en/practice");
+  await expect(page.getByTestId("home-about").getByRole("link", { name: "15-second practice" })).toHaveAttribute(
+    "href",
+    "/en/practice",
+  );
+  await expect(page.getByTestId("home-about").getByRole("link", { name: "typing guides" })).toHaveAttribute("href", "/en/guides");
 });
 
 test("a legal page: the brand only once and the layout's description", async ({ page }) => {
@@ -79,7 +83,9 @@ test("sitemap, robots and share image", async ({ request }) => {
   const sitemap = await request.get("/sitemap.xml");
   expect(sitemap.ok()).toBe(true);
   const xml = await sitemap.text();
-  expect(xml.match(/<loc>/g)).toHaveLength(12);
+  // Home, practice, two rankings, the guides index and five guides, in three languages (spec 5c §5).
+  expect(xml.match(/<loc>/g)).toHaveLength(30);
+  expect(xml).toContain(`<loc>${SITE}/pt/guias/posicao-dos-dedos</loc>`);
   expect(xml).toContain(`<loc>${SITE}/es/ranking/tactil</loc>`);
   expect(xml).toContain(`hreflang="pt" href="${SITE}/pt/pratica"`);
 

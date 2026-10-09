@@ -84,6 +84,7 @@ The guide to opening the beta (accounts, variables and checks) is in [`docs/laun
 - **Beta:** nothing is indexed while `INDEXABLE` (`src/lib/site.ts`) is `false`.
 - **SEO:** every indexable page builds its metadata with `pageMetadata` (`src/lib/seo/`): canonical, `hreflang` and Open Graph with the `SITE_URL` (production) URLs, locally too. Plus `sitemap.xml`, `robots.txt`, JSON-LD and a share image per language (`src/app/[locale]/opengraph-image.tsx`). ICU messages are compiled at build time (`next.config.ts`), so the client doesn't load their parser.
 - **Sharing:** every valid Ranked game has its page `/{language}/r/{id}` (not indexed) with its image generated from the database (`src/app/[locale]/r/[id]/`), and a "Share" button when it ends. Under shadow ban or ban the page is a 404 for everyone else; the player sees their own game.
+- **Guides:** five guides per language in MDX (`content/{en,es,pt}/`), rendered at build time with `@next/mdx` (no client JS) under `/en/guides`, `/es/guias` and `/pt/guias`, with Article JSON-LD and sitemap entries. To add one: its id in `src/lib/guides.ts`, its route with the slug of every locale in `src/i18n/routing.ts`, its title and description in the `Guides` messages, and the three MDX files. `src/lib/guides-content.test.ts` checks every internal link points to a real page of its locale.
 
 ## License
 

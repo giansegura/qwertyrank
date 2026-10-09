@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import sitemap from "./sitemap";
 
 describe("sitemap", () => {
-  it("lists home, practice and the two rankings in each language, with their alternates", () => {
+  it("lists home, practice, the two rankings, the guides index and the five guides in each language", () => {
     const entries = sitemap();
-    expect(entries).toHaveLength(12);
+    expect(entries).toHaveLength(30);
+    expect(entries.map((entry) => entry.url)).toContain("https://qwertyrank.com/es/guias/como-escribir-mas-rapido");
+    expect(entries.map((entry) => entry.url)).toContain("https://qwertyrank.com/pt/guias");
     expect(entries.map((entry) => entry.url)).toContain("https://qwertyrank.com/es/ranking/fisico");
     for (const entry of entries) {
       expect(entry.url).toMatch(/^https:\/\/qwertyrank\.com\/(en|es|pt)/);

@@ -23,7 +23,8 @@
     "aboutTitle": "Como funciona o teste de velocidade de digitação",
     "about1": "Digite por 30 segundos as palavras que aparecem, exatamente como você as vê. No final você recebe suas palavras por minuto (PPM): os caracteres digitados corretamente, divididos por cinco, por minuto. Também medimos sua precisão, a porcentagem de teclas corretas.",
     "about2": "Cada idioma e cada tipo de teclado têm seu próprio ranking. Conta a sua melhor partida, desde que tenha pelo menos 90% de precisão, e o servidor decide se você digitou em um teclado físico ou touch. Para entrar no ranking você precisa de uma conta: pode jogar sem ela e salvar a partida se entrar nos 10 minutos seguintes.",
-    "about3": "Quer aquecer antes? A <practice>prática de 15 segundos</practice> não tem ranking e começa assim que você digita."
+    "about3": "Quer aquecer antes? A <practice>prática de 15 segundos</practice> não tem ranking e começa assim que você digita.",
+    "about4": "Quer melhorar? Leia nossos <guides>guias de digitação</guides>."
   },
   "Practice": {
     "title": "Prática",
@@ -200,6 +201,36 @@
     "copyManually": "Copie este link:",
     "viewResult": "Ver resultado"
   },
+  "Guides": {
+    "indexTitle": "Guias de digitação",
+    "indexDescription": "Guias para digitar mais rápido e entender seu teste de digitação: velocidade média de digitação, PPM e CPM, posição dos dedos e teclado físico ou touch.",
+    "indexIntro": "Guias curtos e práticos para entender o resultado do seu teste de velocidade de digitação e melhorá-lo.",
+    "back": "Todos os guias",
+    "ctaTitle": "Coloque em prática",
+    "ctaTest": "Faça o teste de digitação de 30 segundos",
+    "ctaPractice": "Aqueça com a prática",
+    "more": "Mais guias",
+    "average-typing-speed": {
+      "title": "Velocidade média de digitação: quantas ppm?",
+      "description": "Qual é a velocidade média de digitação de adultos, estudantes e profissionais, o que influencia e como medir suas ppm com um teste de digitação."
+    },
+    "how-to-type-faster": {
+      "title": "Como digitar mais rápido no teclado",
+      "description": "Como digitar mais rápido sem perder precisão: digitação às cegas, postura, prática diária e como medir suas ppm com um teste de velocidade de digitação."
+    },
+    "wpm-vs-cpm": {
+      "title": "PPM e CPM: como se mede a velocidade de digitação",
+      "description": "O que significam PPM e CPM, por que uma palavra conta como cinco caracteres, PPM bruto e líquido, precisão e como converter uma na outra."
+    },
+    "finger-placement": {
+      "title": "Posição dos dedos no teclado",
+      "description": "A fileira guia, qual dedo aperta cada tecla, os polegares na barra de espaço e a postura: o básico da digitação às cegas."
+    },
+    "physical-vs-touch-keyboard": {
+      "title": "Teclado físico ou touch: diferenças de velocidade",
+      "description": "Como digitar em um teclado físico difere do teclado touch do celular ou tablet, velocidades comuns e por que cada um tem seu próprio ranking."
+    }
+  },
   "Email": {
     "magicLinkSubject": "Seu link para entrar no QwertyRank",
     "magicLinkIntro": "Use este link para entrar no QwertyRank. Ele expira em 10 minutos e só funciona uma vez.",
@@ -235,7 +266,8 @@
     "beta": "beta",
     "feedback": "Envie-nos seus comentários",
     "privacy": "Privacidade",
-    "terms": "Termos"
+    "terms": "Termos",
+    "guides": "Guias"
   },
   "Legal": {
     "privacyTitle": "Política de privacidade",

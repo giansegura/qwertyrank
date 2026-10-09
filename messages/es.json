@@ -23,7 +23,8 @@
     "aboutTitle": "Cómo funciona el test de velocidad de escritura",
     "about1": "Escribe durante 30 segundos las palabras que aparecen, tal como las ves. Al terminar te damos tus palabras por minuto (PPM): los caracteres que escribiste bien, divididos entre cinco, por minuto. También medimos tu precisión, el porcentaje de pulsaciones correctas.",
     "about2": "Cada idioma y cada tipo de teclado tienen su propio ranking. Cuenta tu mejor partida, siempre que tenga al menos un 90 % de precisión, y el servidor decide si escribiste con teclado físico o táctil. Para entrar en el ranking necesitas una cuenta: puedes jugar sin ella y guardar la partida si entras en los 10 minutos siguientes.",
-    "about3": "¿Quieres calentar antes? La <practice>práctica de 15 segundos</practice> no tiene ranking y empieza en cuanto escribes."
+    "about3": "¿Quieres calentar antes? La <practice>práctica de 15 segundos</practice> no tiene ranking y empieza en cuanto escribes.",
+    "about4": "¿Quieres mejorar? Lee nuestras <guides>guías de mecanografía</guides>."
   },
   "Practice": {
     "title": "Práctica",
@@ -200,6 +201,36 @@
     "copyManually": "Copia este enlace:",
     "viewResult": "Ver resultado"
   },
+  "Guides": {
+    "indexTitle": "Guías de mecanografía",
+    "indexDescription": "Guías para escribir más rápido y entender tu test de mecanografía: velocidad media de escritura, PPM y CPM, posición de los dedos y teclado físico o táctil.",
+    "indexIntro": "Guías breves y prácticas para entender el resultado de tu test de velocidad de escritura y mejorarlo.",
+    "back": "Todas las guías",
+    "ctaTitle": "Ponlo en práctica",
+    "ctaTest": "Haz el test de mecanografía de 30 segundos",
+    "ctaPractice": "Calienta con la práctica",
+    "more": "Más guías",
+    "average-typing-speed": {
+      "title": "Velocidad media de escritura: ¿cuántas ppm?",
+      "description": "Cuál es la velocidad media de escritura en adultos, estudiantes y profesionales, qué influye en ella y cómo medir tus ppm con un test de mecanografía."
+    },
+    "how-to-type-faster": {
+      "title": "Cómo escribir más rápido en el teclado",
+      "description": "Cómo escribir más rápido sin perder precisión: mecanografía al tacto, postura, práctica diaria y cómo medir tus ppm con un test de velocidad de escritura."
+    },
+    "wpm-vs-cpm": {
+      "title": "PPM y CPM: cómo se mide la velocidad de escritura",
+      "description": "Qué significan PPM y CPM, por qué una palabra cuenta como cinco caracteres, PPM brutas y netas, precisión y cómo convertir unas en otras."
+    },
+    "finger-placement": {
+      "title": "Posición de los dedos en el teclado",
+      "description": "La fila guía, qué dedo pulsa cada tecla, los pulgares en la barra espaciadora y la postura: lo básico de la mecanografía al tacto."
+    },
+    "physical-vs-touch-keyboard": {
+      "title": "Teclado físico o táctil: diferencias de velocidad",
+      "description": "En qué se diferencia escribir en un teclado físico y en el teclado táctil del móvil o la tableta, velocidades habituales y por qué cada uno tiene su ranking."
+    }
+  },
   "Email": {
     "magicLinkSubject": "Tu enlace para entrar en QwertyRank",
     "magicLinkIntro": "Usa este enlace para entrar en QwertyRank. Caduca en 10 minutos y solo funciona una vez.",
@@ -235,7 +266,8 @@
     "beta": "beta",
     "feedback": "Envíanos tus comentarios",
     "privacy": "Privacidad",
-    "terms": "Términos"
+    "terms": "Términos",
+    "guides": "Guías"
   },
   "Legal": {
     "privacyTitle": "Política de privacidad",

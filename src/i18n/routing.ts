@@ -50,6 +50,38 @@ export const routing = defineRouting({
     "/u/[nick]": "/u/[nick]",
     // Result page of a game (spec 5d §3.1).
     "/r/[id]": "/r/[id]",
+    // Guides (spec 5c §2): the index and one fixed route per guide, with its slug in every locale. The page
+    // is guides/[slug], whose param is always the internal id.
+    "/guides": {
+      en: "/guides",
+      es: "/guias",
+      pt: "/guias",
+    },
+    "/guides/average-typing-speed": {
+      en: "/guides/average-typing-speed",
+      es: "/guias/velocidad-media-de-escritura",
+      pt: "/guias/velocidade-media-de-digitacao",
+    },
+    "/guides/how-to-type-faster": {
+      en: "/guides/how-to-type-faster",
+      es: "/guias/como-escribir-mas-rapido",
+      pt: "/guias/como-digitar-mais-rapido",
+    },
+    "/guides/wpm-vs-cpm": {
+      en: "/guides/wpm-vs-cpm",
+      es: "/guias/ppm-y-cpm",
+      pt: "/guias/ppm-e-cpm",
+    },
+    "/guides/finger-placement": {
+      en: "/guides/finger-placement",
+      es: "/guias/posicion-de-los-dedos",
+      pt: "/guias/posicao-dos-dedos",
+    },
+    "/guides/physical-vs-touch-keyboard": {
+      en: "/guides/physical-vs-touch-keyboard",
+      es: "/guias/teclado-fisico-o-tactil",
+      pt: "/guias/teclado-fisico-ou-touch",
+    },
     // Legal pages (spec 5a §4.1).
     "/privacy": {
       en: "/privacy",

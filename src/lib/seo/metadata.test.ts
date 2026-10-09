@@ -83,3 +83,24 @@ describe("resultMetadata", () => {
     expect(metadata.twitter).toMatchObject({ card: "summary_large_image", images: [image] });
   });
 });
+
+describe("guides", () => {
+  it("each guide has its localized slug, with the English one as x-default", () => {
+    expect(alternatesFor("es", "/guides/wpm-vs-cpm")).toEqual({
+      canonical: "/es/guias/ppm-y-cpm",
+      languages: {
+        en: "/en/guides/wpm-vs-cpm",
+        es: "/es/guias/ppm-y-cpm",
+        pt: "/pt/guias/ppm-e-cpm",
+        "x-default": "/en/guides/wpm-vs-cpm",
+      },
+    });
+    expect(alternatesFor("pt", "/guides").canonical).toBe("/pt/guias");
+  });
+
+  it("a guide is shared as an article", () => {
+    const meta = pageMetadata({ locale: "en", href: "/guides/wpm-vs-cpm", title: "WPM vs CPM", ogType: "article" });
+    expect(meta.openGraph).toMatchObject({ type: "article" });
+    expect(pageMetadata({ locale: "en", href: "/guides", title: "Guides" }).openGraph).toMatchObject({ type: "website" });
+  });
+});

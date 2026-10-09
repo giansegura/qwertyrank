@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@words/*": ["./words/*"]
+      "@words/*": ["./words/*"],
+      "@content/*": ["./content/*"]
     }
   },
   "include": [

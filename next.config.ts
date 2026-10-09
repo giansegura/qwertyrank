@@ -1,3 +1,4 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import { INDEXABLE } from "./src/lib/site";
@@ -6,6 +7,9 @@ const withNextIntl = createNextIntlPlugin({
   // ICU messages compiled at build time: the client doesn't load the ICU parser (spec 5b §7.1).
   experimental: { messages: { path: "./messages", format: "json", locales: "infer", precompile: true } },
 });
+
+/** Guides are MDX imported by their page (spec 5c §3): never routed, so no `pageExtensions` change. */
+const withMDX = createMDX({});
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -26,4 +30,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default withNextIntl(withMDX(nextConfig));

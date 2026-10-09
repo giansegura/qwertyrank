@@ -1,15 +1,9 @@
 import "server-only";
 import type { InputType, RejectReason } from "@/lib/game/types";
 import type { InputTypingEvent, KeyTypingEvent, TypingEvent } from "@/lib/scoring/types";
+import type { AnticheatConfig } from "./config";
 
-/** Reglas que rechazan una partida (spec §4.2 y §4.3). Valores iniciales, ajustables con datos reales. */
-
-export const TIMING_TOLERANCE_MS = 250;
-export const BURST_WINDOW = 20;
-export const BURST_MEDIAN_MS = 25;
-export const KEYDOWN_LOOKBACK_MS = 1_000;
-export const TOUCH_MULTI_INSERT_LIMIT = 2;
-export const WPM_CEILING: Record<InputType, number> = { physical: 320, touch: 220 };
+/** Reglas que rechazan una partida (spec §4.2 y §4.3), con los umbrales de `AnticheatConfig`. */
 
 /** Una tanda de eventos tal como la recibió el servidor, con la hora oficial de llegada. */
 export interface ReceivedBatch {
@@ -25,7 +19,11 @@ export interface TimingWindow {
   lastSeq: number;
 }
 
-export function checkTiming(batches: readonly ReceivedBatch[], window: TimingWindow): RejectReason | null {
+export function checkTiming(
+  batches: readonly ReceivedBatch[],
+  window: TimingWindow,
+  config: AnticheatConfig,
+): RejectReason | null {
   if (window.finishedAt > window.deadline) return "late";
   if (batches.length !== window.lastSeq || batches.some((batch, i) => batch.seq !== i + 1)) return "incomplete";
   for (const batch of batches) {
@@ -33,7 +31,7 @@ export function checkTiming(batches: readonly ReceivedBatch[], window: TimingWin
     const elapsedAtArrival = batch.arrivedAt - window.startsAt;
     for (const event of batch.events) {
       if (event.t < 0) return "early_input";
-      if (event.t > elapsedAtArrival + TIMING_TOLERANCE_MS) return "fabricated_timing";
+      if (event.t > elapsedAtArrival + config.timingToleranceMs) return "fabricated_timing";
     }
   }
   return null;
@@ -60,7 +58,11 @@ function baseChar(text: string): string {
  * (sin contar tildes) o de una tecla de composición. Cada keydown se usa una sola vez,
  * así que mantener una tecla pulsada no tapa texto inyectado. Lineal: ambas listas van ordenadas.
  */
-function hasInjectedInput(events: readonly TypingEvent[], inputs: readonly InputTypingEvent[]): boolean {
+function hasInjectedInput(
+  events: readonly TypingEvent[],
+  inputs: readonly InputTypingEvent[],
+  lookbackMs: number,
+): boolean {
   const downs = events
     .filter((event): event is KeyTypingEvent => event.type === "down" && writesText(event.key))
     .toSorted((a, b) => a.t - b.t);
@@ -69,7 +71,7 @@ function hasInjectedInput(events: readonly TypingEvent[], inputs: readonly Input
   let first = 0;
   for (const input of inputs.toSorted((a, b) => a.t - b.t)) {
     // El inicio de la ventana salta las pulsaciones caducadas y las ya usadas.
-    while (first < downs.length && (used[first] || downs[first].t < input.t - KEYDOWN_LOOKBACK_MS)) first++;
+    while (first < downs.length && (used[first] || downs[first].t < input.t - lookbackMs)) first++;
     const wanted = baseChar(input.inserted);
     let match = -1;
     for (let i = first; i < downs.length && downs[i].t <= input.t; i++) {
@@ -91,30 +93,30 @@ function median(values: number[]): number {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-function hasInhumanBurst(inputs: readonly InputTypingEvent[]): boolean {
+function hasInhumanBurst(inputs: readonly InputTypingEvent[], window: number, medianMs: number): boolean {
   const times = inputs.map((event) => event.t).toSorted((a, b) => a - b);
-  for (let start = 0; start + BURST_WINDOW <= times.length; start++) {
+  for (let start = 0; start + window <= times.length; start++) {
     const intervals = [];
-    for (let i = start + 1; i < start + BURST_WINDOW; i++) intervals.push(times[i] - times[i - 1]);
-    if (median(intervals) < BURST_MEDIAN_MS) return true;
+    for (let i = start + 1; i < start + window; i++) intervals.push(times[i] - times[i - 1]);
+    if (median(intervals) < medianMs) return true;
   }
   return false;
 }
 
-export function checkEvents(events: readonly TypingEvent[], inputType: InputType): RejectReason | null {
+export function checkEvents(events: readonly TypingEvent[], inputType: InputType, config: AnticheatConfig): RejectReason | null {
   if (events.some((event) => !event.trusted)) return "untrusted";
 
   const inputs = insertions(events);
-  if (inputType === "physical" && hasInjectedInput(events, inputs)) return "injected_input";
+  if (inputType === "physical" && hasInjectedInput(events, inputs, config.keydownLookbackMs)) return "injected_input";
 
   const multiInserts = inputs.filter((event) => [...event.inserted].length > 1).length;
-  const allowed = inputType === "physical" ? 0 : TOUCH_MULTI_INSERT_LIMIT;
+  const allowed = inputType === "physical" ? 0 : config.touchMultiInsertLimit;
   if (multiInserts > allowed) return "multi_insert";
 
-  if (hasInhumanBurst(inputs)) return "inhuman_burst";
+  if (hasInhumanBurst(inputs, config.burstWindow, config.burstMedianMs)) return "inhuman_burst";
   return null;
 }
 
-export function checkSpeed(wpm: number, inputType: InputType): RejectReason | null {
-  return wpm > WPM_CEILING[inputType] ? "inhuman_speed" : null;
+export function checkSpeed(wpm: number, inputType: InputType, config: AnticheatConfig): RejectReason | null {
+  return wpm > config.wpmCeiling[inputType] ? "inhuman_speed" : null;
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEV_ANTICHEAT_CONFIG } from "./anticheat/config";
 import { parseServerEnv } from "./env";
 
 /** Lo mínimo salvo `BETTER_AUTH_URL`, que en una vista previa puede faltar. */
@@ -12,9 +13,12 @@ const COMMON = {
 };
 const BASE = { ...COMMON, BETTER_AUTH_URL: "http://localhost:3000" };
 const CRON = "d".repeat(32);
+/** Umbrales del anti-trampas de producción: distintos de los de desarrollo. */
+const ANTICHEAT = { ...DEV_ANTICHEAT_CONFIG, burstMedianMs: 31, wpmCeiling: { physical: 301, touch: 211 } };
 const PRODUCTION = {
   ...BASE,
   VERCEL_ENV: "production",
+  ANTICHEAT_CONFIG: JSON.stringify(ANTICHEAT),
   RESEND_API_KEY: "re_x",
   TURNSTILE_SECRET_KEY: "1x0",
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x0",
@@ -44,7 +48,7 @@ describe("parseServerEnv", () => {
     const turnstile = { TURNSTILE_SECRET_KEY: "1x0", NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x0" };
     expect(() => parseServerEnv({ ...BASE, ...turnstile, VERCEL_ENV: "production" })).toThrow(/RESEND_API_KEY/);
     expect(
-      parseServerEnv({ ...BASE, ...turnstile, VERCEL_ENV: "production", RESEND_API_KEY: "re_x", CRON_SECRET: CRON }).RESEND_API_KEY,
+      parseServerEnv({ ...BASE, ...turnstile, VERCEL_ENV: "production", RESEND_API_KEY: "re_x", CRON_SECRET: CRON, ANTICHEAT_CONFIG: PRODUCTION.ANTICHEAT_CONFIG }).RESEND_API_KEY,
     ).toBe("re_x");
   });
 
@@ -98,5 +102,44 @@ describe("parseServerEnv", () => {
     expect(() => parseServerEnv({ ...PREVIEW, REDIS_KEY_PREFIX: "qr:" })).toThrow(/REDIS_KEY_PREFIX/);
     expect(parseServerEnv({ ...PREVIEW, REDIS_KEY_PREFIX: "pr-7:" }).REDIS_KEY_PREFIX).toBe("pr-7:");
     expect(parseServerEnv({ ...PRODUCTION, CRON_SECRET: CRON, REDIS_KEY_PREFIX: "qr:" }).REDIS_KEY_PREFIX).toBe("qr:");
+  });
+
+  it("sin ANTICHEAT_CONFIG, fuera de producción, usa los umbrales de desarrollo", () => {
+    expect(parseServerEnv(BASE).ANTICHEAT).toEqual(DEV_ANTICHEAT_CONFIG);
+    expect(parseServerEnv({ ...BASE, ANTICHEAT_CONFIG: "" }).ANTICHEAT).toEqual(DEV_ANTICHEAT_CONFIG);
+  });
+
+  it("ANTICHEAT_CONFIG es un JSON con todos los umbrales", () => {
+    expect(parseServerEnv({ ...BASE, ANTICHEAT_CONFIG: JSON.stringify(ANTICHEAT) }).ANTICHEAT).toEqual(ANTICHEAT);
+    const { burstWindow: _, ...missing } = ANTICHEAT;
+    expect(() => parseServerEnv({ ...BASE, ANTICHEAT_CONFIG: JSON.stringify(missing) })).toThrow(/ANTICHEAT_CONFIG/);
+    expect(() => parseServerEnv({ ...BASE, ANTICHEAT_CONFIG: JSON.stringify({ ...ANTICHEAT, extra: 1 }) })).toThrow(/ANTICHEAT_CONFIG/);
+    expect(() => parseServerEnv({ ...BASE, ANTICHEAT_CONFIG: JSON.stringify({ ...ANTICHEAT, unidentifiedRatio: 2 }) })).toThrow(
+      /ANTICHEAT_CONFIG/,
+    );
+  });
+
+  it("un ANTICHEAT_CONFIG roto falla sin enseñar su contenido", () => {
+    const secret = '{"burstMedianMs": 31, secreto';
+    let message = "";
+    try {
+      parseServerEnv({ ...BASE, ANTICHEAT_CONFIG: secret });
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toMatch(/ANTICHEAT_CONFIG/);
+    expect(message).not.toContain("secreto");
+  });
+
+  it("en producción de Vercel exige ANTICHEAT_CONFIG: los umbrales de desarrollo son públicos", () => {
+    const { ANTICHEAT_CONFIG: _, ...withoutConfig } = PRODUCTION;
+    expect(() => parseServerEnv({ ...withoutConfig, CRON_SECRET: CRON })).toThrow(/ANTICHEAT_CONFIG/);
+    expect(parseServerEnv({ ...PRODUCTION, CRON_SECRET: CRON }).ANTICHEAT).toEqual(ANTICHEAT);
+  });
+
+  it("en producción no acepta los umbrales de desarrollo, que están en el código", () => {
+    expect(() =>
+      parseServerEnv({ ...PRODUCTION, CRON_SECRET: CRON, ANTICHEAT_CONFIG: JSON.stringify(DEV_ANTICHEAT_CONFIG) }),
+    ).toThrow(/ANTICHEAT_CONFIG/);
   });
 });

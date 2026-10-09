@@ -46,8 +46,9 @@ export function PrivacyEn() {
       <h2>Why, and on what legal basis</h2>
       <ul>
         <li>
-          To provide the service (your account, your public profile and your place on the leaderboard): performance of
-          the contract you accept when you create an account.
+          To provide the service (your account, your public profile, your place on the leaderboard and the page of
+          each valid game, which anyone with its link can see): performance of the contract you accept when you create
+          an account.
         </li>
         <li>
           To validate games and prevent cheating and abuse (checking keystrokes, limiting games, verifying records,

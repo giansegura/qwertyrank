@@ -12,6 +12,7 @@ import type { TypingEvent } from "@/lib/scoring/types";
 import type { VerificationOutcome } from "@/lib/verification";
 import { generateWords } from "@/lib/words/generate";
 import { WORDS_PER_TEST, type TestLanguage } from "@/lib/words/languages";
+import type { AnticheatConfig } from "../anticheat/config";
 import { classifyInputType } from "../anticheat/input-type";
 import { checkEvents, checkSpeed, checkTiming, type ReceivedBatch } from "../anticheat/rules";
 import type { GameRanking } from "@/lib/leaderboard/types";
@@ -42,6 +43,8 @@ export interface GameServiceDeps {
   random: () => number;
   newId: () => string;
   times: GameTimes;
+  /** Umbrales del anti-trampas: los de producción salen de `ANTICHEAT_CONFIG` (`src/server/anticheat/config.ts`). */
+  anticheat: AnticheatConfig;
   /** Publica las marcas y calcula su posición (spec §5.5–5.6); no lanza. */
   rankGame: (game: RankGameInput) => Promise<GameRanking>;
 }
@@ -128,12 +131,12 @@ export function createGameService(deps: GameServiceDeps): GameService {
       }));
       const events = batches.flatMap((batch) => batch.events);
 
-      const inputType = classifyInputType(events, game.env);
+      const inputType = classifyInputType(events, game.env, deps.anticheat);
       const result = replay(game.words, events, game.durationMs);
       const reason =
-        checkTiming(batches, { startsAt: game.startsAt, deadline: game.deadline, finishedAt, lastSeq }) ??
-        checkEvents(events, inputType) ??
-        checkSpeed(result.wpm, inputType);
+        checkTiming(batches, { startsAt: game.startsAt, deadline: game.deadline, finishedAt, lastSeq }, deps.anticheat) ??
+        checkEvents(events, inputType, deps.anticheat) ??
+        checkSpeed(result.wpm, inputType, deps.anticheat);
       const verdict = reason ? "rejected" : "valid";
       const record: GameRecord = {
         id: gameId,

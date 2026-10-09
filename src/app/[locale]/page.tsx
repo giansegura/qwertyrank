@@ -6,11 +6,11 @@ import { HomeAbout } from "@/components/home/home-about";
 import { HomeTop } from "@/components/home/home-top";
 import { RankedTest } from "@/components/ranked/ranked-test";
 import { JsonLd } from "@/components/seo/json-ld";
-import { type Locale, routing } from "@/i18n/routing";
-import type { TopEntry } from "@/lib/leaderboard/types";
+import { routing } from "@/i18n/routing";
 import { pageMetadata } from "@/lib/seo/metadata";
 import { homeStructuredData } from "@/lib/seo/structured-data";
 import { getDb } from "@/server/db/client";
+import { readHomeTop } from "@/server/leaderboard/home-top";
 import { getTop } from "@/server/leaderboard/top";
 
 /** El top 10 se regenera cada 60 s, como el ranking, y al momento cuando cambia (spec 5b §7). */
@@ -30,22 +30,12 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
   return pageMetadata({ locale, href: "/", title: t("title"), description: t("description") });
 }
 
-/** El top de la portada, o `null` si la base de datos falla: el test nunca deja de funcionar por el ranking. */
-async function readHomeTop(language: Locale): Promise<TopEntry[] | null> {
-  try {
-    return await getTop(getDb(), { language, inputType: "physical" }, HOME_TOP_SIZE);
-  } catch (error) {
-    console.error("No se pudo leer el top de la portada", error);
-    return null;
-  }
-}
-
 export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   const t = await getTranslations("Home");
   const meta = await getTranslations("Metadata");
-  const top = await readHomeTop(locale);
+  const top = await readHomeTop(() => getTop(getDb(), { language: locale, inputType: "physical" }, HOME_TOP_SIZE));
 
   // El texto de Ranked no va en la página: lo envía el servidor al pulsar Empezar (spec §3.4).
   return (

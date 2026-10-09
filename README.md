@@ -37,6 +37,7 @@ pnpm dev                      # http://localhost:3000
 ## Moderación
 
 - **Pase humano:** antes de una partida Ranked, Cloudflare Turnstile hace un reto invisible; superado, vale una hora. En local es opcional: sin `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y `TURNSTILE_SECRET_KEY` no se pide. En producción son obligatorias (widget "Managed" en el panel de Cloudflare). Los E2E usan las claves de prueba de Cloudflare, así que necesitan red.
+- **Umbrales del anti-trampas:** en producción salen de `ANTICHEAT_CONFIG` (JSON, `docs/launch.md` §6) y no están en el código, que es público. En local y en los tests se usan los de desarrollo de `src/server/anticheat/config.ts`.
 - **Límites:** 100 partidas Ranked por hora por cuenta (o navegador) y 150 por IP; 10 denuncias al día por jugador.
 - **Admins:** `pnpm admin:grant tu@email.com` da el rol (y `pnpm admin:revoke` lo quita). El panel está en `/admin`; para quien no es admin, no existe (404).
 - **Reconstruir Redis:** `pnpm redis:rebuild` dice lo que haría; `pnpm redis:rebuild --yes` lo hace.
@@ -60,7 +61,7 @@ pnpm dev                      # http://localhost:3000
 | `pnpm lint` / `pnpm typecheck` | ESLint y TypeScript | — |
 | `pnpm budget` | JS propio de la portada (y de `/practice`) en gzip, por encima de `/_not-found`; falla si la portada pasa de 30,0 KB | `pnpm build` antes, y `python3` |
 
-La CI (`.github/workflows/ci.yml`) lo ejecuta todo en cada PR y en `main`, en tres jobs: `checks` (lint, tipos y unitarios), `integration` (con PostgreSQL, Redis y SRH como servicios) y `e2e` (E2E y `pnpm budget` sobre su build). Los tres deben pasar para integrar en `main`.
+La CI (`.github/workflows/ci.yml`) lo ejecuta todo en cada PR y en `main`, en tres jobs: `checks` (lint, tipos y unitarios), `integration` (con PostgreSQL, Redis y SRH como servicios) y `e2e` (E2E y `pnpm budget` sobre su build). Además, `.github/workflows/pr-title.yml` comprueba que el título de cada PR siga Conventional Commits (`conventional-title`): con squash, ese título es el commit en `main`. Los cuatro deben pasar para integrar en `main`. CodeRabbit revisa cada PR con `.coderabbit.yaml` (comenta, no bloquea).
 
 ## Base de datos
 
@@ -82,6 +83,7 @@ La guía para abrir la beta (cuentas, variables y comprobaciones) está en [`doc
 - **Analítica:** Vercel Web Analytics y Speed Insights, solo en producción y sin JS propio en la portada.
 - **Beta:** nada se indexa mientras `INDEXABLE` (`src/lib/site.ts`) sea `false`.
 - **SEO:** cada página indexable construye sus metadatos con `pageMetadata` (`src/lib/seo/`): canonical, `hreflang` y Open Graph con las URLs de `SITE_URL` (producción), también en local. Además, `sitemap.xml`, `robots.txt`, JSON-LD y una imagen para compartir por idioma (`src/app/[locale]/opengraph-image.tsx`). Los mensajes ICU se compilan en el build (`next.config.ts`), así que el cliente no carga su parser.
+- **Compartir:** cada partida Ranked válida tiene su página `/{idioma}/r/{id}` (sin indexar) con su imagen generada desde la base de datos (`src/app/[locale]/r/[id]/`), y un botón «Compartir» al terminarla. Con shadow-ban o ban la página es una 404 para los demás; el propio jugador ve su partida.
 
 ## Licencia
 

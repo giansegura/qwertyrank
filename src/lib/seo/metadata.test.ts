@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alternatesFor, pageMetadata } from "./metadata";
+import { alternatesFor, pageMetadata, resultMetadata } from "./metadata";
 
 describe("alternatesFor", () => {
   it("la portada apunta x-default a la raíz", () => {
@@ -57,5 +57,29 @@ describe("pageMetadata", () => {
     const meta = pageMetadata({ locale: "pt", href: "/", title: "QwertyRank — Teste", description: "D" });
     expect(meta.title).toEqual({ absolute: "QwertyRank — Teste" });
     expect(meta.openGraph).toMatchObject({ title: "QwertyRank — Teste", url: "/pt", locale: "pt_BR" });
+  });
+});
+
+describe("resultMetadata", () => {
+  it("sin indexar, con la imagen de la partida y la URL de su página", () => {
+    const metadata = resultMetadata({
+      locale: "es",
+      id: "g1",
+      title: "Gian: 82 ppm en español",
+      description: "97 % de precisión…",
+      imageAlt: "82 ppm · 97 %",
+    });
+    expect(metadata.robots).toEqual({ index: false });
+    expect(metadata.alternates).toBeUndefined();
+    expect(metadata.title).toBe("Gian: 82 ppm en español");
+    const image = { url: "/es/r/g1/opengraph-image", width: 1200, height: 630, alt: "82 ppm · 97 %", type: "image/png" };
+    expect(metadata.openGraph).toMatchObject({
+      title: "Gian: 82 ppm en español · QwertyRank",
+      description: "97 % de precisión…",
+      url: "/es/r/g1",
+      locale: "es_ES",
+      images: [image],
+    });
+    expect(metadata.twitter).toMatchObject({ card: "summary_large_image", images: [image] });
   });
 });

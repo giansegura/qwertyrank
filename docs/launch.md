@@ -78,6 +78,21 @@ Genera cada uno con `openssl rand -base64 32`, **distintos en Production y en Pr
 Además, **solo en Production**: `BETTER_AUTH_URL=https://qwertyrank.com`. En las vistas previas no hace falta: sale
 de la URL de su rama.
 
+### Umbrales del anti-trampas (`ANTICHEAT_CONFIG`)
+
+El código es público, así que los umbrales de producción solo están en esta variable, **solo en Production**. Es un
+JSON con los mismos campos que `DEV_ANTICHEAT_CONFIG` en `src/server/anticheat/config.ts`, en una línea:
+
+```
+{"timingToleranceMs":…,"burstWindow":…,"burstMedianMs":…,"keydownLookbackMs":…,"touchMultiInsertLimit":…,"wpmCeiling":{"physical":…,"touch":…},"minKeysForSignature":…,"unidentifiedRatio":…,"physicalMinHoldMs":…}
+```
+
+- Los valores de desarrollo están en el código y en el historial del repositorio: producción tiene que usar otros. Si
+  son iguales, el servidor no arranca.
+- Si falta, tampoco arranca. Si el JSON está mal, el error dice qué campo falla, pero nunca enseña el valor.
+- Guárdalos fuera del repositorio (en tu gestor de contraseñas). Para cambiarlos, edita la variable y vuelve a
+  desplegar.
+
 ## 7. Resend (emails)
 
 1. Crea la cuenta y añade el dominio `qwertyrank.com`. Crea en Cloudflare los registros DNS (SPF, DKIM) que te pida
@@ -113,8 +128,22 @@ Sentry corre solo en el servidor. No hay que tocar el código ni subir source ma
 En GitHub → *Settings* → *Branches* (o *Rules*), añade una regla para `main`:
 
 - exigir una PR para integrar;
-- exigir que pasen los checks **`checks`**, **`integration`** y **`e2e`** (aparecen tras la primera ejecución de la CI);
+- exigir que pasen los checks **`checks`**, **`integration`**, **`e2e`** y **`conventional-title`** (aparecen tras
+  la primera ejecución de la CI);
 - exigir que la rama esté al día con `main`.
+
+`conventional-title` (`.github/workflows/pr-title.yml`) comprueba que el título de la PR siga Conventional Commits:
+con squash, ese título es el commit en `main`. En *Settings* → *General* → *Pull Requests*, deja solo **Allow squash
+merging** con **Default commit message: Pull request title** (ya está así).
+
+### CodeRabbit (revisión automática de PR)
+
+1. Instala la app de GitHub **CodeRabbit** desde [coderabbit.ai](https://coderabbit.ai) y dale acceso solo al
+   repositorio `qwertyrank`. Antes, mira en su página de precios qué incluye el plan gratuito para repositorios
+   privados.
+2. Lee la configuración del repositorio (`.coderabbit.yaml`): comenta cada PR en español, con un resumen, y tiene en
+   cuenta `AGENTS.md` y `CLAUDE.md`.
+3. No es un check obligatorio: sus comentarios no bloquean la integración.
 
 ## 12. Primer despliegue
 

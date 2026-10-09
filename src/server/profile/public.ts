@@ -19,6 +19,7 @@ async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
   const [records, history] = await Promise.all([
     db
       .select({
+        gameId: bests.gameId,
         language: bests.language,
         inputType: bests.inputType,
         wpm: bests.wpm,
@@ -29,6 +30,7 @@ async function loadProfile(db: Db, where: SQL): Promise<PublicProfile | null> {
       .orderBy(desc(bests.score)),
     db
       .select({
+        id: games.id,
         startsAt: games.startsAt,
         language: games.language,
         inputType: games.inputType,

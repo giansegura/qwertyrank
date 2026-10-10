@@ -52,6 +52,15 @@ describe("ShareResult", () => {
     }
   });
 
+  it("announces the copied link in a status region that exists before the click", async () => {
+    stubNavigator({ writeText: vi.fn().mockResolvedValue(undefined) });
+    render();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("");
+    await click();
+    expect(status).toHaveTextContent("¡Enlace copiado!");
+  });
+
   it("if copying is not possible either, shows the link", async () => {
     stubNavigator({ writeText: vi.fn().mockRejectedValue(new Error("denied")) });
     render();

@@ -195,6 +195,8 @@
     "notFoundTitle": "Result not found",
     "notFoundText": "This game doesn't exist or isn't public.",
     "notFoundHome": "Back to the start",
+    "pendingTitle": "Result pending verification",
+    "pendingText": "Its player has to confirm this score with a verification game before it's shown. Come back in a while.",
     "share": "Share",
     "copied": "Link copied!",
     "shareText": "I typed {wpm} wpm in {language, select, en {English} es {Spanish} pt {Portuguese} other {}} on QwertyRank. Can you beat me?",

@@ -195,6 +195,8 @@
     "notFoundTitle": "Resultado não encontrado",
     "notFoundText": "Esta partida não existe ou não é pública.",
     "notFoundHome": "Voltar ao início",
+    "pendingTitle": "Resultado aguardando verificação",
+    "pendingText": "Quem jogou precisa confirmar essa marca com uma partida de verificação antes de ela aparecer. Volte daqui a pouco.",
     "share": "Compartilhar",
     "copied": "Link copiado!",
     "shareText": "Fiz {wpm} ppm em {language, select, en {inglês} es {espanhol} pt {português} other {}} no QwertyRank. Você consegue superar?",
@@ -212,11 +214,11 @@
     "more": "Mais guias",
     "average-typing-speed": {
       "title": "Velocidade média de digitação: quantas ppm?",
-      "description": "Qual é a velocidade média de digitação de adultos, estudantes e profissionais, o que influencia e como medir suas ppm com um teste de digitação."
+      "description": "Qual é a velocidade média de digitação de adultos, estudantes e profissionais, o que influencia e como medir seu ppm com um teste de digitação."
     },
     "how-to-type-faster": {
       "title": "Como digitar mais rápido no teclado",
-      "description": "Como digitar mais rápido sem perder precisão: digitação às cegas, postura, prática diária e como medir suas ppm com um teste de velocidade de digitação."
+      "description": "Como digitar mais rápido sem perder precisão: digitação às cegas, postura, prática diária e como medir seu ppm com um teste de velocidade de digitação."
     },
     "wpm-vs-cpm": {
       "title": "PPM e CPM: como se mede a velocidade de digitação",

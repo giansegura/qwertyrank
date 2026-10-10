@@ -1,5 +1,5 @@
-# CI (spec 5a §7): lint, types, unit, integration, E2E and the home page budget, on every PR and on main.
-# All three jobs are required to merge into main (branch protection, docs/launch.md).
+# CI (spec 5a §7, 5e §2): lint, types, unit, integration, E2E, the home page budget and Lighthouse, on every PR and on main.
+# All four jobs are required to merge into main (branch protection, docs/launch.md).
 name: CI
 
 on:
@@ -127,4 +127,64 @@ jobs:
         with:
           name: playwright-results
           path: test-results/
+          retention-days: 7
+
+  lighthouse:
+    name: lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The pages read PostgreSQL and Redis (the home page's top 10, the leaderboards): the same services as e2e.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: qwertyrank
+          POSTGRES_PASSWORD: qwertyrank
+          POSTGRES_DB: qwertyrank
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U qwertyrank -d qwertyrank"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+      redis:
+        image: redis:7-alpine
+      redis-http:
+        image: hiett/serverless-redis-http:0.0.10
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: local_dev_token
+          SRH_CONNECTION_STRING: redis://redis:6379
+        ports:
+          - 8079:80
+    # Like e2e: the build measured is the one production ships, Turnstile included (with Cloudflare's test keys).
+    env:
+      DATABASE_URL: postgres://qwertyrank:qwertyrank@localhost:54329/qwertyrank
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: local_dev_token
+      REDIS_KEY_PREFIX: "qr:"
+      ANON_COOKIE_SECRET: ci-only-anon-cookie-secret-0123456789
+      IP_HASH_SECRET: ci-only-ip-hash-secret-0123456789abcd
+      BETTER_AUTH_SECRET: ci-only-better-auth-secret-0123456789
+      BETTER_AUTH_URL: http://localhost:3200
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000BB
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm build
+      # Five pages, three runs each, against the limits in lighthouserc.cjs (uses the runner's Chrome).
+      - run: pnpm lighthouse
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: lighthouse-report/
           retention-days: 7

@@ -27,7 +27,7 @@ export function localizedHref(pathname: Pathname, params: Record<string, string 
 }
 
 const OPTION =
-  "rounded px-1.5 py-0.5 font-mono text-xs uppercase text-zinc-500 aria-[current]:bg-zinc-200 aria-[current]:text-zinc-900 dark:aria-[current]:bg-zinc-800 dark:aria-[current]:text-zinc-100";
+  "rounded px-1.5 py-0.5 font-mono text-xs uppercase text-zinc-500 dark:text-zinc-400 aria-[current]:bg-zinc-200 aria-[current]:text-zinc-900 dark:aria-[current]:bg-zinc-800 dark:aria-[current]:text-zinc-100";
 
 /** Picking a language in the dropdown closes it (does nothing in the desktop list). */
 function closeMenu(event: MouseEvent<HTMLAnchorElement>) {
@@ -61,9 +61,10 @@ export function LocaleSwitcher() {
       <details className="relative sm:hidden">
         <summary
           data-testid="locale-menu"
-          aria-label={t("open")}
-          className="flex cursor-pointer list-none items-center gap-0.5 rounded px-1 py-0.5 font-mono text-xs uppercase text-zinc-500 [&::-webkit-details-marker]:hidden"
+          className="flex cursor-pointer list-none items-center gap-0.5 rounded px-1 py-0.5 font-mono text-xs uppercase text-zinc-500 dark:text-zinc-400 [&::-webkit-details-marker]:hidden"
         >
+          {/* The accessible name includes the visible code, so voice control finds it by what it shows. */}
+          <span className="sr-only normal-case">{t("open")}: </span>
           {locale}
           <span aria-hidden>▾</span>
         </summary>

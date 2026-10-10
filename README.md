@@ -60,8 +60,21 @@ pnpm dev                      # http://localhost:3000
 | `pnpm test:e2e` | E2E tests with Playwright, on desktop and emulated mobile | `docker compose up -d` and `.env.local` |
 | `pnpm lint` / `pnpm typecheck` | ESLint and TypeScript | — |
 | `pnpm budget` | The home page's (and `/practice`'s) own gzipped JS, on top of `/_not-found`; fails if the home page exceeds 30.0 KB | `pnpm build` first, and `python3` |
+| `pnpm lighthouse` | Lighthouse CI on five pages (mobile, simulated slow 4G, three runs each): performance ≥ 90, accessibility and best practices 100, LCP ≤ 3.5 s, CLS ≤ 0.01, TBT ≤ 300 ms, ≤ 200 KB of JS and ≤ 400 KB in all per page, and the SEO audits except `is-crawlable` (`lighthouserc.cjs`). Reports in `lighthouse-report/` | `pnpm build` with the variables `pnpm start` needs, and Chrome (`CHROME_PATH` to use Playwright's) |
+| `pnpm load` | k6 load test (`load/ranked.js`): see below | k6, or Docker |
 
-CI (`.github/workflows/ci.yml`) runs all of it on every PR and on `main`, in three jobs: `checks` (lint, types and unit), `integration` (with PostgreSQL, Redis and SRH as services) and `e2e` (E2E and `pnpm budget` on its build). In addition, `.github/workflows/pr-title.yml` checks that each PR title follows Conventional Commits (`conventional-title`): with squash, that title is the commit on `main`. All four must pass to merge into `main`. CodeRabbit reviews every PR with `.coderabbit.yaml` (it comments, it doesn't block).
+CI (`.github/workflows/ci.yml`) runs all of it on every PR and on `main`, in four jobs: `checks` (lint, types and unit), `integration` (with PostgreSQL, Redis and SRH as services), `e2e` (E2E and `pnpm budget` on its build) and `lighthouse`. In addition, `.github/workflows/pr-title.yml` checks that each PR title follows Conventional Commits (`conventional-title`): with squash, that title is the commit on `main`. All five must pass to merge into `main`. CodeRabbit reviews every PR with `.coderabbit.yaml` (it comments, it doesn't block).
+
+**Typing speed (INP):** `e2e/performance.spec.ts` plays Ranked with the CPU 4x slower and fails if typing's INP reaches 50 ms (spec §2's target). It runs in its own Playwright project (`performance`, desktop), after the others: with no other tests sharing the CPU.
+
+**Load test:** `load/ranked.js` runs players through whole Ranked games (`start`, a batch of keys every 3 s, `finish`) while visitors load pages, and fails if more than 1 % of requests fail or the p95 goes over 500 ms (`start`), 300 ms (`keys`), 1 s (`finish`) or 800 ms (pages). Every game is saved: run it against a disposable database, never production. Locally, against a production build:
+
+```bash
+pnpm build && pnpm exec next start --keepAliveTimeout 70000   # with Cloudflare's Turnstile test keys (as in CI) or none
+pnpm load                                                     # or: docker run --rm -i -e BASE_URL=http://host.docker.internal:3000 grafana/k6:2.3.0 run - < load/ranked.js
+```
+
+`PLAYERS` (peak concurrent games, 50), `VISITORS` (page loads per second, 10), `HOLD` (time at the peak, 3m) and `BASE_URL` change it. Each VU sends its own `x-forwarded-for`, so the per-IP limit doesn't cut the test short (keep `HOLD` under an hour: each VU is one player, with its 100 games per hour); on Vercel the platform overwrites that header and every game counts against k6's IP (150 per hour). `--keepAliveTimeout` avoids a local artifact: Node closes idle connections after 5 s, and through Docker's port forwarding k6 doesn't notice and reuses them.
 
 ## Database
 

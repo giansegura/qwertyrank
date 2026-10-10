@@ -67,6 +67,10 @@ export function ShareResult({ gameId, language, wpm }: ShareResultProps) {
       <Link href={href} prefetch={false} className="text-sm underline">
         {t("viewResult")}
       </Link>
+      {/* Screen readers don't announce the button's new label: the region exists before it changes. */}
+      <p role="status" className="sr-only">
+        {state.kind === "copied" ? t("copied") : ""}
+      </p>
       {state.kind === "manual" && (
         <p className="w-full text-sm">
           {t("copyManually")}{" "}

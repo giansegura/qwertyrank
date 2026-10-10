@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { cache } from "react";
+import { PendingResult } from "@/components/result/pending-result";
 import { ResultCard } from "@/components/result/result-card";
 import { routing } from "@/i18n/routing";
 import { displayAccuracy, displayWpm } from "@/lib/scoring/metrics";
 import { resultMetadata } from "@/lib/seo/metadata";
 import { getDb } from "@/server/db/client";
-import { getPublicResult } from "@/server/game/result";
+import { getPublicResult, isPendingResult } from "@/server/game/result";
 
 /** Like the profile: it is regenerated every 60 s and nothing is generated at build time (spec 5d §3.1). */
 export const revalidate = 60;
@@ -23,12 +24,17 @@ interface ResultPageProps {
 
 /** One query per request, shared by the metadata and the page. */
 const readResult = cache((id: string) => getPublicResult(getDb(), id));
+const readPending = cache((id: string) => isPendingResult(getDb(), id));
 
 export async function generateMetadata({ params }: ResultPageProps): Promise<Metadata> {
   const { locale, id } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
   const result = await readResult(id);
-  if (!result) return { robots: { index: false } };
+  if (!result) {
+    if (!(await readPending(id))) return { robots: { index: false } };
+    const t = await getTranslations({ locale, namespace: "Share" });
+    return { title: t("pendingTitle"), robots: { index: false } };
+  }
   const t = await getTranslations({ locale, namespace: "Share" });
   const wpm = displayWpm(result.wpm);
   const accuracy = displayAccuracy(result.accuracy);
@@ -48,6 +54,8 @@ export default async function ResultPage({ params }: ResultPageProps) {
   const { locale, id } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   const result = await readResult(id);
-  if (!result) notFound();
-  return <ResultCard result={result} />;
+  if (result) return <ResultCard result={result} />;
+  // Shared while anonymous and then claimed into `review`: the link doesn't break while it is verified.
+  if (await readPending(id)) return <PendingResult />;
+  notFound();
 }

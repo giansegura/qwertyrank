@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
 import { createDb } from "../db/client";
-import { users } from "../db/schema";
+import { recordVerifications, users } from "../db/schema";
+import { openPendingVerification } from "../verification/pending";
 import { insertGame, type GameRecord } from "./persist";
-import { getOwnResult, getPublicResult } from "./result";
+import { getOwnResult, getPublicResult, isPendingResult } from "./result";
 
 const db = createDb(process.env.DATABASE_URL!);
 
@@ -97,5 +99,46 @@ describe("getOwnResult", () => {
     expect(await getOwnResult(db, other.id, await newGame(owner.id))).toBeNull();
     expect(await getOwnResult(db, owner.id, await newGame(owner.id, { verdict: "rejected", rejectReason: "late" }))).toBeNull();
     expect(await getOwnResult(db, owner.id, "hola")).toBeNull();
+  });
+});
+
+describe("isPendingResult", () => {
+  /** A `review` game with its open verification, like `createSaveGame` leaves it. */
+  async function reviewGame(status: "active" | "shadowbanned" = "active") {
+    const user = await newUser(status);
+    const id = await newGame(user.id, { verdict: "review" });
+    const verification = await openPendingVerification(db, {
+      userId: user.id,
+      language: "es",
+      inputType: "physical",
+      gameId: id,
+      wpm: 81.6,
+    });
+    return { id, verificationId: verification.id };
+  }
+
+  it("a review game whose verification is still open", async () => {
+    const { id } = await reviewGame();
+    expect(await isPendingResult(db, id)).toBe(true);
+  });
+
+  it("not once the verification failed or expired", async () => {
+    const failed = await reviewGame();
+    await db.update(recordVerifications).set({ status: "failed" }).where(eq(recordVerifications.id, failed.verificationId));
+    const expired = await reviewGame();
+    await db
+      .update(recordVerifications)
+      .set({ expiresAt: sql`now() - interval '1 minute'` })
+      .where(eq(recordVerifications.id, expired.verificationId));
+    expect(await isPendingResult(db, failed.id)).toBe(false);
+    expect(await isPendingResult(db, expired.id)).toBe(false);
+  });
+
+  it("not for a sanctioned player, a valid game, a missing game or a non-UUID id", async () => {
+    const { id } = await reviewGame("shadowbanned");
+    expect(await isPendingResult(db, id)).toBe(false);
+    expect(await isPendingResult(db, await newGame((await newUser()).id))).toBe(false);
+    expect(await isPendingResult(db, randomUUID())).toBe(false);
+    expect(await isPendingResult(db, "hola")).toBe(false);
   });
 });

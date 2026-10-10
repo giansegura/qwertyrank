@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { closeDb, seedGame, setStatus, signUp, userIdByEmail } from "./helpers/accounts";
+import { closeDb, seedGame, seedPendingVerification, setStatus, signUp, userIdByEmail } from "./helpers/accounts";
 import { playValidGame } from "./helpers/ranked";
 
 const SITE = "https://qwertyrank.com";
@@ -69,4 +69,15 @@ test("under shadow ban: 404 for everyone else and their game for them", async ({
   // The 404 asks from the browser and shows them their own (spec 5d §5).
   await page.goto(`/es/r/${id}`);
   await expect(page.getByTestId("game-result")).toContainText("72");
+});
+
+test("a game waiting for its verification says so, without its score or nick", async ({ page, browser }) => {
+  const email = await signUp(page, "es");
+  const { gameId } = await seedPendingVerification((await userIdByEmail(email))!, { wpm: 80 });
+  const stranger = await browser.newPage();
+  expect((await stranger.goto(`/es/r/${gameId}`))?.status()).toBe(200);
+  await expect(stranger.getByRole("heading", { name: "Resultado pendiente de verificación" })).toBeVisible();
+  await expect(stranger.getByTestId("pending-result")).not.toContainText("80");
+  expect(await meta(stranger, "robots")).toContain("noindex");
+  await stranger.close();
 });

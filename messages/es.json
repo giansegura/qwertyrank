@@ -195,6 +195,8 @@
     "notFoundTitle": "Resultado no encontrado",
     "notFoundText": "Esta partida no existe o no es pública.",
     "notFoundHome": "Volver al inicio",
+    "pendingTitle": "Resultado pendiente de verificación",
+    "pendingText": "Su jugador tiene que confirmar esta marca con una partida de verificación antes de mostrarla. Vuelve dentro de un rato.",
     "share": "Compartir",
     "copied": "¡Enlace copiado!",
     "shareText": "He hecho {wpm} ppm en {language, select, en {inglés} es {español} pt {portugués} other {}} en QwertyRank. ¿Puedes superarlo?",

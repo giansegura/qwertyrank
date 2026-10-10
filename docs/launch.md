@@ -129,7 +129,7 @@ Sentry runs on the server only. There's no need to touch the code or upload sour
 In GitHub → *Settings* → *Branches* (or *Rules*), add a rule for `main`:
 
 - require a PR to merge;
-- require the **`checks`**, **`integration`**, **`e2e`** and **`conventional-title`** checks to pass (they show up
+- require the **`checks`**, **`integration`**, **`e2e`**, **`lighthouse`** and **`conventional-title`** checks to pass (they show up
   after the first CI run);
 - require the branch to be up to date with `main`.
 
@@ -205,3 +205,5 @@ merging** with **Default commit message: Pull request title** (it's already set 
 - `INDEXABLE = true` in `src/lib/site.ts`: removes the `noindex`.
 - Then submit `https://qwertyrank.com/sitemap.xml` to Google Search Console and Bing Webmaster Tools.
 - Have a lawyer review the privacy policy and the terms.
+- Before announcing it, run the load test (README → Tests → *Load test*) on a production build and check its thresholds.
+- In `lighthouserc.cjs`, add `is-crawlable` to `SEO_AUDITS`: once indexable, a page that blocks crawlers must fail.

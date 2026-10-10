@@ -44,7 +44,7 @@ export function LeaderboardTable({ entries }: { entries: TopEntry[] }) {
             data-nick={entry.nick}
             className="border-b border-zinc-200 dark:border-zinc-800"
           >
-            <td className="py-2 font-mono text-zinc-500 tabular-nums">{entry.rank}</td>
+            <td className="py-2 font-mono text-zinc-500 tabular-nums dark:text-zinc-400">{entry.rank}</td>
             <td className="truncate py-2">
               {/* No prefetch: it would be up to 100 profiles regenerating on every visit (Vercel Hobby limit). */}
               <Link
@@ -57,7 +57,7 @@ export function LeaderboardTable({ entries }: { entries: TopEntry[] }) {
               </Link>
             </td>
             <td className="py-2 pl-3 text-right font-mono tabular-nums">{displayWpm(entry.wpm)}</td>
-            <td className="py-2 pl-3 text-right font-mono text-sm text-zinc-500 tabular-nums">
+            <td className="py-2 pl-3 text-right font-mono text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
               {t("accuracyValue", { accuracy: displayAccuracy(entry.accuracy) })}
             </td>
           </tr>

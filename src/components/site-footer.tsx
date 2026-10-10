@@ -15,7 +15,7 @@ export function SiteFooter() {
   return (
     <footer
       data-testid="site-footer"
-      className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400"
+      className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-x-2 gap-y-2 px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400"
     >
       <a
         href={FEEDBACK}

@@ -14,8 +14,15 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: "performance.spec.ts" },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: "performance.spec.ts" },
+    // Timing (INP) runs alone, once the others are done: other workers on the same CPU would skew it.
+    {
+      name: "performance",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: "performance.spec.ts",
+      dependencies: ["desktop", "mobile"],
+    },
   ],
   webServer: {
     command: `pnpm db:migrate && pnpm build && pnpm start --port ${PORT}`,

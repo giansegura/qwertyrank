@@ -51,3 +51,7 @@ next-env.d.ts
 
 # design docs and plans: local only
 /docs/superpowers/
+
+# lighthouse ci
+/.lighthouseci/
+/lighthouse-report/

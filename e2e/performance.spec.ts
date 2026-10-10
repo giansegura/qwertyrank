@@ -37,6 +37,11 @@ test("typing in Ranked responds in under 50 ms (INP) on a 4x slower CPU", async 
   const text = `${words.join(" ")} `;
   await page.keyboard.type(text, { delay: 80 });
   await page.waitForTimeout(500);
-  const durations = await page.evaluate(() => [...(window as unknown as InteractionWindow).__keys.values()]);
-  expect(inp(durations, text.length)).toBeLessThan(50);
+  const { durations, interactions } = await page.evaluate(() => ({
+    durations: [...(window as unknown as InteractionWindow).__keys.values()],
+    // Every interaction the browser counted, fast ones included: proves the keys reached the page.
+    interactions: (performance as Performance & { interactionCount: number }).interactionCount,
+  }));
+  expect(interactions).toBeGreaterThanOrEqual(text.length);
+  expect(inp(durations, interactions)).toBeLessThan(50);
 });
